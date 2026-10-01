@@ -15,10 +15,13 @@ WORKDIR /app
 # Dependências em camada própria, antes do código: só reinstala quando o lockfile muda.
 COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --no-install-project --no-dev
+    uv sync --locked --no-install-project
 
 COPY manage.py ./
 COPY config/ ./config/
+COPY core/ ./core/
+COPY templates/ ./templates/
+COPY static/ ./static/
 
 # Usuário sem privilégio.
 RUN useradd --create-home --uid 1000 app \

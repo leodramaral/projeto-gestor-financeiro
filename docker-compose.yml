@@ -8,6 +8,16 @@ x-app-build: &app-build
   dockerfile: docker/Dockerfile
 
 services:
+  # Compila o CSS (Tailwind) e copia o Alpine.js para static/dist/, e termina. O `web` só sobe depois.
+  # Para recompilar ao editar estilos: docker compose run --rm css npm run watch
+  css:
+    image: node:22-alpine
+    user: node
+    working_dir: /app
+    command: ["sh", "-c", "npm ci && npm run build"]
+    volumes:
+      - ./:/app
+
   web:
     build: *app-build
     image: projeto-gestor-financeiro:dev
@@ -22,6 +32,8 @@ services:
     ports:
       - "127.0.0.1:8000:8000"
     depends_on:
+      css:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
 

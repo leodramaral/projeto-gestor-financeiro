@@ -23,6 +23,8 @@ Tudo roda em Docker; o Python do sistema não é usado.
 cp .env.example .env                                  # primeira vez
 docker compose up --build                             # web + db em 127.0.0.1:8000 (migra ao subir)
 docker compose exec web python manage.py <comando>    # qualquer comando do Django
+docker compose exec web pytest                        # testes (settings de teste, banco próprio)
+docker compose run --rm css npm run build             # recompila o CSS (`watch` para acompanhar)
 openspec validate --all                               # SEM --strict
 ```
 
@@ -36,6 +38,8 @@ openspec validate --all                               # SEM --strict
 - **Dependências com `uv`** (`pyproject.toml` + `uv.lock`); nunca `requirements.txt`.
 - **O domínio ainda não foi modelado.** Não crie model, regra de negócio nem tela de domínio sem uma
   change que a autorize.
+- **`static/dist/` e `node_modules/` não são versionados:** o CSS compilado nasce do serviço `css` do
+  Compose. Node só existe dentro do contêiner.
 - `environment` vence `env_file` no Compose: ao acrescentar variável, confira que nada a sobrescreve.
 
 ## Fluxo de trabalho: Issues + OpenSpec
