@@ -62,7 +62,7 @@ do que arquivar cedo demais.
 ### 3. Commit
 
 **Nunca `git commit` direto via Bash.** Invoque a skill `git-commit` — ela faz o staging, deriva o
-escopo (nome da change) e **pede confirmação da mensagem antes de commitar**, mesmo quando o
+escopo (`#<n>` da Issue) e **pede confirmação da mensagem antes de commitar**, mesmo quando o
 usuário já pediu a mudança em si. Isso vale mesmo sob pressão de tempo (PR bloqueado, deploy
 esperando).
 
@@ -82,11 +82,11 @@ Nunca `--force` sem pedido explícito.
 ### 5. Abrir o PR — sem perguntar se deve
 
 Abrir o PR **faz parte da entrega**, no mesmo pé que o commit e o `archive` — não é um passo
-opcional para confirmar depois. Título no mesmo padrão do commit (`feat(<nome-da-change>): ...`, mesmo com
-escopo do nome da change): com squash merge ele vira a linha na `main`.
+opcional para confirmar depois. Título no mesmo padrão do commit (`feat(#<n>): ...`, com o número
+da Issue como escopo): com squash merge ele vira a linha na `main`.
 
 ```bash
-gh pr create --title "feat(<nome-da-change>): ..." --body "$(cat <<'EOF'
+gh pr create --title "feat(#<n>): ..." --body "$(cat <<'EOF'
 ## Resumo
 ...
 

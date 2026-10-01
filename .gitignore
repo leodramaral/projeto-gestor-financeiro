@@ -24,3 +24,7 @@ db.sqlite3
 
 # Worktrees locais
 worktrees/
+
+# Front-end
+node_modules/
+static/dist/

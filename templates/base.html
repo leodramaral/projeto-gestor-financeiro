@@ -1,0 +1,36 @@
+{% load static %}
+{# Layout base derivado do TailAdmin Free (MIT) — https://tailadmin.com. Licença em frontend/TAILADMIN-LICENSE. #}
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Gestor Financeiro{% endblock %}</title>
+    <link rel="icon" href="{% static 'images/favicon.ico' %}" />
+    <link rel="stylesheet" href="{% static 'dist/css/style.css' %}" />
+    <script>
+      // Aplica o tema antes de pintar, para não piscar.
+      try {
+        if (JSON.parse(localStorage.getItem("darkMode"))) document.documentElement.classList.add("dark");
+      } catch (e) {}
+    </script>
+    <script defer src="{% static 'dist/js/alpine.min.js' %}"></script>
+  </head>
+  <body
+    x-data="{ darkMode: document.documentElement.classList.contains('dark'), sidebarToggle: false }"
+    :class="{ 'bg-gray-900': darkMode }"
+  >
+    <div class="flex h-screen overflow-hidden">
+      {% include "partials/sidebar.html" %}
+      <div class="relative flex flex-1 flex-col overflow-x-hidden overflow-y-auto">
+        {% include "partials/overlay.html" %}
+        {% include "partials/header.html" %}
+        <main>
+          <div class="mx-auto max-w-(--breakpoint-2xl) p-4 pb-20 md:p-6 md:pb-6">
+            {% block content %}{% endblock %}
+          </div>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "gestor-financeiro-frontend",
+  "private": true,
+  "description": "Build do CSS (Tailwind) e do Alpine.js; roda no serviço css do Compose.",
+  "scripts": {
+    "build": "tailwindcss -i frontend/style.css -o static/dist/css/style.css --minify && node scripts/copy-alpine.mjs",
+    "watch": "node scripts/copy-alpine.mjs && tailwindcss -i frontend/style.css -o static/dist/css/style.css --watch"
+  },
+  "dependencies": {
+    "alpinejs": "^3.17.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "@tailwindcss/forms": "^0.5.9",
+    "tailwindcss": "^4.3.3"
+  }
+}

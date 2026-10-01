@@ -29,7 +29,7 @@ ficar idênticas — ao editar uma, copie para a outra):
 
 | Skill | Uso |
 |---|---|
-| `git-commit` | staging + mensagem em Conventional Commits a partir do diff, com confirmação antes de commitar. O escopo é o **nome da change** (`chore(boilerplate): ...`). |
+| `git-commit` | staging + mensagem em Conventional Commits a partir do diff, com confirmação antes de commitar. O escopo é o **número da Issue** (`chore(#1): ...`). |
 | `fechar-change` | leva uma change implementada até o PR: verificação, a pergunta "já está pronta para arquivar?", commit via `git-commit`, push e abertura do PR — sem perguntar se deve abrir. |
 
 As demais skills em `.claude/skills/` (`openspec-*`) são geradas por `openspec init`/`openspec update`

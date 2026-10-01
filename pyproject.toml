@@ -7,3 +7,14 @@ dependencies = [
     "django-environ>=0.14.0",
     "psycopg[binary]>=3.3.6",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-django>=4.14.0",
+]
+
+[tool.pytest.ini_options]
+# A opção de linha de comando vence o DJANGO_SETTINGS_MODULE do .env (dev).
+addopts = "--ds=config.settings.test"
+python_files = ["test_*.py"]

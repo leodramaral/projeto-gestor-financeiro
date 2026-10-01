@@ -7,3 +7,5 @@
 .claude
 openspec
 worktrees
+node_modules
+static/dist

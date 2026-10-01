@@ -23,6 +23,8 @@ Tudo roda em Docker; o Python do sistema não é usado.
 cp .env.example .env                                  # primeira vez
 docker compose up --build                             # web + db em 127.0.0.1:8000 (migra ao subir)
 docker compose exec web python manage.py <comando>    # qualquer comando do Django
+docker compose exec web pytest                        # testes (settings de teste, banco próprio)
+docker compose run --rm css npm run build             # recompila o CSS (`watch` para acompanhar)
 openspec validate --all                               # SEM --strict
 ```
 
@@ -36,6 +38,8 @@ openspec validate --all                               # SEM --strict
 - **Dependências com `uv`** (`pyproject.toml` + `uv.lock`); nunca `requirements.txt`.
 - **O domínio ainda não foi modelado.** Não crie model, regra de negócio nem tela de domínio sem uma
   change que a autorize.
+- **`static/dist/` e `node_modules/` não são versionados:** o CSS compilado nasce do serviço `css` do
+  Compose. Node só existe dentro do contêiner.
 - `environment` vence `env_file` no Compose: ao acrescentar variável, confira que nada a sobrescreve.
 
 ## Fluxo de trabalho: Issues + OpenSpec
@@ -44,9 +48,11 @@ Spec-Driven Development. **Não implemente sem uma change.**
 
 1. A Issue existe (`gh issue create`) e aponta para o trabalho.
 2. `/opsx:explore` quando a intenção tem mais de uma leitura.
-3. Branch com o nome da change: `git checkout -b boilerplate`.
-4. `/opsx:propose`. O id da change é um nome em kebab-case (`login-por-email`); sem número, porque
-   o projeto não usa Issues numeradas.
+3. Branch com o id da change: `git checkout -b 2-login-por-email`.
+4. `/opsx:propose`. O id da change é `<n>-<nome>`: o número da Issue seguido de um nome em
+   kebab-case (`2-login-por-email`). Ao arquivar, a pasta ganha a data na frente
+   (`2026-10-01-2-login-por-email`). Exceção histórica: `1-boilerplate` e `1-frontend-testes`
+   repetem o `1`, porque ambas atendem à Issue #1.
 5. `/opsx:apply`. Marque cada task só depois de **concluída e verificada**.
 6. O que surgir no caminho: dentro do escopo vira task **antes** de ser feito; fora do escopo vira
    Issue nova, e o trabalho corrente não desvia.
@@ -56,7 +62,7 @@ Spec-Driven Development. **Não implemente sem uma change.**
 
 ## Commits
 
-Conventional Commits, em português, com o **nome da change** como escopo:
-`chore(boilerplate): base Django + PostgreSQL em Docker`, `feat(login-por-email): ...`.
+Conventional Commits, em português, com o **número da Issue** da change como escopo:
+`feat(#2): login por e-mail`, `chore(#1): base Django + PostgreSQL em Docker`.
 Trabalho fora de change usa a área como escopo: `docs: ...`, `chore(docker): ...`.
 O título do PR segue o mesmo padrão.
