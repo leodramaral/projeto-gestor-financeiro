@@ -1,0 +1,54 @@
+schema: spec-driven
+
+context: |
+  # Aplicação web Django
+
+  Aplicação web em Django com PostgreSQL, executada inteiramente em Docker. O domínio de negócio
+  ainda não foi modelado: a fundação (OpenSpec, projeto Django, ambientes e contêineres) vem antes.
+  As regras do projeto estão no `AGENTS.md` na raiz.
+
+  ## Idioma: dividido por quem lê
+
+  Código-fonte (nomes de módulo, classe, função, variável, docstring, comentário, mensagem de log,
+  rota) é em INGLÊS. Variável de ambiente mantém o nome definido no `.env.example`.
+
+  TODO texto GERADO POR ESTE PROCESSO — proposals, specs, design, tasks, artefatos do OpenSpec,
+  commits, documentação em prosa — é em pt-BR. Requisitos usam DEVE / NÃO DEVE (não SHALL/MUST).
+  Scenarios usam `#### Cenário: <nome>` com bullets `- **QUANDO**` / `- **ENTÃO**` / `- **E**`.
+
+  ÚNICA exceção, e é estrutura da ferramenta, não texto: o marcador `### Requirement:` precisa
+  ficar em inglês porque o parser do OpenSpec o reconhece por regex fixa. O NOME do requisito,
+  depois dos dois pontos, é em português. Exemplo:
+
+      ### Requirement: Configuração validada na inicialização
+      A aplicação DEVE validar a configuração ao iniciar e NÃO DEVE subir com variável
+      obrigatória ausente.
+
+      #### Cenário: Variável obrigatória ausente
+      - **QUANDO** a aplicação inicia sem `DATABASE_URL`
+      - **ENTÃO** ela encerra com erro
+      - **E** a mensagem informa qual variável falta, sem exibir o valor
+
+  Por causa disso a validação roda como `openspec validate --all` (SEM `--strict`, que exigiria
+  SHALL/MUST em inglês). As checagens estruturais continuam todas ativas.
+
+  ## Stack
+
+  - Python 3.12+, dependências com `uv` + `pyproject.toml`
+  - Django (versão LTS) com templates renderizados no servidor; sem SPA
+  - PostgreSQL; `psycopg` como driver
+  - Configuração por ambiente em `config/settings/`: `base` (comum), `dev` (local), `test`, `prod`;
+    `DJANGO_SETTINGS_MODULE` escolhe o ambiente. Segredos só por variável de ambiente
+  - Tudo roda em `docker compose`; o Postgres é um serviço do compose com volume nomeado
+
+  ## Fora de escopo por enquanto
+
+  Suíte de testes, quality gate (lint, pre-commit, CI), UI, regras e modelagem de domínio. Cada um
+  entra como change própria depois que a fundação estiver de pé.
+
+rules:
+  proposal:
+    - Citar a Issue que originou a change, quando houver
+    - Declarar o que fica fora do escopo
+  tasks:
+    - Cada task é verificável; marque só depois de verificar
