@@ -1,6 +1,6 @@
 ---
 name: git-commit
-description: 'Executa git commit com análise de mensagem de commit convencional, staging inteligente e geração de mensagem. Use quando o usuário pedir para fazer commit de alterações, criar um commit git ou mencionar "/commit". Suporta: (1) Escopo derivado do nome da change OpenSpec, (2) Geração de mensagens de commit convencionais em português a partir do diff, (3) Confirmação interativa com o usuário antes de efetuar o commit.'
+description: 'Executa git commit com análise de mensagem de commit convencional, staging inteligente e geração de mensagem. Use quando o usuário pedir para fazer commit de alterações, criar um commit git ou mencionar "/commit". Suporta: (1) Escopo derivado do número da Issue da change OpenSpec, (2) Geração de mensagens de commit convencionais em português a partir do diff, (3) Confirmação interativa com o usuário antes de efetuar o commit.'
 license: MIT
 ---
 
@@ -37,29 +37,31 @@ Crie commits do git padronizados e semânticos usando a especificação de Commi
 | `chore`    | Manutenção/diversos            |
 | `revert`   | Reverter um commit anterior    |
 
-## Escopo: o nome da change, não a camada
+## Escopo: o número da Issue
 
-Neste repositório o escopo é o **nome da change OpenSpec** — é o que mantém a simetria
-"uma change, um branch, uma linha no log" (ver "Fluxo de trabalho" no `AGENTS.md`). Não há Issues
-numeradas, então não se usa número:
+Neste repositório o escopo é o **número da Issue** que originou a change, no formato `#<n>` — é o que
+mantém a simetria "uma Issue, uma change, um branch, uma linha no log" (ver "Fluxo de trabalho" no
+`AGENTS.md`). O id da change é `<n>-<nome>`, então o número vem do próprio nome:
 
 ```
-branch        login-por-email
-pasta         openspec/changes/login-por-email/
-commit        feat(login-por-email): ...
+issue         #2
+branch        2-login-por-email
+pasta         openspec/changes/2-login-por-email/
+commit        feat(#2): ...
 ```
 
 Como derivar, nesta ordem:
 
-1. **Nome do branch** — `git rev-parse --abbrev-ref HEAD`; o próprio nome é o escopo
-   (`login-por-email`).
+1. **Nome do branch** — `git rev-parse --abbrev-ref HEAD`; o número no começo do nome é o escopo
+   (`2-login-por-email` → `#2`).
 2. **Change ativa** — se o branch não disser (ex.: `main`), veja `openspec/changes/` e os arquivos
-   tocados pelo diff; se o diff mexe em `openspec/changes/<nome>/`, o escopo é `<nome>`.
+   tocados pelo diff; se o diff mexe em `openspec/changes/<n>-<nome>/`, o escopo é `#<n>`. Se nem
+   assim houver número, pergunte ao usuário a Issue.
 3. **Fora de change** — trabalho que não pertence a nenhuma usa a **área** como escopo, ou nenhum:
    `docs: reorganiza a documentação`, `chore(docker): ajusta o compose`.
 
-⚠️ Como o escopo não nomeia mais a camada, **diga a área no assunto** quando ela não for óbvia.
-`git log --oneline | grep '(login-por-email)'` devolve a change inteira — é o que se ganha em troca.
+⚠️ Como o escopo não nomeia a camada, **diga a área no assunto** quando ela não for óbvia.
+`git log --oneline | grep '(#2)'` devolve a change inteira — é o que se ganha em troca.
 
 ## Fluxo de Trabalho
 
@@ -87,7 +89,7 @@ valores reais, é versionado.
 ### 3. Gerar Mensagem de Commit Técnico
 Analise o diff para determinar:
 - **Tipo**: Que tipo de alteração é essa?
-- **Escopo**: o nome da change, pela regra acima.
+- **Escopo**: `#<n>` da Issue, pela regra acima.
 - **Descrição**: Resumo técnico em uma linha do que mudou, **em português** (tempo presente, modo
   imperativo, <72 caracteres). Foque estritamente no aspecto técnico (o que mudou, onde e como), sem
   necessidade de justificar valor de negócio.

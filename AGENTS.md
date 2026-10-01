@@ -48,9 +48,11 @@ Spec-Driven Development. **Não implemente sem uma change.**
 
 1. A Issue existe (`gh issue create`) e aponta para o trabalho.
 2. `/opsx:explore` quando a intenção tem mais de uma leitura.
-3. Branch com o nome da change: `git checkout -b boilerplate`.
-4. `/opsx:propose`. O id da change é um nome em kebab-case (`login-por-email`); sem número, porque
-   o projeto não usa Issues numeradas.
+3. Branch com o id da change: `git checkout -b 2-login-por-email`.
+4. `/opsx:propose`. O id da change é `<n>-<nome>`: o número da Issue seguido de um nome em
+   kebab-case (`2-login-por-email`). Ao arquivar, a pasta ganha a data na frente
+   (`2026-10-01-2-login-por-email`). Exceção histórica: `1-boilerplate` e `1-frontend-testes`
+   repetem o `1`, porque ambas atendem à Issue #1.
 5. `/opsx:apply`. Marque cada task só depois de **concluída e verificada**.
 6. O que surgir no caminho: dentro do escopo vira task **antes** de ser feito; fora do escopo vira
    Issue nova, e o trabalho corrente não desvia.
@@ -60,7 +62,7 @@ Spec-Driven Development. **Não implemente sem uma change.**
 
 ## Commits
 
-Conventional Commits, em português, com o **nome da change** como escopo:
-`chore(boilerplate): base Django + PostgreSQL em Docker`, `feat(login-por-email): ...`.
+Conventional Commits, em português, com o **número da Issue** da change como escopo:
+`feat(#2): login por e-mail`, `chore(#1): base Django + PostgreSQL em Docker`.
 Trabalho fora de change usa a área como escopo: `docs: ...`, `chore(docker): ...`.
 O título do PR segue o mesmo padrão.
