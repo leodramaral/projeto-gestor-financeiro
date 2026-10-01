@@ -10,7 +10,7 @@
     class="sidebar-header flex items-center gap-2 pt-8 pb-7"
   >
     <a href="{% url 'home' %}">
-      <span class="logo" :class="sidebarToggle ? 'hidden' : ''">
+      <span class="logo" :class="sidebarToggle ? 'xl:hidden' : ''">
         <img class="dark:hidden" src="{% static 'images/logo/logo.svg' %}" alt="Logo" />
         <img
           class="hidden dark:block"
@@ -21,7 +21,7 @@
 
       <img
         class="logo-icon"
-        :class="sidebarToggle ? 'lg:block' : 'hidden'"
+        :class="sidebarToggle ? 'hidden xl:block' : 'hidden'"
         src="{% static 'images/logo/logo-icon.svg' %}"
         alt="Logo"
       />
@@ -45,7 +45,7 @@
           >
 
           <svg
-            :class="sidebarToggle ? 'lg:block hidden' : 'hidden'"
+            :class="sidebarToggle ? 'hidden xl:block' : 'hidden'"
             class="mx-auto fill-current menu-group-icon"
             width="24"
             height="24"

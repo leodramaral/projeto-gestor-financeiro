@@ -4,7 +4,7 @@
   "description": "Build do CSS (Tailwind) e do Alpine.js; roda no serviço css do Compose.",
   "scripts": {
     "build": "tailwindcss -i frontend/style.css -o static/dist/css/style.css --minify && node scripts/copy-alpine.mjs",
-    "watch": "tailwindcss -i frontend/style.css -o static/dist/css/style.css --watch"
+    "watch": "node scripts/copy-alpine.mjs && tailwindcss -i frontend/style.css -o static/dist/css/style.css --watch"
   },
   "dependencies": {
     "alpinejs": "^3.17.2"
