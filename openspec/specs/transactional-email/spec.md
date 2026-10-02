@@ -36,6 +36,10 @@ versionadas, e a mensagem de erro NÃO DEVE exibir o valor de nenhuma variável.
 - **ENTÃO** ela encerra com erro
 - **E** a mensagem informa qual variável falta, sem exibir valores
 
+#### Cenário: Variável vazia em produção
+- **QUANDO** a aplicação inicia em produção com alguma variável de e-mail definida como vazia
+- **ENTÃO** ela encerra com erro informando qual variável está vazia, sem exibir valores
+
 #### Cenário: Credencial ou remetente ausente em produção
 - **QUANDO** a aplicação inicia em produção sem a senha SMTP ou sem o remetente padrão
 - **ENTÃO** ela encerra com erro informando qual variável falta
@@ -43,7 +47,7 @@ versionadas, e a mensagem de erro NÃO DEVE exibir o valor de nenhuma variável.
 ### Requirement: Links absolutos em e-mails
 A aplicação DEVE montar links presentes em e-mails a partir de uma URL base configurável, para
 que sejam corretos mesmo quando o e-mail é enviado fora de uma requisição web. Em produção a URL
-base é obrigatória e NÃO DEVE ter valor padrão.
+base é obrigatória, não pode ser vazia e NÃO DEVE ter valor padrão.
 
 #### Cenário: Link em e-mail de desenvolvimento
 - **QUANDO** a aplicação envia um e-mail com um link em desenvolvimento

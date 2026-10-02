@@ -46,3 +46,13 @@ def test_prod_fails_naming_the_missing_variable(missing):
     assert missing in result.stderr
     for secret in ("user-secret", "password-secret"):
         assert secret not in result.stderr
+
+
+@pytest.mark.parametrize("empty", EMAIL_VARS)
+def test_prod_fails_naming_the_empty_variable(empty):
+    result = import_prod({**REQUIRED, empty: ""})
+
+    assert result.returncode != 0
+    assert empty in result.stderr
+    for secret in ("user-secret", "password-secret"):
+        assert secret not in result.stderr
