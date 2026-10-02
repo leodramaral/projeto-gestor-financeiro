@@ -144,6 +144,23 @@ db   ──(healthcheck ok)───────┘
 | `mailpit` | `axllent/mailpit` | Caixa de entrada fake para dev: recebe todo e-mail da aplicação (SMTP em `mailpit:1025`, só na rede do Compose) e o exibe em <http://127.0.0.1:8025>. Sem volume: as mensagens somem ao recriar o contêiner. Nada sai da máquina. |
 | `web` | build de `docker/Dockerfile` | Aplica as migrações (`migrate`) e inicia o `runserver`. O código é montado em `/app`, então editar um arquivo recarrega a aplicação sem rebuild. |
 
+### Identidade visual
+
+A marca é um **G de moeda** (com as pontas do cifrão `$`) num quadrado arredondado, e a cor é um
+verde-azulado **jade**. Tudo vem de poucos pontos:
+
+- **Cores:** a escala `--color-brand-25…950` em `frontend/style.css`. Para mudar a cor do produto,
+  troque só esses tokens e recompile (`docker compose run --rm css npm run build`). Um teste
+  (`core/tests/test_brand_colors.py`) falha se um par de cores da marca ficar abaixo de 4,5:1 de
+  contraste. Os e-mails usam o hex de `brand-500` direto no HTML (`templates/email/`), porque e-mail
+  não lê o CSS: ao mudar a cor, troque lá também.
+- **Marca:** o ícone está em `templates/partials/brand.html` (SVG inline, muda de cor no tema
+  escuro) e o nome é texto. O mesmo desenho está em `static/images/logo/logo-icon.svg` e
+  `static/images/favicon.svg` (o favicon é SVG, sem `.ico`).
+- **Tema claro/escuro:** o botão está em `templates/partials/theme_toggle.html`, no painel e nas
+  telas de visitante. A escolha fica no `localStorage` (chave `darkMode`) e é aplicada antes de a
+  página pintar por `templates/partials/theme_init.html`.
+
 ### Estrutura do repositório
 
 ```

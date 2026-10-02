@@ -1,0 +1,15 @@
+{# Aplica o tema salvo antes de pintar a página (sem piscar) e expõe setTheme(dark) para o botão. #}
+<script>
+  (function () {
+    var root = document.documentElement;
+    try {
+      if (JSON.parse(localStorage.getItem("darkMode"))) root.classList.add("dark");
+    } catch (e) {}
+    window.setTheme = function (dark) {
+      root.classList.toggle("dark", dark);
+      try {
+        localStorage.setItem("darkMode", JSON.stringify(dark));
+      } catch (e) {}
+    };
+  })();
+</script>

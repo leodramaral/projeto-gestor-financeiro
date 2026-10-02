@@ -9,5 +9,5 @@
     {% for field in form %}{% include "partials/form_field.html" %}{% endfor %}
     <button type="submit" class="bg-brand-500 hover:bg-brand-600 h-11 w-full rounded-lg px-4 text-sm font-medium text-white">Enviar link</button>
   </form>
-  <p class="mt-6 text-center text-sm"><a href="{% url 'accounts:login' %}" class="text-brand-500 hover:underline">Voltar ao login</a></p>
+  <p class="mt-6 text-center text-sm"><a href="{% url 'accounts:login' %}" class="text-brand-500 hover:underline dark:text-brand-400">Voltar ao login</a></p>
 {% endblock %}

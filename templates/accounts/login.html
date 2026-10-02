@@ -11,13 +11,13 @@
     <input type="hidden" name="next" value="{{ next }}" />
     {% include "partials/form_errors.html" %}
     {% if form.unconfirmed %}
-      <p class="text-sm"><a href="{% url 'accounts:resend' %}?email={{ form.cleaned_data.username|urlencode }}" class="text-brand-500 hover:underline">Reenviar o e-mail de confirmação</a></p>
+      <p class="text-sm"><a href="{% url 'accounts:resend' %}?email={{ form.cleaned_data.username|urlencode }}" class="text-brand-500 hover:underline dark:text-brand-400">Reenviar o e-mail de confirmação</a></p>
     {% endif %}
     {% for field in form %}{% include "partials/form_field.html" %}{% endfor %}
-    <p class="text-right text-sm"><a href="{% url 'accounts:password_reset' %}" class="text-brand-500 hover:underline">Esqueci minha senha</a></p>
+    <p class="text-right text-sm"><a href="{% url 'accounts:password_reset' %}" class="text-brand-500 hover:underline dark:text-brand-400">Esqueci minha senha</a></p>
     <button type="submit" class="bg-brand-500 hover:bg-brand-600 h-11 w-full rounded-lg px-4 text-sm font-medium text-white">Entrar</button>
   </form>
   <p class="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
-    Ainda não tem conta? <a href="{% url 'accounts:signup' %}" class="text-brand-500 hover:underline">Criar conta</a>
+    Ainda não tem conta? <a href="{% url 'accounts:signup' %}" class="text-brand-500 hover:underline dark:text-brand-400">Criar conta</a>
   </p>
 {% endblock %}

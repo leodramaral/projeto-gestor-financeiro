@@ -9,22 +9,14 @@
     :class="sidebarToggle ? 'justify-center' : 'justify-between'"
     class="sidebar-header flex items-center gap-2 pt-8 pb-7"
   >
-    <a href="{% url 'home' %}">
+    <a href="{% url 'home' %}" aria-label="Gestor Financeiro">
       <span class="logo" :class="sidebarToggle ? 'xl:hidden' : ''">
-        <img class="dark:hidden" src="{% static 'images/logo/logo.svg' %}" alt="Logo" />
-        <img
-          class="hidden dark:block"
-          src="{% static 'images/logo/logo-dark.svg' %}"
-          alt="Logo"
-        />
+        {% include "partials/brand.html" with text=True %}
       </span>
 
-      <img
-        class="logo-icon"
-        :class="sidebarToggle ? 'hidden xl:block' : 'hidden'"
-        src="{% static 'images/logo/logo-icon.svg' %}"
-        alt="Logo"
-      />
+      <span class="logo-icon" :class="sidebarToggle ? 'hidden xl:block' : 'hidden'">
+        {% include "partials/brand.html" %}
+      </span>
     </a>
   </div>
   <!-- SIDEBAR HEADER -->
