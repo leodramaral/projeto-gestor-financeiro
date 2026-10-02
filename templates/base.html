@@ -6,14 +6,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% block title %}Gestor Financeiro{% endblock %}</title>
-    <link rel="icon" href="{% static 'images/favicon.ico' %}" />
+    <link rel="icon" type="image/svg+xml" href="{% static 'images/favicon.svg' %}" />
+    {% include "partials/theme_init.html" %}
     <link rel="stylesheet" href="{% static 'dist/css/style.css' %}" />
-    <script>
-      // Aplica o tema antes de pintar, para não piscar.
-      try {
-        if (JSON.parse(localStorage.getItem("darkMode"))) document.documentElement.classList.add("dark");
-      } catch (e) {}
-    </script>
     <script defer src="{% static 'dist/js/alpine.min.js' %}"></script>
   </head>
   <body

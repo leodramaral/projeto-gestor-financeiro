@@ -39,6 +39,6 @@ omit = ["*/migrations/*"]
 [tool.coverage.report]
 show_missing = true
 precision = 2
-# Piso = cobertura medida (94,808...%), truncada para baixo, nunca arredondada para cima. Só sobe
+# Piso = cobertura medida (96,719...%), truncada para baixo, nunca arredondada para cima. Só sobe
 # quando a cobertura real sobe.
-fail_under = 96.30
+fail_under = 96.71

@@ -1,0 +1,11 @@
+{# Marca do Gestor Financeiro: ícone em SVG (G de moeda) e, se `text` for verdadeiro, o nome ao lado. #}
+<span class="inline-flex items-center gap-2.5">
+  <svg class="h-9 w-9 shrink-0" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Gestor Financeiro">
+    <rect class="fill-brand-500 dark:fill-brand-300" width="48" height="48" rx="12" />
+    <g class="stroke-white dark:stroke-brand-700" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M31.39 15.19A11.5 11.5 0 1 0 35.5 24H25" />
+      <path d="M24 8V12.5M24 35.5V40" />
+    </g>
+  </svg>
+  {% if text %}<span class="text-xl font-semibold tracking-tight whitespace-nowrap text-gray-900 dark:text-white">Gestor Financeiro</span>{% endif %}
+</span>
