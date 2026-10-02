@@ -20,6 +20,7 @@
 - [x] 3.3 Implementar o job `tests`: gerar `.env` a partir de `.env.example` com `SECRET_KEY` e `POSTGRES_PASSWORD` aleatórios, `docker compose up -d --wait db`, `docker compose run --rm web pytest --cov --cov-report=term-missing`; verificar reproduzindo os mesmos comandos num clone limpo (sem `.env` nem `static/dist/`) e terminando com código `0`
 - [x] 3.4 Implementar o job `openspec`: `setup-node`, `npm install -g @fission-ai/openspec@1.13.1` e `openspec validate --all`; verificar rodando os comandos localmente com a mesma versão
 - [x] 3.5 Verificar que o CI reprova: introduzir temporariamente código fora do padrão, um teste quebrado e uma spec malformada num branch descartável e confirmar que cada job falha; reverter em seguida
+- [ ] 3.6 Corrigir a falha do job `tests` no primeiro PR (#17): o serviço `css` roda como `node` (uid 1000) e não consegue criar `static/dist` no checkout do runner (uid 1001, `EACCES`). Criar `static/dist` com permissão de escrita no passo anterior do workflow; verificar simulando o dono do diretório com uid 1001 num clone limpo (`css` conclui; reproduzido e corrigido) e, no PR, com o job `tests` verde
 
 ## 4. Documentação
 
