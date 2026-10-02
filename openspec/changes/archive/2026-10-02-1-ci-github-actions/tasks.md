@@ -20,7 +20,7 @@
 - [x] 3.3 Implementar o job `tests`: gerar `.env` a partir de `.env.example` com `SECRET_KEY` e `POSTGRES_PASSWORD` aleatórios, `docker compose up -d --wait db`, `docker compose run --rm web pytest --cov --cov-report=term-missing`; verificar reproduzindo os mesmos comandos num clone limpo (sem `.env` nem `static/dist/`) e terminando com código `0`
 - [x] 3.4 Implementar o job `openspec`: `setup-node`, `npm install -g @fission-ai/openspec@1.13.1` e `openspec validate --all`; verificar rodando os comandos localmente com a mesma versão
 - [x] 3.5 Verificar que o CI reprova: introduzir temporariamente código fora do padrão, um teste quebrado e uma spec malformada num branch descartável e confirmar que cada job falha; reverter em seguida
-- [ ] 3.6 Corrigir a falha do job `tests` no primeiro PR (#17): os contêineres rodam como uid 1000 (`node` no `css`, `app` no `web`) e não conseguem gravar no checkout do runner (uid 1001): `EACCES` em `static/dist` e `sqlite3.OperationalError` ao gravar `.coverage`. Liberar escrita no workspace (`chmod -R a+rwX .`) num passo anterior do workflow; verificar simulando o dono do diretório com uid 1001 num clone limpo (`css` conclui; reproduzido e corrigido) e, no PR, com o job `tests` verde
+- [x] 3.6 Corrigir a falha do job `tests` no primeiro PR (#17): os contêineres rodam como uid 1000 (`node` no `css`, `app` no `web`) e não conseguem gravar no checkout do runner (uid 1001): `EACCES` em `static/dist` e `sqlite3.OperationalError` ao gravar `.coverage`. Liberar escrita no workspace (`chmod -R a+rwX .`) num passo anterior do workflow; verificar simulando o dono do diretório com uid 1001 num clone limpo (`css` conclui; reproduzido e corrigido) e, no PR, com o job `tests` verde
 
 ## 4. Documentação
 
@@ -29,4 +29,4 @@
 
 ## 5. Verificação final
 
-- [ ] 5.1 Rodar `openspec validate --all` e abrir o PR com `Closes #1`; verificar na aba Actions do PR que os jobs `quality`, `tests` e `openspec` passam
+- [x] 5.1 Rodar `openspec validate --all` e abrir o PR com `Closes #1`; verificar na aba Actions do PR que os jobs `quality`, `tests` e `openspec` passam
