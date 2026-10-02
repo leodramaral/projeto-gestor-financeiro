@@ -104,6 +104,10 @@ docker compose exec web python manage.py createsuperuser
 > antigo (com o `User` padrão do Django) é incompatível. Recrie-o: `docker compose down -v` e
 > `docker compose up --build` (apaga os dados locais, inclusive o superusuário antigo).
 
+**Esqueci minha senha (dev).** Em <http://127.0.0.1:8000/accounts/password-reset/> (atalho na tela
+de login) informe o e-mail de uma conta confirmada; o link de redefinição chega ao Mailpit, vale 1
+hora e só funciona uma vez. A resposta é a mesma exista ou não conta para o e-mail.
+
 **7. Confirme que está tudo certo rodando os testes**
 
 ```bash
@@ -177,7 +181,13 @@ Decisões que valem conhecer:
   uma vez); sem confirmar, o login é recusado. "Lembrar de mim" mantém a sessão por
   `SESSION_REMEMBER_SECONDS` (30 dias); sem ele, a sessão acaba ao fechar o navegador. As páginas do
   painel exigem login (`LoginRequiredMixin`); telas de visitante estendem `templates/base_auth.html`.
-  Rotas: `/accounts/{signup,login,logout,confirm/...}/`.
+  Rotas: `/accounts/{signup,login,logout,confirm/...,password-reset/...}/`.
+- **Recuperação de senha e limite de tentativas.** O link de redefinição usa um gerador de token
+  próprio (`accounts/tokens.py`): vale `PASSWORD_RESET_LINK_TIMEOUT` (1 hora) e é invalidado por
+  qualquer troca de senha. Só contas ativas e confirmadas recebem o e-mail, mas a resposta nunca
+  revela se o e-mail existe. No login, `LOGIN_MAX_FAILED_ATTEMPTS` (5) tentativas erradas seguidas
+  bloqueiam aquele e-mail por `LOGIN_LOCKOUT_SECONDS` (900 s), mesmo para e-mails sem conta; a
+  contagem fica na tabela `accounts_loginthrottle` e redefinir a senha encerra o bloqueio.
 - **Porta só local.** A porta é publicada em `127.0.0.1`, então a aplicação não fica exposta à rede.
   Não há servidor de produção ainda; a hospedagem não foi decidida.
 
@@ -198,7 +208,7 @@ AGENTS.md          convenções, fronteiras e armadilhas (fonte única para agen
 
 ### Modelo de dados
 
-`accounts.User` (tabela `accounts_user`), o único model do projeto por enquanto:
+`accounts.User` (tabela `accounts_user`):
 
 | Campo | Tipo | Observação |
 |---|---|---|
@@ -211,6 +221,16 @@ AGENTS.md          convenções, fronteiras e armadilhas (fonte única para agen
 | `date_joined` / `updated_at` / `last_login` | data/hora | Cadastro, última alteração e último acesso. |
 
 Relações herdadas do Django: `groups` e `user_permissions`.
+
+`accounts.LoginThrottle` (tabela `accounts_loginthrottle`), contador de falhas de login. Não
+referencia `User`, para contar também e-mails sem conta:
+
+| Campo | Tipo | Observação |
+|---|---|---|
+| `email` | e-mail, único | Normalizado em minúsculas. |
+| `failed_count` | inteiro | Falhas seguidas; volta a zero ao bloquear e ao logar com sucesso. |
+| `locked_until` | data/hora, nulo | Enquanto estiver no futuro, o e-mail não consegue entrar. |
+| `updated_at` | data/hora | Última alteração. |
 
 ### Problemas comuns
 

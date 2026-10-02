@@ -16,5 +16,16 @@ urlpatterns = [
         views.ResendConfirmationDoneView.as_view(),
         name="resend_done",
     ),
+    path("password-reset/", views.PasswordResetRequestView.as_view(), name="password_reset"),
+    path(
+        "password-reset/done/",
+        views.PasswordResetDoneView.as_view(),
+        name="password_reset_done",
+    ),
+    path(
+        "password-reset/<uidb64>/<token>/",
+        views.PasswordResetConfirmLinkView.as_view(),
+        name="password_reset_confirm",
+    ),
     path("confirm/<uidb64>/<token>/", views.ConfirmEmailView.as_view(), name="confirm"),
 ]

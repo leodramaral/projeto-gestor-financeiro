@@ -3,6 +3,9 @@
 {% block content %}
   <h1 class="mb-1 text-title-sm font-semibold text-gray-800 dark:text-white/90">Entrar</h1>
   <p class="mb-6 text-sm text-gray-500 dark:text-gray-400">Acesse o seu painel financeiro.</p>
+  {% for message in messages %}
+    <div class="mb-4">{% include "partials/alert.html" with title="Tudo certo" message=message %}</div>
+  {% endfor %}
   <form method="post" novalidate class="space-y-4">
     {% csrf_token %}
     <input type="hidden" name="next" value="{{ next }}" />
@@ -11,6 +14,7 @@
       <p class="text-sm"><a href="{% url 'accounts:resend' %}?email={{ form.cleaned_data.username|urlencode }}" class="text-brand-500 hover:underline">Reenviar o e-mail de confirmação</a></p>
     {% endif %}
     {% for field in form %}{% include "partials/form_field.html" %}{% endfor %}
+    <p class="text-right text-sm"><a href="{% url 'accounts:password_reset' %}" class="text-brand-500 hover:underline">Esqueci minha senha</a></p>
     <button type="submit" class="bg-brand-500 hover:bg-brand-600 h-11 w-full rounded-lg px-4 text-sm font-medium text-white">Entrar</button>
   </form>
   <p class="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">

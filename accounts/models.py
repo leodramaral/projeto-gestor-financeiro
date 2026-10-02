@@ -78,3 +78,19 @@ class User(AbstractBaseUser, PermissionsMixin):
     def clean(self):
         super().clean()
         self.email = type(self).objects.normalize_email(self.email)
+
+
+class LoginThrottle(models.Model):
+    """Failed-login counter per normalized email; not tied to `User`, so unknown emails count."""
+
+    email = models.EmailField("e-mail", max_length=254, unique=True)
+    failed_count = models.PositiveSmallIntegerField("falhas seguidas", default=0)
+    locked_until = models.DateTimeField("bloqueado até", null=True, blank=True)
+    updated_at = models.DateTimeField("atualizado em", auto_now=True)
+
+    class Meta:
+        verbose_name = "controle de tentativas de login"
+        verbose_name_plural = "controles de tentativas de login"
+
+    def __str__(self):
+        return self.email
