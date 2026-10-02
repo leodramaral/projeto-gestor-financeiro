@@ -46,7 +46,10 @@ def register_failure(email):
         _ensure_row(email)
         throttle = LoginThrottle.objects.select_for_update().get(email=email)
         now = timezone.now()
-        if throttle.locked_until is not None and throttle.locked_until <= now:
+        if throttle.locked_until is not None:
+            if throttle.locked_until > now:
+                # Already locked: a concurrent failure must not extend the lock.
+                return
             # A lock that already ended starts a fresh count.
             throttle.locked_until = None
             throttle.failed_count = 0

@@ -157,3 +157,15 @@ def test_lock_expires_and_login_works_again(client, make_user):
     post_login(client, password=PASSWORD)
 
     assert SESSION_KEY in client.session
+
+
+@pytest.mark.django_db
+def test_failure_during_an_active_lock_does_not_extend_it():
+    fail()
+    locked_until = LoginThrottle.objects.get().locked_until
+
+    throttle.register_failure("ana@exemplo.com")
+
+    row = LoginThrottle.objects.get()
+    assert row.locked_until == locked_until
+    assert row.failed_count == 0
