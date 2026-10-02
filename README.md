@@ -16,10 +16,11 @@ financeira. O escopo está dividido em duas fases, acompanhadas pelas Issues do 
   previsão de orçamento, assistente de gestão com IA, planos de serviço, relatórios e exportação,
   deploy em cloud, documentação final e pitch.
 
-**Estado atual:** só a fundação está pronta — projeto Django, PostgreSQL, Docker, layout
-([TailAdmin](https://tailadmin.com)), suíte de testes e verificação automática (CI). O domínio financeiro ainda **não foi
-modelado**: a tela inicial é um esqueleto. As funcionalidades entram uma a uma, cada uma como uma
-*change* do OpenSpec (ver [Fluxo de desenvolvimento](#fluxo-de-desenvolvimento)).
+**Estado atual:** fundação pronta (Django, PostgreSQL, Docker, layout
+[TailAdmin](https://tailadmin.com), testes e CI) e autenticação de usuários. O domínio financeiro
+ainda **não foi modelado**. As funcionalidades entram uma a uma, cada uma como uma *change* do
+OpenSpec (ver [Fluxo de desenvolvimento](#parte-2--fluxo-de-desenvolvimento)); o que o sistema faz
+hoje está em [`openspec/specs/`](openspec/specs/).
 
 **Stack:** Python 3.12, Django 5.2 (templates no servidor, sem SPA), PostgreSQL 16, Tailwind CSS 4
 e Alpine.js. Tudo roda em Docker.
@@ -143,44 +144,6 @@ db   ──(healthcheck ok)───────┘
 | `mailpit` | `axllent/mailpit` | Caixa de entrada fake para dev: recebe todo e-mail da aplicação (SMTP em `mailpit:1025`, só na rede do Compose) e o exibe em <http://127.0.0.1:8025>. Sem volume: as mensagens somem ao recriar o contêiner. Nada sai da máquina. |
 | `web` | build de `docker/Dockerfile` | Aplica as migrações (`migrate`) e inicia o `runserver`. O código é montado em `/app`, então editar um arquivo recarrega a aplicação sem rebuild. |
 
-Decisões que valem conhecer:
-
-- **Imagem do `web`.** Parte de `python:3.12-slim` e instala as dependências com
-  [`uv`](https://docs.astral.sh/uv/) a partir de `pyproject.toml` + `uv.lock` (`--locked`: build
-  reprodutível). As dependências ficam numa camada própria, *antes* do código, e só são
-  reinstaladas quando o lockfile muda. O processo roda como usuário sem privilégio (`app`, uid 1000).
-  Não existe `requirements.txt`.
-- **Configuração por ambiente.** `config/settings/` tem `base` (comum, **não** é um ambiente),
-  `dev`, `test` e `prod`; a variável `DJANGO_SETTINGS_MODULE` escolhe qual vale. Segredos entram
-  só por variável de ambiente (via `django-environ`).
-- **Falha rápida.** `SECRET_KEY` e `DATABASE_URL` não têm valor padrão: sem elas a aplicação se
-  recusa a subir, em vez de rodar insegura. O Compose monta a `DATABASE_URL` a partir das três
-  variáveis `POSTGRES_*`.
-- **Front-end sem Node na máquina.** O CSS-fonte é `frontend/style.css`; o resultado compilado fica
-  em `static/dist/` (não versionado, assim como `node_modules/`, que é um volume nomeado). O layout
-  é o TailAdmin: `templates/base.html` e as parciais em `templates/partials/`. Telas novas estendem
-  `base.html` e preenchem `{% block content %}`.
-- **Testes isolados.** `pytest` + `pytest-django` forçam `config.settings.test`, mesmo com
-  `dev` no `.env`, e usam um banco `test_<POSTGRES_DB>` próprio, criado e removido a cada execução.
-  O banco de desenvolvimento nunca é tocado. Os testes ficam em `<app>/tests/test_*.py`.
-- **E-mail por ambiente.** Dev envia por SMTP ao Mailpit (sem variáveis no `.env`); teste usa o
-  backend em memória (`mail.outbox`); prod usa SMTP configurado por variável. Em prod a aplicação
-  **não sobe** sem `EMAIL_HOST`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `DEFAULT_FROM_EMAIL` e
-  `SITE_URL` (base dos links nos e-mails, ex.: `https://app.exemplo.com.br`); `EMAIL_PORT` (587) e
-  `EMAIL_USE_TLS` (true) têm padrão. Para enviar e-mail no código, use
-  `core.emailing.send_templated_email(to, subject, template, context)`, que renderiza
-  `templates/email/<template>.txt` e `.html`. Para validar a configuração:
-  `docker compose exec web python manage.py send_test_email voce@exemplo.com`.
-- **Contas de usuário.** O app `accounts` define `AUTH_USER_MODEL = "accounts.User"`, com **e-mail
-  como login** (único sem diferenciar maiúsculas, também no banco). O cadastro cria a conta como
-  *não confirmada* e envia um link por e-mail (vale `PASSWORD_RESET_TIMEOUT`, 3 dias, e só funciona
-  uma vez); sem confirmar, o login é recusado. "Lembrar de mim" mantém a sessão por
-  `SESSION_REMEMBER_SECONDS` (30 dias); sem ele, a sessão acaba ao fechar o navegador. As páginas do
-  painel exigem login (`LoginRequiredMixin`); telas de visitante estendem `templates/base_auth.html`.
-  Rotas: `/accounts/{signup,login,logout,confirm/...}/`.
-- **Porta só local.** A porta é publicada em `127.0.0.1`, então a aplicação não fica exposta à rede.
-  Não há servidor de produção ainda; a hospedagem não foi decidida.
-
 ### Estrutura do repositório
 
 ```
@@ -195,22 +158,6 @@ openspec/          specs vigentes (specs/) e changes em andamento/arquivadas (ch
 .claude/ .agents/  comandos e skills dos agentes de IA usados no fluxo
 AGENTS.md          convenções, fronteiras e armadilhas (fonte única para agentes)
 ```
-
-### Modelo de dados
-
-`accounts.User` (tabela `accounts_user`), o único model do projeto por enquanto:
-
-| Campo | Tipo | Observação |
-|---|---|---|
-| `email` | e-mail, único | Login. Gravado em minúsculas; índice único também sobre `lower(email)`. |
-| `name` | texto (150) | Informado no cadastro. |
-| `password` | texto | Hash (não é a senha). |
-| `email_confirmed_at` | data/hora, nulo | Nulo = conta não confirmada; só contas confirmadas entram. |
-| `is_active` | booleano | Falso = conta desativada pelo admin (não entra). |
-| `is_staff` / `is_superuser` | booleanos | Acesso ao admin / todos os poderes. |
-| `date_joined` / `updated_at` / `last_login` | data/hora | Cadastro, última alteração e último acesso. |
-
-Relações herdadas do Django: `groups` e `user_permissions`.
 
 ### Problemas comuns
 

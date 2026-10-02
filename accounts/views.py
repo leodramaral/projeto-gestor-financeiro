@@ -2,8 +2,9 @@ import logging
 from smtplib import SMTPException
 
 from django.conf import settings
+from django.contrib import messages
 from django.contrib.auth import get_user_model
-from django.contrib.auth.views import LoginView
+from django.contrib.auth.views import LoginView, PasswordResetConfirmView
 from django.db import transaction
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
@@ -11,9 +12,16 @@ from django.utils import timezone
 from django.utils.http import urlsafe_base64_decode
 from django.views.generic import FormView, TemplateView, View
 
-from .emails import send_confirmation_email
-from .forms import LoginForm, ResendConfirmationForm, SignupForm
-from .tokens import email_confirmation_token
+from . import throttle
+from .emails import send_confirmation_email, send_password_reset_email
+from .forms import (
+    LoginForm,
+    PasswordResetRequestForm,
+    ResendConfirmationForm,
+    SetNewPasswordForm,
+    SignupForm,
+)
+from .tokens import email_confirmation_token, password_reset_token
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -59,6 +67,7 @@ class SignInView(LoginView):
 
     def form_valid(self, form):
         response = super().form_valid(form)
+        throttle.reset(form.get_user().email)
         if form.cleaned_data["remember_me"]:
             self.request.session.set_expiry(settings.SESSION_REMEMBER_SECONDS)
         else:
@@ -113,3 +122,44 @@ class ResendConfirmationView(AnonymousOnlyMixin, FormView):
 
 class ResendConfirmationDoneView(AnonymousOnlyMixin, TemplateView):
     template_name = "accounts/resend_confirmation_done.html"
+
+
+class PasswordResetRequestView(AnonymousOnlyMixin, FormView):
+    template_name = "accounts/password_reset_form.html"
+    form_class = PasswordResetRequestForm
+    success_url = reverse_lazy("accounts:password_reset_done")
+
+    def form_valid(self, form):
+        user = User.objects.filter(
+            email__iexact=form.cleaned_data["email"],
+            is_active=True,
+            email_confirmed_at__isnull=False,
+        ).first()
+        if user is not None:
+            try:
+                send_password_reset_email(user)
+            except (SMTPException, OSError):
+                # The answer must not depend on the account existing, so a failure is only logged.
+                logger.exception("Could not send the password reset email")
+        return super().form_valid(form)
+
+
+class PasswordResetDoneView(AnonymousOnlyMixin, TemplateView):
+    template_name = "accounts/password_reset_done.html"
+
+
+class PasswordResetConfirmLinkView(PasswordResetConfirmView):
+    """Sets the new password from the emailed link; a bad link renders one generic page."""
+
+    template_name = "accounts/password_reset_confirm.html"
+    form_class = SetNewPasswordForm
+    token_generator = password_reset_token
+    success_url = reverse_lazy("accounts:login")
+    post_reset_login = False
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        # Whoever just proved ownership of the email must not stay locked out.
+        throttle.reset(form.user.email)
+        messages.success(self.request, "Senha redefinida. Entre com a nova senha.")
+        return response

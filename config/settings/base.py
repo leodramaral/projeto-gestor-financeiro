@@ -81,5 +81,11 @@ LOGOUT_REDIRECT_URL = "accounts:login"
 # Without "remember me" the session ends when the browser closes; with it, it lasts this long.
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_REMEMBER_SECONDS = 60 * 60 * 24 * 30
-# Lifetime of account confirmation links (and, later, password reset links).
+# Lifetime of account confirmation links.
 PASSWORD_RESET_TIMEOUT = 60 * 60 * 24 * 3
+# Lifetime of password reset links: shorter, since they grant access to the account.
+PASSWORD_RESET_LINK_TIMEOUT = 60 * 60
+
+# Consecutive wrong-credential logins for one email before it is locked, and for how long.
+LOGIN_MAX_FAILED_ATTEMPTS = 5
+LOGIN_LOCKOUT_SECONDS = 60 * 15

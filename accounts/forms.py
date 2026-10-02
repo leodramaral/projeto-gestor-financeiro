@@ -1,6 +1,10 @@
+import math
+
 from django import forms
 from django.contrib.auth import get_user_model
-from django.contrib.auth.forms import AuthenticationForm, BaseUserCreationForm
+from django.contrib.auth.forms import AuthenticationForm, BaseUserCreationForm, SetPasswordForm
+
+from . import throttle
 
 User = get_user_model()
 
@@ -62,6 +66,7 @@ class LoginForm(StyledFormMixin, AuthenticationForm):
         **AuthenticationForm.error_messages,
         "invalid_login": "E-mail ou senha incorretos.",
         "unconfirmed": "Confirme seu e-mail para entrar. Procure a mensagem de confirmação.",
+        "locked": "Muitas tentativas de login. Tente novamente em %(minutes)d %(unit)s.",
     }
 
     def __init__(self, *args, **kwargs):
@@ -71,6 +76,24 @@ class LoginForm(StyledFormMixin, AuthenticationForm):
 
     def clean_username(self):
         return User.objects.normalize_email(self.cleaned_data["username"])
+
+    def clean(self):
+        email = self.cleaned_data.get("username")
+        if email:
+            remaining = throttle.lock_remaining(email)
+            if remaining is not None:
+                minutes = max(1, math.ceil(remaining.total_seconds() / 60))
+                raise forms.ValidationError(
+                    self.error_messages["locked"],
+                    code="locked",
+                    params={"minutes": minutes, "unit": "minuto" if minutes == 1 else "minutos"},
+                )
+        try:
+            return super().clean()
+        except forms.ValidationError as error:
+            if error.code == "invalid_login":
+                throttle.register_failure(email)
+            raise
 
     def confirm_login_allowed(self, user):
         super().confirm_login_allowed(user)
@@ -84,3 +107,20 @@ class ResendConfirmationForm(StyledFormMixin, forms.Form):
 
     def clean_email(self):
         return User.objects.normalize_email(self.cleaned_data["email"])
+
+
+class PasswordResetRequestForm(ResendConfirmationForm):
+    """Same single email field as the confirmation resend."""
+
+
+class SetNewPasswordForm(StyledFormMixin, SetPasswordForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["new_password1"].label = "Nova senha"
+        self.fields["new_password2"].label = "Confirmação da nova senha"
+        self.fields["new_password1"].help_text = ""
+        self.fields["new_password2"].help_text = ""
+        self.fields["new_password1"].widget.attrs.update(
+            {"autocomplete": "new-password", "autofocus": True}
+        )
+        self.fields["new_password2"].widget.attrs["autocomplete"] = "new-password"
