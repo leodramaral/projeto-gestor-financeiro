@@ -43,8 +43,8 @@ context: |
 
   ## Fora de escopo por enquanto
 
-  Suíte de testes, quality gate (lint, pre-commit, CI), UI, regras e modelagem de domínio. Cada um
-  entra como change própria depois que a fundação estiver de pé.
+  Teste de mutação, `import-linter`, checagem de tipos, deploy/CD, regras e modelagem de domínio.
+  Cada um entra como change própria depois que a fundação estiver de pé.
 
 rules:
   proposal:
