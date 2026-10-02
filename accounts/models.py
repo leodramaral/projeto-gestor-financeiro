@@ -20,6 +20,10 @@ class UserManager(BaseUserManager):
         """Lowercase the whole address: login and uniqueness ignore case."""
         return (email or "").strip().lower()
 
+    def get_by_natural_key(self, username):
+        """Case-insensitive lookup, so the admin and other native flows accept any casing."""
+        return self.get(**{self.model.USERNAME_FIELD: self.normalize_email(username)})
+
     def create_user(self, email, password=None, **extra_fields):
         extra_fields.setdefault("is_staff", False)
         extra_fields.setdefault("is_superuser", False)

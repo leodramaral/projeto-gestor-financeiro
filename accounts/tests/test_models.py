@@ -73,3 +73,10 @@ def test_admin_changelist_opens_for_superuser(client):
 
     assert response.status_code == 200
     assert "root@exemplo.com" in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_get_by_natural_key_ignores_case():
+    user = User.objects.create_user("admin@example.com", "pw")
+
+    assert User.objects.get_by_natural_key("ADMIN@Example.com") == user

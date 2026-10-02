@@ -23,7 +23,7 @@ def send_confirmation_email(user):
         "confirm_account",
         {
             "name": user.get_short_name(),
-            "confirm_url": f"{settings.SITE_URL}{path}",
+            "confirm_url": f"{settings.SITE_URL.rstrip('/')}{path}",
             "valid_days": settings.PASSWORD_RESET_TIMEOUT // 86400,
         },
     )

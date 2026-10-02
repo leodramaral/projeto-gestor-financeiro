@@ -62,7 +62,7 @@ reenvio, sem confirmar nada.
 #### Cenário: Link já usado
 - **QUANDO** o usuário abre um link de uma conta já confirmada
 - **ENTÃO** nada muda
-- **E** a página informa que a conta já foi confirmada e leva ao login
+- **E** a página mostra a mesma mensagem genérica de link inválido, expirado ou já utilizado, sem revelar o estado da conta, e oferece o login e o reenvio
 
 #### Cenário: Link adulterado
 - **QUANDO** o usuário abre um link com token ou identificador inválido

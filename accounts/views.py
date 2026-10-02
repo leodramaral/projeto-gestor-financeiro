@@ -71,11 +71,8 @@ class ConfirmEmailView(View):
 
     def get(self, request, uidb64, token):
         user = self._get_user(uidb64)
-        if user is None:
-            return self._render(request, "invalid")
-        if user.is_email_confirmed:
-            return self._render(request, "already")
-        if not email_confirmation_token.check_token(user, token):
+        # Same page for unknown user, bad token and already-used link: no account-state oracle.
+        if user is None or not email_confirmation_token.check_token(user, token):
             return self._render(request, "invalid")
         user.email_confirmed_at = timezone.now()
         user.save(update_fields=["email_confirmed_at"])

@@ -35,6 +35,8 @@ class SignupForm(StyledFormMixin, BaseUserCreationForm):
         self.fields["name"].widget.attrs.update({"autocomplete": "name", "autofocus": True})
         self.fields["email"].widget.attrs["autocomplete"] = "email"
         # The rules are shown by a live checklist in the template, not as Django's static list.
+        self.fields["password1"].widget.attrs["autocomplete"] = "new-password"
+        self.fields["password2"].widget.attrs["autocomplete"] = "new-password"
         self.fields["password1"].help_text = ""
         self.fields["password2"].help_text = ""
         self.fields["password1"].widget.attrs["x-model"] = "password1"
@@ -65,6 +67,7 @@ class LoginForm(StyledFormMixin, AuthenticationForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.unconfirmed = False
+        self.fields["password"].widget.attrs["autocomplete"] = "current-password"
 
     def clean_username(self):
         return User.objects.normalize_email(self.cleaned_data["username"])

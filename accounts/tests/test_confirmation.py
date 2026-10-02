@@ -3,6 +3,8 @@ from datetime import datetime, timedelta
 import pytest
 from django.core import mail
 from django.urls import reverse
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 
 from accounts.emails import send_confirmation_email
 from accounts.tokens import email_confirmation_token
@@ -36,8 +38,20 @@ def test_link_is_single_use(client, make_user):
     client.get(link)
     second = client.get(link)
 
-    assert second.context["outcome"] == "already"
-    assert "já foi confirmado" in second.content.decode()
+    assert second.context["outcome"] == "invalid"
+    assert "já utilizado" in second.content.decode()
+
+
+@pytest.mark.django_db
+def test_wrong_token_does_not_reveal_confirmed_account(client, make_user):
+    confirmed = make_user(confirmed=True)
+    pending = make_user(email="pending@example.com", confirmed=False)
+
+    def probe(user):
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        return client.get(reverse("accounts:confirm", kwargs={"uidb64": uid, "token": "x-y"}))
+
+    assert probe(confirmed).content == probe(pending).content
 
 
 @pytest.mark.django_db
@@ -50,7 +64,7 @@ def test_expired_link_does_not_confirm(client, make_user, monkeypatch, settings)
     response = client.get(link)
 
     assert response.context["outcome"] == "invalid"
-    assert "inválido ou expirado" in response.content.decode()
+    assert "inválido, expirado" in response.content.decode()
     assert reverse("accounts:resend") in response.content.decode()
     user.refresh_from_db()
     assert not user.is_email_confirmed
@@ -149,3 +163,13 @@ def test_resend_form_validates_and_prefills_email(client):
     bad = client.post(reverse("accounts:resend"), {"email": "x"})
     assert bad.status_code == 200
     assert bad.context["form"].errors["email"]
+
+
+@pytest.mark.django_db
+def test_confirm_link_has_no_double_slash_when_site_url_ends_with_slash(make_user, settings):
+    settings.SITE_URL = "https://app.example.com/"
+    user = make_user(confirmed=False)
+
+    send_confirmation_email(user)
+
+    assert "https://app.example.com/accounts/confirm/" in mail.outbox[-1].body
