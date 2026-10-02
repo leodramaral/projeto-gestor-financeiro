@@ -1,0 +1,5 @@
+{% extends "email/base.txt" %}{% block content %}Olá!
+
+Este é um e-mail de teste do Gestor Financeiro. Se você o está lendo, o envio de e-mail está funcionando.
+
+Link de exemplo: {{ site_url }}/{% endblock %}

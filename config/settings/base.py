@@ -68,3 +68,6 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Seconds before a stuck SMTP connection gives up, so a slow server cannot hang a request.
+EMAIL_TIMEOUT = 10

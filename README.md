@@ -85,6 +85,7 @@ Na primeira vez leva alguns minutos (baixa imagens, instala dependências Python
 
 - Aplicação: <http://127.0.0.1:8000/>
 - Admin do Django: <http://127.0.0.1:8000/admin/>
+- Caixa de entrada de e-mail (Mailpit): <http://127.0.0.1:8025/>
 
 **6. (Opcional) Crie um superusuário para entrar no admin**
 
@@ -110,12 +111,13 @@ docker compose exec web pytest --cov --cov-report=term-missing   # testes + cobe
 uvx pre-commit run --all-files                       # lint, formatação e higiene de arquivos (igual ao CI)
 docker compose run --rm css npm run build            # recompila o CSS uma vez
 docker compose run --rm css npm run watch            # recompila o CSS a cada edição de template/estilo
+docker compose exec web python manage.py send_test_email voce@exemplo.com  # e-mail de teste (aparece no Mailpit)
 openspec validate --all                              # valida os artefatos do OpenSpec (sem --strict)
 ```
 
 ### Como funciona por baixo (engenharia)
 
-O `docker-compose.yml` define três serviços que sobem em ordem:
+O `docker-compose.yml` define quatro serviços que sobem em ordem:
 
 ```
 css  ──(termina com sucesso)──┐
@@ -127,6 +129,7 @@ db   ──(healthcheck ok)───────┘
 |---|---|---|
 | `css` | `node:22-alpine` | Roda `npm ci && npm run build`: compila o Tailwind e copia o Alpine.js para `static/dist/`, e **termina**. O `web` só sobe depois que ele conclui. |
 | `db` | `postgres:16-alpine` | Banco de dados, com volume nomeado `pgdata` (os dados sobrevivem a `down`). Tem *healthcheck* (`pg_isready`), então o `web` espera o banco aceitar conexões. |
+| `mailpit` | `axllent/mailpit` | Caixa de entrada fake para dev: recebe todo e-mail da aplicação (SMTP em `mailpit:1025`, só na rede do Compose) e o exibe em <http://127.0.0.1:8025>. Sem volume: as mensagens somem ao recriar o contêiner. Nada sai da máquina. |
 | `web` | build de `docker/Dockerfile` | Aplica as migrações (`migrate`) e inicia o `runserver`. O código é montado em `/app`, então editar um arquivo recarrega a aplicação sem rebuild. |
 
 Decisões que valem conhecer:
@@ -149,6 +152,14 @@ Decisões que valem conhecer:
 - **Testes isolados.** `pytest` + `pytest-django` forçam `config.settings.test`, mesmo com
   `dev` no `.env`, e usam um banco `test_<POSTGRES_DB>` próprio, criado e removido a cada execução.
   O banco de desenvolvimento nunca é tocado. Os testes ficam em `<app>/tests/test_*.py`.
+- **E-mail por ambiente.** Dev envia por SMTP ao Mailpit (sem variáveis no `.env`); teste usa o
+  backend em memória (`mail.outbox`); prod usa SMTP configurado por variável. Em prod a aplicação
+  **não sobe** sem `EMAIL_HOST`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `DEFAULT_FROM_EMAIL` e
+  `SITE_URL` (base dos links nos e-mails, ex.: `https://app.exemplo.com.br`); `EMAIL_PORT` (587) e
+  `EMAIL_USE_TLS` (true) têm padrão. Para enviar e-mail no código, use
+  `core.emailing.send_templated_email(to, subject, template, context)`, que renderiza
+  `templates/email/<template>.txt` e `.html`. Para validar a configuração:
+  `docker compose exec web python manage.py send_test_email voce@exemplo.com`.
 - **Porta só local.** A porta é publicada em `127.0.0.1`, então a aplicação não fica exposta à rede.
   Não há servidor de produção ainda; a hospedagem não foi decidida.
 
@@ -156,8 +167,8 @@ Decisões que valem conhecer:
 
 ```
 config/            projeto Django: urls, wsgi/asgi e settings/{base,dev,test,prod}.py
-core/              app Django inicial (tela home) e seus testes
-templates/         base.html, parciais (sidebar, header...) e telas
+core/              app Django inicial (tela home), envio de e-mail (`emailing.py`) e seus testes
+templates/         base.html, parciais (sidebar, header...), telas e e-mails (`email/`)
 static/            imagens versionadas; static/dist/ é gerado e não versionado
 frontend/          CSS-fonte (Tailwind) e licença do TailAdmin
 docker/            Dockerfile da aplicação
