@@ -35,11 +35,12 @@ jobs:
           cp .env.example .env
           sed -i "s|^SECRET_KEY=.*|SECRET_KEY=$(openssl rand -hex 32)|" .env
           sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$(openssl rand -hex 16)|" .env
-      - name: Liberar escrita em static/dist
-        # O serviço `css` roda como `node` (uid 1000); o checkout do runner pertence a outro uid.
+      - name: Liberar escrita no workspace
+        # Os contêineres rodam como uid 1000 (`node` no css, `app` no web) e gravam no checkout montado
+        # em /app (static/dist, .coverage, .pytest_cache), que no runner pertence a outro uid.
         run: |
           mkdir -p static/dist
-          chmod 777 static/dist
+          chmod -R a+rwX .
       - name: Subir o banco
         run: docker compose up -d --wait db
       - name: Rodar os testes com cobertura

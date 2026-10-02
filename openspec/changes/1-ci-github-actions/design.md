@@ -59,8 +59,9 @@ exige `SECRET_KEY` e `DATABASE_URL`; o Compose monta `DATABASE_URL` a partir de 
 6. **Gatilhos:** `pull_request` e `push` em `main`, com `concurrency` cancelando execuções antigas
    da mesma ref, e `permissions: contents: read`.
 7. **Permissão de `static/dist` no runner.** O `css` grava no checkout montado em `/app` como `node`
-   (uid 1000), mas o checkout do runner pertence ao uid 1001. O workflow cria `static/dist` com
-   escrita liberada antes do Compose. Preferível a rodar o `css` como root (deixaria `static/dist/`
+   (uid 1000), mas o checkout do runner pertence ao uid 1001. O `web` também grava no checkout (`.coverage`,
+   `.pytest_cache`) como `app` (uid 1000). O workflow libera escrita no workspace inteiro
+   (`chmod -R a+rwX .`) antes do Compose. Preferível a rodar o `css` como root (deixaria `static/dist/`
    com dono root no host, o que o `docker-compose.yml` evita de propósito) ou a parametrizar o uid no
    Compose (mudança maior, fora do escopo). Detectado no primeiro PR; não aparecia localmente
    porque o uid do desenvolvedor é 1000.
