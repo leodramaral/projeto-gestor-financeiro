@@ -39,6 +39,16 @@ services:
         condition: service_completed_successfully
       db:
         condition: service_healthy
+      mailpit:
+        condition: service_started
+
+  # Caixa de entrada fake: recebe todo e-mail enviado em dev. SMTP em mailpit:1025 só na rede
+  # interna do Compose (porta não publicada); interface web só em 127.0.0.1:8025. Sem volume.
+  mailpit:
+    image: axllent/mailpit:v1.31.3
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8025:8025"
 
   db:
     image: postgres:16-alpine
