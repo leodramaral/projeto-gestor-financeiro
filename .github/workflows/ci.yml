@@ -38,9 +38,12 @@ jobs:
       - name: Liberar escrita no workspace
         # Os contêineres rodam como uid 1000 (`node` no css, `app` no web) e gravam no checkout montado
         # em /app (static/dist, .coverage, .pytest_cache), que no runner pertence a outro uid.
+        # A escrita é liberada só nesses três caminhos; o resto do checkout (inclusive `.git`) fica intacto.
         run: |
-          mkdir -p static/dist
-          chmod -R a+rwX .
+          mkdir -p static/dist .pytest_cache
+          touch .coverage
+          chmod -R a+rwX static/dist .pytest_cache
+          chmod a+rw .coverage
       - name: Subir o banco
         run: docker compose up -d --wait db
       - name: Rodar os testes com cobertura
