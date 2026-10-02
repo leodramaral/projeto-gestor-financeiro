@@ -11,6 +11,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
     "pytest-django>=4.14.0",
 ]
 
@@ -18,3 +19,26 @@ dev = [
 # A opção de linha de comando vence o DJANGO_SETTINGS_MODULE do .env (dev).
 addopts = "--ds=config.settings.test"
 python_files = ["test_*.py"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["*/migrations/*"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "DJ", "C90"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.coverage.run]
+branch = true
+source = ["config", "core"]
+omit = ["*/migrations/*"]
+
+[tool.coverage.report]
+show_missing = true
+precision = 2
+# Piso = cobertura medida (51/74 = 68,918...), truncada para baixo, nunca arredondada para cima. Só sobe
+# quando a cobertura real sobe.
+fail_under = 68.91

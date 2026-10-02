@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Um push novo na mesma branch cancela a execução anterior, que já está desatualizada.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # Lint, formatação e higiene de arquivos: os mesmos hooks do pre-commit local.
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Rodar os hooks do pre-commit
+        run: uvx pre-commit run --all-files --show-diff-on-failure
+
+  # Testes e cobertura no mesmo Docker Compose do desenvolvimento.
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Gerar o .env (valores descartáveis, nenhum segredo do repositório)
+        run: |
+          cp .env.example .env
+          sed -i "s|^SECRET_KEY=.*|SECRET_KEY=$(openssl rand -hex 32)|" .env
+          sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$(openssl rand -hex 16)|" .env
+      - name: Liberar escrita no workspace
+        # Os contêineres rodam como uid 1000 (`node` no css, `app` no web) e gravam no checkout montado
+        # em /app (static/dist, .pytest_cache), que no runner pertence a outro uid.
+        # A escrita é liberada só nesses dois caminhos; o resto do checkout (inclusive `.git`) fica intacto.
+        # O `.coverage` vai para /tmp (COVERAGE_FILE): o coverage apaga e recria o arquivo, o que exigiria
+        # escrita no diretório raiz.
+        run: |
+          mkdir -p static/dist .pytest_cache
+          chmod -R a+rwX static/dist .pytest_cache
+      - name: Subir o banco
+        run: docker compose up -d --wait db
+      - name: Rodar os testes com cobertura
+        # O `run` sobe o serviço `css` por dependência, então o build do CSS também é validado.
+        run: docker compose run --rm -e COVERAGE_FILE=/tmp/.coverage web pytest --cov --cov-report=term-missing
+      - name: Mostrar logs do compose se algo falhou
+        if: failure()
+        run: docker compose logs --no-color
+      - name: Derrubar o ambiente
+        if: always()
+        run: docker compose down -v
+
+  # Valida as specs e changes do OpenSpec (sem --strict, ver AGENTS.md).
+  openspec:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Instalar o OpenSpec CLI (versão fixa)
+        run: npm install -g @fission-ai/openspec@1.13.1
+      - name: Validar
+        run: openspec validate --all

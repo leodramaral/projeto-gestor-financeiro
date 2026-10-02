@@ -24,6 +24,8 @@ cp .env.example .env                                  # primeira vez
 docker compose up --build                             # web + db em 127.0.0.1:8000 (migra ao subir)
 docker compose exec web python manage.py <comando>    # qualquer comando do Django
 docker compose exec web pytest                        # testes (settings de teste, banco próprio)
+docker compose exec web pytest --cov --cov-report=term-missing   # com cobertura (como o CI; piso em `fail_under`)
+uvx pre-commit run --all-files                        # lint (Ruff, inclui complexidade), formatação e higiene
 docker compose run --rm css npm run build             # recompila o CSS (`watch` para acompanhar)
 openspec validate --all                               # SEM --strict
 ```
@@ -40,6 +42,11 @@ openspec validate --all                               # SEM --strict
   change que a autorize.
 - **`static/dist/` e `node_modules/` não são versionados:** o CSS compilado nasce do serviço `css` do
   Compose. Node só existe dentro do contêiner.
+- **Qualidade e CI.** Ruff (`E,F,I,UP,B,DJ,C90`, complexidade máxima 10, linha de 100) roda só via
+  pre-commit (`.pre-commit-config.yaml`; instale com `uvx pre-commit install`). O CI
+  (`.github/workflows/ci.yml`: `quality`, `tests`, `openspec`) repete tudo; **não mescle com o CI
+  vermelho**. O piso de cobertura (`fail_under` no `pyproject.toml`) só sobe, nunca é rebaixado para
+  fazer um PR passar.
 - `environment` vence `env_file` no Compose: ao acrescentar variável, confira que nada a sobrescreve.
 
 ## Fluxo de trabalho: Issues + OpenSpec

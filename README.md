@@ -17,7 +17,7 @@ financeira. O escopo está dividido em duas fases, acompanhadas pelas Issues do 
   deploy em cloud, documentação final e pitch.
 
 **Estado atual:** só a fundação está pronta — projeto Django, PostgreSQL, Docker, layout
-([TailAdmin](https://tailadmin.com)) e suíte de testes. O domínio financeiro ainda **não foi
+([TailAdmin](https://tailadmin.com)), suíte de testes e verificação automática (CI). O domínio financeiro ainda **não foi
 modelado**: a tela inicial é um esqueleto. As funcionalidades entram uma a uma, cada uma como uma
 *change* do OpenSpec (ver [Fluxo de desenvolvimento](#fluxo-de-desenvolvimento)).
 
@@ -106,6 +106,8 @@ Para apagar também o banco e o cache do Node: `docker compose down -v`.
 ```bash
 docker compose exec web python manage.py <comando>   # qualquer comando do Django (migrate, shell...)
 docker compose exec web pytest                       # testes
+docker compose exec web pytest --cov --cov-report=term-missing   # testes + cobertura (igual ao CI)
+uvx pre-commit run --all-files                       # lint, formatação e higiene de arquivos (igual ao CI)
 docker compose run --rm css npm run build            # recompila o CSS uma vez
 docker compose run --rm css npm run watch            # recompila o CSS a cada edição de template/estilo
 openspec validate --all                              # valida os artefatos do OpenSpec (sem --strict)
@@ -211,11 +213,13 @@ Issue ─▶ explore ─▶ branch ─▶ propose ─▶ apply ─▶ verificar 
    **concluída e verificada**.
 6. **O que surgir no caminho:** se está dentro do escopo, vira task *antes* de ser feito; se está
    fora, vira Issue nova e o trabalho corrente não desvia.
-7. **Verificar:** `openspec validate --all` (sem `--strict`), `docker compose exec web pytest` e a
-   verificação manual descrita nas tasks.
+7. **Verificar:** `openspec validate --all` (sem `--strict`), `docker compose exec web pytest`,
+   `uvx pre-commit run --all-files` e a verificação manual descrita nas tasks. O CI repete essas
+   checagens no PR (ver [Parte 3](#parte-3--qualidade-de-código-e-ci)).
 8. **Arquivar** (`openspec archive <id> --yes`), ainda na branch e antes do PR. Isso mescla os
    deltas da change em `openspec/specs/` e move a pasta para `changes/archive/`.
-9. **Pull Request** com `Closes #<n>` no corpo, para a Issue fechar sozinha no merge.
+9. **Pull Request** com `Closes #<n>` no corpo, para a Issue fechar sozinha no merge. O PR só deve
+   ser mesclado com o **CI verde**.
 
 A skill `fechar-change` automatiza os passos 7–9: verifica, decide se já dá para arquivar,
 commita, faz o push e abre o PR.
@@ -260,6 +264,132 @@ em inglês porque o parser do OpenSpec o reconhece por regex fixa — por isso a
 - [`openspec/specs/`](openspec/specs/) — o que o sistema promete hoje.
 - [`openspec/changes/archive/`](openspec/changes/archive/) — o histórico de decisões, change a change.
 - [`openspec/config.yaml`](openspec/config.yaml) — o contexto e as regras que guiam a geração dos artefatos.
+
+---
+
+## Parte 3 — Qualidade de código e CI
+
+O código é verificado automaticamente em dois pontos: localmente, a cada `git commit`
+(pre-commit), e no GitHub, a cada Pull Request (CI).
+
+### CI
+
+**CI** (*Continuous Integration*, integração contínua) é a execução automática das verificações do
+projeto a cada alteração proposta. O resultado de cada verificação é registrado no Pull Request
+como aprovado ou reprovado.
+
+A implementação usa o **GitHub Actions**, e está definida em
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
+**Gatilhos:**
+
+- abertura de Pull Request e cada novo commit enviado a ele;
+- merge na `main`.
+
+Um novo push na mesma branch cancela a execução anterior.
+
+### Jobs
+
+Um **job** é um conjunto de passos executado em uma máquina virtual limpa, descartada ao final. O
+CI tem três jobs, executados em paralelo e independentes entre si.
+
+| Job | Verifica | Execução |
+|---|---|---|
+| `quality` | Padrão do código | Hooks do pre-commit: lint, formatação e higiene de arquivos |
+| `tests` | Testes e cobertura | `pytest` com cobertura, no Docker Compose |
+| `openspec` | Formato das specs e changes | `openspec validate --all` |
+
+#### `quality`
+
+- **Lint:** detecta erros prováveis, como variável não utilizada e `import` fora de ordem.
+  Ferramenta: [Ruff](https://docs.astral.sh/ruff/).
+- **Formatação:** padroniza aspas, espaços e quebras de linha, com no máximo 100 caracteres por
+  linha. Ferramenta: Ruff.
+- **Complexidade ciclomática:** número de caminhos de execução de uma função; cada `if`, `for` ou
+  `and` adiciona um. O limite é 10. Funções acima disso são reprovadas e devem ser divididas.
+- **Higiene de arquivos:** espaço ao final da linha, ausência de quebra de linha final, YAML
+  inválido, marcador de conflito de merge e chave privada versionada.
+
+#### `tests`
+
+Executa a suíte no Docker Compose do desenvolvimento, com o mesmo PostgreSQL e o mesmo build do CSS,
+e mede a **cobertura**: a porcentagem do código executada pelos testes.
+
+- **Cobertura de linha:** proporção das linhas executadas.
+- **Cobertura de branch:** em cada `if`, indica se os testes percorreram os dois desvios,
+  verdadeiro e falso.
+
+O **piso** (`fail_under`, no `pyproject.toml`) é a cobertura mínima aceita. Com cobertura abaixo
+dele, o job é reprovado mesmo que todos os testes passem. O piso é elevado quando a cobertura
+aumenta e não é reduzido.
+
+#### `openspec`
+
+Valida se specs e changes seguem o formato exigido; por exemplo, todo requisito deve ter ao menos
+um cenário. A versão do OpenSpec é fixada no workflow para que atualizações da ferramenta não
+alterem o resultado do CI.
+
+### Resultado no GitHub
+
+1. O estado de cada job aparece na seção de *checks* do Pull Request: em execução, aprovado (✅) ou
+   reprovado (❌).
+2. O link **Details** do job reprovado abre o log; o erro está próximo ao final.
+3. Após a correção, um novo commit enviado ao Pull Request dispara nova execução.
+
+As execuções também ficam listadas na aba **Actions** do repositório. Em Pull Requests de forks, o
+GitHub pode exigir aprovação de um mantenedor antes da primeira execução.
+
+### Falhas comuns
+
+| Job | Causa | Correção |
+|---|---|---|
+| `quality` | Import fora de ordem, formatação, função complexa | `uvx pre-commit run --all-files` aplica as correções automáticas. Funções complexas são divididas manualmente. |
+| `tests` (teste) | Teste reprovado | `docker compose exec web pytest`; a mensagem indica o teste e a asserção. |
+| `tests` (cobertura) | Cobertura abaixo do piso | Adicionar testes ao código novo. A coluna `Missing` do log lista as linhas sem cobertura. |
+| `openspec` | Spec ou change malformada | `openspec validate --all` indica o arquivo e a linha. |
+
+### Pre-commit
+
+O **pre-commit** executa localmente as verificações do job `quality`, no momento do `git commit`.
+Se houver problema, o commit é interrompido e as correções automáticas são aplicadas; os arquivos
+alterados devem ser revisados e adicionados ao commit.
+
+A instalação é feita uma vez por clone e requer o
+[`uv`](https://docs.astral.sh/uv/getting-started/installation/) na máquina, usado somente para esta
+ferramenta. A aplicação continua executando apenas no Docker.
+
+```bash
+uvx pre-commit install
+```
+
+Execução manual, sem commit:
+
+```bash
+uvx pre-commit run --all-files
+```
+
+As regras estão em [`.pre-commit-config.yaml`](.pre-commit-config.yaml) e, para o Ruff, no
+`pyproject.toml`. O CI usa os mesmos arquivos; portanto, o que passa localmente passa no CI.
+
+### Reprodução local do CI
+
+```bash
+uvx pre-commit run --all-files                                    # job quality
+docker compose exec web pytest --cov --cov-report=term-missing   # job tests
+openspec validate --all                                           # job openspec
+```
+
+### Perguntas frequentes
+
+**O CI bloqueia o merge?** Somente se a *proteção de branch* exigir os três checks. Por regra do
+projeto, não se faz merge com o CI reprovado.
+
+**É possível desativar uma regra do lint?** Apenas com justificativa. A exceção é registrada no
+`pyproject.toml`, com comentário explicando o motivo, e avaliada no Pull Request.
+
+**CI aprovado garante código correto?** Não. Indica apenas que as verificações automáticas
+passaram. A revisão por outra pessoa e a verificação manual descrita nas tasks continuam
+necessárias.
 
 ---
 
