@@ -31,6 +31,8 @@ ficar idênticas — ao editar uma, copie para a outra):
 |---|---|
 | `git-commit` | staging + mensagem em Conventional Commits a partir do diff, com confirmação antes de commitar. O escopo é o **número da Issue** (`chore(#1): ...`). |
 | `fechar-change` | leva uma change implementada até o PR: verificação, a pergunta "já está pronta para arquivar?", commit via `git-commit`, push e abertura do PR — sem perguntar se deve abrir. |
+| `revisar-pr` | revisa um PR: verifica cada hipótese no código, mostra o rascunho e, aprovado, publica apontamentos inline por criticidade (🔴/🟡/🟢) com assinatura. |
+| `responder-review` | trata os comentários recebidos no nosso PR: triagem com recomendação, o usuário decide, correção verificada, commit via `git-commit`, push e resposta em cada comentário citando o commit. |
 
 As demais skills em `.claude/skills/` (`openspec-*`) são geradas por `openspec init`/`openspec update`
 e não são editadas à mão.
