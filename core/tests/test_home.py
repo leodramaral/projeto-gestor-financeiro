@@ -1,10 +1,20 @@
+import pytest
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.urls import reverse
 
 
-def test_home_renders_base_layout(client):
-    """The home page renders the base layout with its sidebar and header partials."""
-    response = client.get(reverse("home"))
+@pytest.fixture
+def logged_client(client):
+    user = get_user_model().objects.create_user("ana@exemplo.com", "senha-segura-123", name="Ana")
+    client.force_login(user)
+    return client
+
+
+@pytest.mark.django_db
+def test_home_renders_base_layout(logged_client):
+    """The dashboard renders the base layout with its sidebar and header partials."""
+    response = logged_client.get(reverse("home"))
 
     assert response.status_code == 200
     templates = [t.name for t in response.templates]

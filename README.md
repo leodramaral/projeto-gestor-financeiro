@@ -87,11 +87,22 @@ Na primeira vez leva alguns minutos (baixa imagens, instala dependências Python
 - Admin do Django: <http://127.0.0.1:8000/admin/>
 - Caixa de entrada de e-mail (Mailpit): <http://127.0.0.1:8025/>
 
-**6. (Opcional) Crie um superusuário para entrar no admin**
+**6. Crie sua conta**
+
+Pela tela de cadastro, <http://127.0.0.1:8000/accounts/signup/>: informe nome, e-mail e senha. O
+e-mail de confirmação não sai da máquina; abra o Mailpit (<http://127.0.0.1:8025/>), clique no link
+da mensagem e depois entre em <http://127.0.0.1:8000/accounts/login/>. Só contas confirmadas
+conseguem entrar.
+
+Para o admin (`/admin/`), crie um superusuário (pede e-mail, nome e senha; já nasce confirmado):
 
 ```bash
 docker compose exec web python manage.py createsuperuser
 ```
+
+> **Veio de uma versão anterior ao cadastro de usuários?** O modelo de usuário mudou, e o banco
+> antigo (com o `User` padrão do Django) é incompatível. Recrie-o: `docker compose down -v` e
+> `docker compose up --build` (apaga os dados locais, inclusive o superusuário antigo).
 
 **7. Confirme que está tudo certo rodando os testes**
 
@@ -160,6 +171,13 @@ Decisões que valem conhecer:
   `core.emailing.send_templated_email(to, subject, template, context)`, que renderiza
   `templates/email/<template>.txt` e `.html`. Para validar a configuração:
   `docker compose exec web python manage.py send_test_email voce@exemplo.com`.
+- **Contas de usuário.** O app `accounts` define `AUTH_USER_MODEL = "accounts.User"`, com **e-mail
+  como login** (único sem diferenciar maiúsculas, também no banco). O cadastro cria a conta como
+  *não confirmada* e envia um link por e-mail (vale `PASSWORD_RESET_TIMEOUT`, 3 dias, e só funciona
+  uma vez); sem confirmar, o login é recusado. "Lembrar de mim" mantém a sessão por
+  `SESSION_REMEMBER_SECONDS` (30 dias); sem ele, a sessão acaba ao fechar o navegador. As páginas do
+  painel exigem login (`LoginRequiredMixin`); telas de visitante estendem `templates/base_auth.html`.
+  Rotas: `/accounts/{signup,login,logout,confirm/...}/`.
 - **Porta só local.** A porta é publicada em `127.0.0.1`, então a aplicação não fica exposta à rede.
   Não há servidor de produção ainda; a hospedagem não foi decidida.
 
@@ -167,6 +185,7 @@ Decisões que valem conhecer:
 
 ```
 config/            projeto Django: urls, wsgi/asgi e settings/{base,dev,test,prod}.py
+accounts/          usuários: modelo `User`, cadastro, confirmação por e-mail, login/logout e testes
 core/              app Django inicial (tela home), envio de e-mail (`emailing.py`) e seus testes
 templates/         base.html, parciais (sidebar, header...), telas e e-mails (`email/`)
 static/            imagens versionadas; static/dist/ é gerado e não versionado
@@ -176,6 +195,22 @@ openspec/          specs vigentes (specs/) e changes em andamento/arquivadas (ch
 .claude/ .agents/  comandos e skills dos agentes de IA usados no fluxo
 AGENTS.md          convenções, fronteiras e armadilhas (fonte única para agentes)
 ```
+
+### Modelo de dados
+
+`accounts.User` (tabela `accounts_user`), o único model do projeto por enquanto:
+
+| Campo | Tipo | Observação |
+|---|---|---|
+| `email` | e-mail, único | Login. Gravado em minúsculas; índice único também sobre `lower(email)`. |
+| `name` | texto (150) | Informado no cadastro. |
+| `password` | texto | Hash (não é a senha). |
+| `email_confirmed_at` | data/hora, nulo | Nulo = conta não confirmada; só contas confirmadas entram. |
+| `is_active` | booleano | Falso = conta desativada pelo admin (não entra). |
+| `is_staff` / `is_superuser` | booleanos | Acesso ao admin / todos os poderes. |
+| `date_joined` / `updated_at` / `last_login` | data/hora | Cadastro, última alteração e último acesso. |
+
+Relações herdadas do Django: `groups` e `user_permissions`.
 
 ### Problemas comuns
 

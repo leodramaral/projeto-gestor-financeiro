@@ -1,0 +1,10 @@
+{% extends "email/base.txt" %}
+{% block content %}Olá, {{ name }}!
+
+Para ativar sua conta no Gestor Financeiro, confirme o seu e-mail abrindo o link abaixo:
+
+{{ confirm_url }}
+
+O link vale por {{ valid_days }} dias e só pode ser usado uma vez.
+Se você não criou uma conta, ignore esta mensagem.
+{% endblock %}

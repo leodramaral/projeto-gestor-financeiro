@@ -1,0 +1,71 @@
+# user-authentication Specification
+
+## Purpose
+Define como o usuário confirmado entra e sai da aplicação, por quanto tempo a sessão dura e como as
+páginas privadas ficam protegidas de acesso anônimo.
+
+## Requirements
+
+### Requirement: Login por e-mail e senha
+A aplicação DEVE autenticar o usuário por e-mail (sem diferenciar maiúsculas) e senha, e levá-lo ao
+painel. Somente contas confirmadas DEVEM conseguir iniciar sessão. Credenciais inválidas DEVEM
+produzir uma única mensagem genérica em português, igual para e-mail inexistente e senha errada.
+
+#### Cenário: Login válido
+- **QUANDO** um usuário com conta confirmada envia e-mail e senha corretos
+- **ENTÃO** a sessão é iniciada
+- **E** ele é redirecionado ao painel
+
+#### Cenário: Credenciais inválidas
+- **QUANDO** alguém envia um e-mail inexistente, ou um e-mail existente com senha errada
+- **ENTÃO** nenhuma sessão é iniciada
+- **E** a mesma mensagem genérica é exibida nos dois casos
+
+#### Cenário: Conta não confirmada
+- **QUANDO** alguém envia e-mail e senha corretos de uma conta ainda não confirmada
+- **ENTÃO** nenhuma sessão é iniciada
+- **E** a página informa que a conta precisa ser confirmada e oferece o reenvio do link
+
+#### Cenário: Caixa do e-mail
+- **QUANDO** o usuário digita o e-mail com maiúsculas diferentes das do cadastro
+- **ENTÃO** o login funciona
+
+### Requirement: Sessão com "lembrar de mim"
+O login DEVE oferecer a opção "lembrar de mim". Sem ela, a sessão DEVE expirar ao fechar o
+navegador; com ela, a sessão DEVE persistir por um prazo fixo e configurável.
+
+#### Cenário: Sem lembrar de mim
+- **QUANDO** o usuário faz login sem marcar "lembrar de mim"
+- **ENTÃO** o cookie de sessão não tem data de expiração (expira ao fechar o navegador)
+
+#### Cenário: Com lembrar de mim
+- **QUANDO** o usuário faz login marcando "lembrar de mim"
+- **ENTÃO** o cookie de sessão persiste pelo prazo configurado
+
+### Requirement: Logout
+A aplicação DEVE permitir encerrar a sessão por uma requisição `POST` protegida contra CSRF, e DEVE
+levar o usuário ao login. Uma requisição `GET` NÃO DEVE encerrar a sessão.
+
+#### Cenário: Logout
+- **QUANDO** o usuário autenticado aciona "Sair"
+- **ENTÃO** a sessão é encerrada
+- **E** ele é redirecionado ao login
+- **E** o painel volta a exigir login
+
+### Requirement: Páginas privadas exigem login
+Toda página que não seja de autenticação, cadastro ou confirmação DEVE redirecionar o visitante
+anônimo ao login, preservando o destino pretendido. O painel DEVE ser a página inicial do usuário
+autenticado. Usuário autenticado que abre login ou cadastro DEVE ser redirecionado ao painel.
+
+#### Cenário: Anônimo no painel
+- **QUANDO** um visitante anônimo abre `/`
+- **ENTÃO** é redirecionado ao login com o destino original no parâmetro `next`
+
+#### Cenário: Destino após login
+- **QUANDO** o login ocorre com um `next` interno válido
+- **ENTÃO** o usuário vai a esse destino
+- **E** um `next` externo é ignorado em favor do painel
+
+#### Cenário: Autenticado em página de visitante
+- **QUANDO** um usuário autenticado abre a página de login ou de cadastro
+- **ENTÃO** é redirecionado ao painel

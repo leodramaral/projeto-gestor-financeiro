@@ -1,0 +1,48 @@
+{% extends "base_auth.html" %}
+{% block title %}Criar conta · Gestor Financeiro{% endblock %}
+{% block content %}
+  <h1 class="mb-1 text-title-sm font-semibold text-gray-800 dark:text-white/90">Criar conta</h1>
+  <p class="mb-6 text-sm text-gray-500 dark:text-gray-400">Informe seus dados. Enviaremos um e-mail para confirmar a conta.</p>
+  <form
+    method="post"
+    novalidate
+    class="space-y-4"
+    x-data="{
+      password1: '',
+      password2: '',
+      get longEnough() { return this.password1.length >= 8 },
+      get notOnlyDigits() { return this.password1.length > 0 && !/^\d+$/.test(this.password1) },
+      get matches() { return this.password2.length > 0 && this.password1 === this.password2 },
+      tone(started, ok) { return !started ? 'text-gray-500 dark:text-gray-400' : ok ? 'text-success-600 dark:text-success-500' : 'text-error-500' },
+      mark(started, ok) { return !started ? '○' : ok ? '✓' : '✗' },
+    }"
+  >
+    {% csrf_token %}
+    {% include "partials/form_errors.html" %}
+    {% include "partials/form_field.html" with field=form.name %}
+    {% include "partials/form_field.html" with field=form.email %}
+
+    {% include "partials/form_field.html" with field=form.password1 %}
+    <ul class="-mt-2 space-y-1 text-xs" aria-live="polite" aria-label="Requisitos da senha">
+      <li :class="tone(password1.length > 0, longEnough)"><span aria-hidden="true" x-text="mark(password1.length > 0, longEnough)">○</span> Pelo menos 8 caracteres</li>
+      <li :class="tone(password1.length > 0, notOnlyDigits)"><span aria-hidden="true" x-text="mark(password1.length > 0, notOnlyDigits)">○</span> Não pode ser só números</li>
+    </ul>
+
+    {% include "partials/form_field.html" with field=form.password2 %}
+    <p
+      class="-mt-2 text-xs"
+      aria-live="polite"
+      x-show="password2.length > 0"
+      x-cloak
+      :class="tone(true, matches)"
+    >
+      <span aria-hidden="true" x-text="mark(true, matches)"></span>
+      <span x-text="matches ? 'As senhas coincidem' : 'As senhas não coincidem'"></span>
+    </p>
+
+    <button type="submit" class="bg-brand-500 hover:bg-brand-600 h-11 w-full rounded-lg px-4 text-sm font-medium text-white">Criar conta</button>
+  </form>
+  <p class="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
+    Já tem conta? <a href="{% url 'accounts:login' %}" class="text-brand-500 hover:underline">Entrar</a>
+  </p>
+{% endblock %}

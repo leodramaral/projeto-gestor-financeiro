@@ -1,0 +1,7 @@
+{% extends "base_auth.html" %}
+{% block title %}Verifique seu e-mail · Gestor Financeiro{% endblock %}
+{% block content %}
+  <h1 class="mb-2 text-title-sm font-semibold text-gray-800 dark:text-white/90">Verifique seu e-mail</h1>
+  <p class="mb-6 text-sm text-gray-500 dark:text-gray-400">Se houver uma conta pendente de confirmação para esse e-mail, enviamos um novo link.</p>
+  <p class="text-center text-sm"><a href="{% url 'accounts:login' %}" class="text-brand-500 hover:underline">Voltar ao login</a></p>
+{% endblock %}

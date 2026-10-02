@@ -1,0 +1,14 @@
+{% extends "base_auth.html" %}
+{% block title %}Confirmação de conta · Gestor Financeiro{% endblock %}
+{% block content %}
+  {% if outcome == "confirmed" %}
+    <h1 class="mb-2 text-title-sm font-semibold text-gray-800 dark:text-white/90">Conta confirmada</h1>
+    <p class="mb-6 text-sm text-gray-500 dark:text-gray-400">Seu e-mail foi confirmado. Agora você já pode entrar.</p>
+    <a href="{% url 'accounts:login' %}" class="bg-brand-500 hover:bg-brand-600 flex h-11 w-full items-center justify-center rounded-lg px-4 text-sm font-medium text-white">Entrar</a>
+  {% else %}
+    <h1 class="mb-2 text-title-sm font-semibold text-gray-800 dark:text-white/90">Link inválido, expirado ou já utilizado</h1>
+    <p class="mb-6 text-sm text-gray-500 dark:text-gray-400">Este link de confirmação não é mais válido: pode ter expirado, estar incorreto ou já ter sido usado. Se sua conta já está confirmada, é só entrar; senão, peça um novo link.</p>
+    <a href="{% url 'accounts:resend' %}" class="bg-brand-500 hover:bg-brand-600 flex h-11 w-full items-center justify-center rounded-lg px-4 text-sm font-medium text-white">Reenviar o link</a>
+    <a href="{% url 'accounts:login' %}" class="mt-3 flex h-11 w-full items-center justify-center rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-700 dark:border-gray-700 dark:text-gray-400">Entrar</a>
+  {% endif %}
+{% endblock %}
