@@ -1,0 +1,9 @@
+{% extends "email/base.html" %}
+{% block title %}Confirme sua conta{% endblock %}
+{% block content %}
+<p style="margin:0 0 16px;">Olá, {{ name }}!</p>
+<p style="margin:0 0 16px;">Para ativar sua conta no Gestor Financeiro, confirme o seu e-mail:</p>
+<p style="margin:0 0 16px;"><a href="{{ confirm_url }}" style="display:inline-block;padding:12px 24px;background-color:#465fff;color:#ffffff;text-decoration:none;border-radius:8px;">Confirmar e-mail</a></p>
+<p style="margin:0 0 16px;font-size:14px;color:#667085;">O link vale por {{ valid_days }} dias e só pode ser usado uma vez. Se o botão não funcionar, copie este endereço no navegador:<br>{{ confirm_url }}</p>
+<p style="margin:0;font-size:14px;color:#667085;">Se você não criou uma conta, ignore esta mensagem.</p>
+{% endblock %}

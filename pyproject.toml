@@ -33,12 +33,12 @@ max-complexity = 10
 
 [tool.coverage.run]
 branch = true
-source = ["config", "core"]
+source = ["config", "core", "accounts"]
 omit = ["*/migrations/*"]
 
 [tool.coverage.report]
 show_missing = true
 precision = 2
-# Piso = cobertura medida (51/74 = 68,918...), truncada para baixo, nunca arredondada para cima. Só sobe
+# Piso = cobertura medida (94,808...%), truncada para baixo, nunca arredondada para cima. Só sobe
 # quando a cobertura real sobe.
-fail_under = 68.91
+fail_under = 94.80

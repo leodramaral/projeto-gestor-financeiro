@@ -1,0 +1,6 @@
+{# Erros do formulário como um todo. Parâmetro: form. #}
+{% if form.non_field_errors %}
+  <div class="border-error-500 bg-error-50 dark:bg-error-500/15 mb-4 rounded-lg border p-3 text-sm text-gray-700 dark:text-gray-300" role="alert">
+    {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+  </div>
+{% endif %}

@@ -1,0 +1,29 @@
+{% load static %}
+{# Layout de visitante (login, cadastro, confirmação): sem sidebar nem header do painel. #}
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Gestor Financeiro{% endblock %}</title>
+    <link rel="icon" href="{% static 'images/favicon.ico' %}" />
+    <link rel="stylesheet" href="{% static 'dist/css/style.css' %}" />
+    <script>
+      try {
+        if (JSON.parse(localStorage.getItem("darkMode"))) document.documentElement.classList.add("dark");
+      } catch (e) {}
+    </script>
+    <script defer src="{% static 'dist/js/alpine.min.js' %}"></script>
+  </head>
+  <body class="bg-gray-50 dark:bg-gray-900">
+    <main class="flex min-h-screen items-center justify-center p-4">
+      <div class="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-sm sm:p-8 dark:border-gray-800 dark:bg-white/[0.03]">
+        <div class="mb-6 flex justify-center">
+          <img src="{% static 'images/logo/logo.svg' %}" alt="Gestor Financeiro" class="h-8 dark:hidden" />
+          <img src="{% static 'images/logo/logo-dark.svg' %}" alt="Gestor Financeiro" class="hidden h-8 dark:block" />
+        </div>
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+  </body>
+</html>

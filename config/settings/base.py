@@ -13,6 +13,7 @@ SECRET_KEY = env("SECRET_KEY")
 DATABASES = {"default": env.db("DATABASE_URL")}
 
 INSTALLED_APPS = [
+    "accounts",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -71,3 +72,14 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Seconds before a stuck SMTP connection gives up, so a slow server cannot hang a request.
 EMAIL_TIMEOUT = 10
+
+AUTH_USER_MODEL = "accounts.User"
+LOGIN_URL = "accounts:login"
+LOGIN_REDIRECT_URL = "home"
+LOGOUT_REDIRECT_URL = "accounts:login"
+
+# Without "remember me" the session ends when the browser closes; with it, it lasts this long.
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_REMEMBER_SECONDS = 60 * 60 * 24 * 30
+# Lifetime of account confirmation links (and, later, password reset links).
+PASSWORD_RESET_TIMEOUT = 60 * 60 * 24 * 3
