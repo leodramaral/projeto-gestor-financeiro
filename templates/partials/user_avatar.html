@@ -1,0 +1,2 @@
+{% load accounts_tags %}{# Avatar de iniciais. Parâmetros: user, size (classes de tamanho, ex.: "h-11 w-11"), text (ex.: "text-sm"). #}
+<span class="{{ size|default:'h-11 w-11' }} {{ text|default:'text-sm' }} flex shrink-0 items-center justify-center rounded-full bg-brand-50 font-medium text-brand-600 dark:bg-brand-500/15 dark:text-brand-400" aria-hidden="true">{{ user.name|initials|default:"?" }}</span>

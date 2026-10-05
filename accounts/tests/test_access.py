@@ -35,7 +35,7 @@ def test_private_routes_redirect_anonymous_users_to_login(client, route):
 
 
 @pytest.mark.django_db
-def test_dashboard_shows_user_name_and_logout_button(client, make_user):
+def test_dashboard_shows_user_menu_with_name_and_logout(client, make_user):
     client.force_login(make_user())
 
     content = client.get(reverse("transactions:list")).content.decode()
