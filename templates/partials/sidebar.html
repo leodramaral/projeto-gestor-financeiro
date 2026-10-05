@@ -56,10 +56,10 @@
 
         <ul class="mb-6 flex flex-col gap-1">
           <li>
-            {% with active=request.resolver_match.app_name %}
-            <a href="{% url 'transactions:list' %}" class="menu-item group {% if active == 'transactions' %}menu-item-active{% else %}menu-item-inactive{% endif %}"{% if active == 'transactions' %} aria-current="page"{% endif %}>
+            {% with active=request.resolver_match.app_name name=request.resolver_match.url_name %}
+            <a href="{% url 'transactions:list' %}" class="menu-item group {% if active == 'transactions' and name|slice:':9' != 'category-' %}menu-item-active{% else %}menu-item-inactive{% endif %}"{% if active == 'transactions' and name|slice:':9' != 'category-' %} aria-current="page"{% endif %}>
               <svg
-                class="{% if active == 'transactions' %}menu-item-icon-active{% else %}menu-item-icon-inactive{% endif %}" width="24"
+                class="{% if active == 'transactions' and name|slice:':9' != 'category-' %}menu-item-icon-active{% else %}menu-item-icon-inactive{% endif %}" width="24"
                 height="24"
                 viewBox="0 0 24 24"
                 fill="none"
@@ -73,6 +73,22 @@
                 />
               </svg>
               <span class="menu-item-text" :class="sidebarToggle ? 'xl:hidden' : ''">Lançamentos</span>
+            </a>
+            {% endwith %}
+          </li>
+          <li>
+            {% with active=request.resolver_match.app_name name=request.resolver_match.url_name %}
+            <a href="{% url 'transactions:category-list' %}" class="menu-item group {% if active == 'transactions' and name|slice:':9' == 'category-' %}menu-item-active{% else %}menu-item-inactive{% endif %}"{% if active == 'transactions' and name|slice:':9' == 'category-' %} aria-current="page"{% endif %}>
+              <svg
+                class="{% if active == 'transactions' and name|slice:':9' == 'category-' %}menu-item-icon-active{% else %}menu-item-icon-inactive{% endif %}" width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d="M3.75 5.5A1.75 1.75 0 0 1 5.5 3.75h5.3c.46 0 .9.18 1.23.51l7.2 7.2a1.75 1.75 0 0 1 0 2.47l-4.8 4.8a1.75 1.75 0 0 1-2.47 0l-7.2-7.2a1.75 1.75 0 0 1-.51-1.23V5.5Zm3.75 1a1 1 0 1 0 0 2 1 1 0 0 0 0-2Z" fill="currentColor" />
+              </svg>
+              <span class="menu-item-text" :class="sidebarToggle ? 'xl:hidden' : ''">Categorias</span>
             </a>
             {% endwith %}
           </li>

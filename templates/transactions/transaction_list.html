@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static category_tags %}
 
 {% block title %}Lançamentos · Gestor Financeiro{% endblock %}
 
@@ -15,13 +15,26 @@
     <p class="text-title-sm font-semibold {% if balance < 0 %}text-error-500{% else %}text-gray-800 dark:text-white/90{% endif %}">R$ {{ balance|floatformat:"2g" }}</p>
   </div>
 
-  {% if transactions %}
+  {% if transactions or selected_category %}
     <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
       <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-6">
         <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Últimos lançamentos</h3>
-        <a href="{% url 'transactions:create' %}" data-modal class="bg-brand-500 hover:bg-brand-600 inline-flex h-11 items-center rounded-lg px-4 text-sm font-medium text-white">Novo lançamento</a>
+        <div class="flex flex-wrap items-center gap-3">
+          <form method="get" class="flex items-center gap-2">
+            {% category_select name="category" field_id="category-filter" categories=categories selected=selected_category.pk placeholder="Todas as categorias" label="Categoria" css="w-56" %}
+            <button type="submit" class="h-11 rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/5">Filtrar</button>
+          </form>
+          <a href="{% url 'transactions:create' %}" data-modal class="bg-brand-500 hover:bg-brand-600 inline-flex h-11 items-center rounded-lg px-4 text-sm font-medium text-white">Novo lançamento</a>
+        </div>
       </div>
+      {% if not transactions %}
+        <div class="border-t border-gray-100 px-5 py-10 text-center dark:border-gray-800">
+          <p class="text-gray-800 dark:text-white/90">Nenhum lançamento na categoria {{ selected_category.name }}.</p>
+          <a href="{% url 'transactions:list' %}" class="text-brand-500 dark:text-brand-400 mt-2 inline-block text-sm hover:underline">Limpar o filtro</a>
+        </div>
+      {% endif %}
 
+      {% if transactions %}
       <div class="overflow-x-auto md:overflow-visible">
         <table class="w-full text-left text-sm">
           <thead>
@@ -49,6 +62,7 @@
                     {% endif %}
                     <span class="min-w-0">
                       <span class="block font-medium text-gray-800 dark:text-white/90">{{ item.description }}</span>
+                      {% if item.category %}<span class="mt-0.5 block">{% category_chip item.category %}</span>{% endif %}
                       <span class="block text-xs text-gray-500 sm:hidden dark:text-gray-400">{{ item.date|date:"d/m/Y" }}</span>
                     </span>
                   </div>
@@ -80,11 +94,12 @@
           </tbody>
         </table>
       </div>
+      {% endif %}
 
       {% if is_paginated %}
         <nav class="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-5 py-4 sm:px-6 dark:border-gray-800" aria-label="Paginação">
           {% if page_obj.has_previous %}
-            <a href="?page={{ page_obj.previous_page_number }}" rel="prev" class="shadow-theme-xs inline-flex h-10 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/5">← <span class="hidden sm:inline">Anterior</span><span class="sr-only sm:hidden">Anterior</span></a>
+            <a href="?{{ query_prefix }}page={{ page_obj.previous_page_number }}" rel="prev" class="shadow-theme-xs inline-flex h-10 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/5">← <span class="hidden sm:inline">Anterior</span><span class="sr-only sm:hidden">Anterior</span></a>
           {% else %}
             <span aria-disabled="true" class="shadow-theme-xs inline-flex h-10 cursor-not-allowed items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">← <span class="hidden sm:inline">Anterior</span><span class="sr-only sm:hidden">Anterior</span></span>
           {% endif %}
@@ -97,14 +112,14 @@
                 {% elif number == page_obj.number %}
                   <span aria-current="page" class="bg-brand-50 text-brand-500 dark:bg-brand-500/15 dark:text-brand-400 flex h-10 w-10 items-center justify-center rounded-lg text-sm font-medium">{{ number }}</span>
                 {% else %}
-                  <a href="?page={{ number }}" class="flex h-10 w-10 items-center justify-center rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5">{{ number }}</a>
+                  <a href="?{{ query_prefix }}page={{ number }}" class="flex h-10 w-10 items-center justify-center rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5">{{ number }}</a>
                 {% endif %}
               </li>
             {% endfor %}
           </ul>
 
           {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}" rel="next" class="shadow-theme-xs inline-flex h-10 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/5"><span class="hidden sm:inline">Próxima</span><span class="sr-only sm:hidden">Próxima</span> →</a>
+            <a href="?{{ query_prefix }}page={{ page_obj.next_page_number }}" rel="next" class="shadow-theme-xs inline-flex h-10 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/5"><span class="hidden sm:inline">Próxima</span><span class="sr-only sm:hidden">Próxima</span> →</a>
           {% else %}
             <span aria-disabled="true" class="shadow-theme-xs inline-flex h-10 cursor-not-allowed items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"><span class="hidden sm:inline">Próxima</span><span class="sr-only sm:hidden">Próxima</span> →</span>
           {% endif %}
@@ -119,7 +134,7 @@
     </div>
   {% endif %}
 
-  <dialog id="transaction-modal" class="backdrop:bg-gray-900/60 shadow-theme-lg m-auto w-[calc(100%-2rem)] max-w-xl rounded-2xl border border-gray-200 bg-white p-0 text-left dark:border-gray-800 dark:bg-gray-900">
+  <dialog id="transaction-modal" class="backdrop:bg-gray-900/60 shadow-theme-lg m-auto overflow-visible w-[calc(100%-2rem)] max-w-xl rounded-2xl border border-gray-200 bg-white p-0 text-left dark:border-gray-800 dark:bg-gray-900">
     <div id="transaction-modal-body" class="p-6"></div>
   </dialog>
   <script src="{% static 'js/transaction-modal.js' %}" defer></script>

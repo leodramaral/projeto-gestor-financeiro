@@ -1,0 +1,26 @@
+{% extends base_template %}
+{% load category_tags %}
+
+{% block title %}Excluir categoria · Gestor Financeiro{% endblock %}
+
+{% block content %}
+  {% if is_modal %}
+    <h2 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">Excluir categoria</h2>
+  {% else %}
+    {% include "partials/breadcrumb.html" with title="Excluir categoria" %}
+  {% endif %}
+
+  <div {% if not is_modal %}class="max-w-xl rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]"{% endif %}>
+    <p class="text-gray-800 dark:text-white/90">Tem certeza de que deseja excluir a categoria {% category_chip object %}?</p>
+    {% if uses %}
+      <p class="mt-3 text-sm text-gray-700 dark:text-gray-300">{{ uses }} lançamento{{ uses|pluralize }} que usa{{ uses|pluralize:",m" }} esta categoria não {{ uses|pluralize:"será,serão" }} excluído{{ uses|pluralize }}: {{ uses|pluralize:"passa,passam" }} para a categoria <strong>Outros</strong>.</p>
+    {% else %}
+      <p class="mt-3 text-sm text-gray-700 dark:text-gray-300">Nenhum lançamento usa esta categoria.</p>
+    {% endif %}
+    <form method="post" class="mt-6 flex items-center gap-3">
+      {% csrf_token %}
+      <button type="submit" class="bg-error-500 hover:bg-error-600 h-11 rounded-lg px-4 text-sm font-medium text-white">Excluir</button>
+      <a href="{% url 'transactions:category-list' %}" data-modal-close autofocus class="text-sm text-gray-500 hover:underline dark:text-gray-400">Cancelar</a>
+    </form>
+  </div>
+{% endblock %}
