@@ -43,11 +43,12 @@ navegador; com ela, a sessão DEVE persistir por um prazo fixo e configurável.
 - **ENTÃO** o cookie de sessão persiste pelo prazo configurado
 
 ### Requirement: Logout
-A aplicação DEVE permitir encerrar a sessão por uma requisição `POST` protegida contra CSRF, e DEVE
-levar o usuário ao login. Uma requisição `GET` NÃO DEVE encerrar a sessão.
+A aplicação DEVE permitir encerrar a sessão por uma requisição `POST` protegida contra CSRF, acionada
+pela ação "Sair" do menu de usuário no cabeçalho, e DEVE levar o usuário ao login. Uma requisição
+`GET` NÃO DEVE encerrar a sessão.
 
 #### Cenário: Logout
-- **QUANDO** o usuário autenticado aciona "Sair"
+- **QUANDO** o usuário autenticado aciona "Sair" no menu de usuário
 - **ENTÃO** a sessão é encerrada
 - **E** ele é redirecionado ao login
 - **E** o painel volta a exigir login

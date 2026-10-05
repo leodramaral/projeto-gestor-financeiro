@@ -4,6 +4,7 @@ from smtplib import SMTPException
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView, PasswordResetConfirmView
 from django.db import transaction
 from django.shortcuts import redirect, render
@@ -58,6 +59,12 @@ class SignupView(AnonymousOnlyMixin, FormView):
 
 class SignupDoneView(AnonymousOnlyMixin, TemplateView):
     template_name = "accounts/signup_done.html"
+
+
+class ProfileView(LoginRequiredMixin, TemplateView):
+    """Read-only profile of the signed-in user; there is no way to open someone else's."""
+
+    template_name = "accounts/profile.html"
 
 
 class SignInView(LoginView):
