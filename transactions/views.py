@@ -1,3 +1,5 @@
+from functools import cached_property
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -62,7 +64,8 @@ class TransactionListView(LoginRequiredMixin, OwnedQuerysetMixin, ListView):
     def get_paginate_by(self, queryset):
         return settings.TRANSACTIONS_PER_PAGE
 
-    def get_selected_category(self):
+    @cached_property
+    def selected_category(self):
         """The category in `?category=`; None when missing, not a number or not the user's."""
         raw = self.request.GET.get("category", "")
         if not raw.isdecimal():
@@ -71,12 +74,12 @@ class TransactionListView(LoginRequiredMixin, OwnedQuerysetMixin, ListView):
 
     def get_queryset(self):
         queryset = super().get_queryset().select_related("category").order_by("-date", "-id")
-        category = self.get_selected_category()
+        category = self.selected_category
         return queryset.filter(category=category) if category else queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        selected = self.get_selected_category()
+        selected = self.selected_category
         context["balance"] = current_balance(self.request.user)
         context["categories"] = Category.objects.for_user(self.request.user)
         context["selected_category"] = selected

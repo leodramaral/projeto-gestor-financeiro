@@ -20,7 +20,7 @@
     <form method="post" class="mt-6 flex items-center gap-3">
       {% csrf_token %}
       <button type="submit" class="bg-error-500 hover:bg-error-600 h-11 rounded-lg px-4 text-sm font-medium text-white">Excluir</button>
-      <a href="{% url 'transactions:category-list' %}" data-modal-close class="text-sm text-gray-500 hover:underline dark:text-gray-400">Cancelar</a>
+      <a href="{% url 'transactions:category-list' %}" data-modal-close autofocus class="text-sm text-gray-500 hover:underline dark:text-gray-400">Cancelar</a>
     </form>
   </div>
 {% endblock %}

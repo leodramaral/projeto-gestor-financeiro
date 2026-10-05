@@ -88,7 +88,7 @@ def test_form_page_uses_the_floating_select_and_loads_its_script_before_alpine(l
 
     assert 'x-data="categorySelect"' in content
     assert content.index("js/category-select.js") < content.index("alpine.min.js")
-    assert 'name="category"' in content and 'for="id_category-button"' in content
+    assert 'name="category"' in content and 'for="id_category"' in content
 
 
 def test_edit_form_opens_with_the_current_category_selected(

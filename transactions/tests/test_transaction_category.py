@@ -123,7 +123,7 @@ def test_list_uses_a_single_query_for_the_categories(
     for _ in range(5):
         make_transaction(user)
 
-    with django_assert_max_num_queries(10):
+    with django_assert_max_num_queries(7):
         logged_client.get(reverse("transactions:list"))
 
 
@@ -227,3 +227,12 @@ class TestFilter:
         make_transaction(user)
 
         assert "Hobby" not in lists().content.decode()
+
+    def test_filtered_list_does_not_repeat_the_category_lookup(
+        self, lists, user, make_transaction, django_assert_max_num_queries
+    ):
+        lazer = default("Lazer")
+        make_transaction(user, category=lazer)
+
+        with django_assert_max_num_queries(7):
+            lists(category=lazer.pk)

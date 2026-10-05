@@ -21,7 +21,7 @@
           {% include "partials/choice_buttons.html" %}
         {% elif field.name == "category" %}
           <div>
-            <label for="{{ field.id_for_label }}-button" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">{{ field.label }}</label>
+            <label for="{{ field.id_for_label }}" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">{{ field.label }}</label>
             {% category_select name=field.html_name field_id=field.id_for_label categories=field.field.queryset selected=field.value placeholder="Selecione…" label=field.label %}
             {% for error in field.errors %}<p class="text-error-500 mt-1.5 text-xs">{{ error }}</p>{% endfor %}
             <div class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">{{ field.help_text }}</div>

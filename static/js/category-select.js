@@ -19,6 +19,9 @@ document.addEventListener("alpine:init", function () {
           this.value = native.value;
           this.refresh();
         });
+        native.addEventListener("focus", () => {
+          if (this.enhanced) this.$refs.button.focus();
+        });
       },
 
       get items() {

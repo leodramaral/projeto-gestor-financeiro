@@ -10,7 +10,9 @@
   function show(html) {
     body.innerHTML = html;
     if (!dialog.open) dialog.showModal();
-    const first = body.querySelector("input:not([type=hidden]), button[type=submit]");
+    const first =
+      body.querySelector("[autofocus]") ||
+      body.querySelector("input:not([type=hidden]), button[type=submit]");
     if (first) first.focus();
   }
 
