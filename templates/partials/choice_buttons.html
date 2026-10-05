@@ -1,0 +1,15 @@
+{# Campo de escolha como botões (rádios escondidos + rótulos estilizados). Parâmetro: field. #}
+<fieldset>
+  <legend class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">{{ field.label }}</legend>
+  <div class="grid grid-cols-2 gap-3">
+    {% for radio in field %}
+      <label class="cursor-pointer">
+        {{ radio.tag }}
+        <span class="peer-focus-visible:ring-3 peer-focus-visible:ring-brand-500/20 flex h-11 items-center justify-center rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-700 transition dark:border-gray-700 dark:text-gray-400 {% if radio.data.value == 'income' %}peer-checked:border-success-500 peer-checked:bg-success-50 peer-checked:text-success-700 dark:peer-checked:bg-success-500/15 dark:peer-checked:text-success-500{% else %}peer-checked:border-error-500 peer-checked:bg-error-50 peer-checked:text-error-600 dark:peer-checked:bg-error-500/15 dark:peer-checked:text-error-500{% endif %}">{{ radio.choice_label }}</span>
+      </label>
+    {% endfor %}
+  </div>
+  {% for error in field.errors %}
+    <p class="text-error-500 mt-1.5 text-xs">{{ error }}</p>
+  {% endfor %}
+</fieldset>

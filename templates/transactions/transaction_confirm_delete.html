@@ -1,0 +1,26 @@
+{% extends base_template %}
+
+{% block title %}Excluir lançamento · Gestor Financeiro{% endblock %}
+
+{% block content %}
+  {% if is_modal %}
+    <h2 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">Excluir lançamento</h2>
+  {% else %}
+    {% include "partials/breadcrumb.html" with title="Excluir lançamento" %}
+  {% endif %}
+
+  <div {% if not is_modal %}class="max-w-xl rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]"{% endif %}>
+    <p class="text-gray-800 dark:text-white/90">Tem certeza de que deseja excluir este lançamento? Esta ação não pode ser desfeita.</p>
+    <dl class="mt-4 space-y-1 text-sm text-gray-700 dark:text-gray-300">
+      <div><dt class="inline font-medium">Tipo:</dt> <dd class="inline">{{ object.get_kind_display }}</dd></div>
+      <div><dt class="inline font-medium">Valor:</dt> <dd class="inline">R$ {{ object.amount|floatformat:"2g" }}</dd></div>
+      <div><dt class="inline font-medium">Data:</dt> <dd class="inline">{{ object.date|date:"d/m/Y" }}</dd></div>
+      <div><dt class="inline font-medium">Descrição:</dt> <dd class="inline">{{ object.description }}</dd></div>
+    </dl>
+    <form method="post" class="mt-6 flex items-center gap-3">
+      {% csrf_token %}
+      <button type="submit" class="bg-error-500 hover:bg-error-600 h-11 rounded-lg px-4 text-sm font-medium text-white">Excluir</button>
+      <a href="{% url 'transactions:list' %}" data-modal-close class="text-sm text-gray-500 hover:underline dark:text-gray-400">Cancelar</a>
+    </form>
+  </div>
+{% endblock %}

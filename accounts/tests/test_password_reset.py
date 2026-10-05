@@ -291,13 +291,13 @@ def test_open_session_elsewhere_is_ended_by_the_reset(make_user):
     make_user()
     other = Client()
     other.login(username="ana@exemplo.com", password=PASSWORD)
-    assert other.get(reverse("home")).status_code == 200
+    assert other.get(reverse("transactions:list")).status_code == 200
     requester = Client()
     ask_reset(requester)
 
     submit_new_password(requester, reset_path())
 
-    response = other.get(reverse("home"))
+    response = other.get(reverse("transactions:list"))
     assert response.status_code == 302
     assert reverse("accounts:login") in response.url
 

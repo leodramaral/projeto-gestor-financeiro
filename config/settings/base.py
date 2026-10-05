@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "core",
+    "transactions",
 ]
 
 MIDDLEWARE = [
@@ -89,3 +90,6 @@ PASSWORD_RESET_LINK_TIMEOUT = 60 * 60
 # Consecutive wrong-credential logins for one email before it is locked, and for how long.
 LOGIN_MAX_FAILED_ATTEMPTS = 5
 LOGIN_LOCKOUT_SECONDS = 60 * 15
+
+# Transactions shown per page in the list.
+TRANSACTIONS_PER_PAGE = 20

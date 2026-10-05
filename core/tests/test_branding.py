@@ -52,7 +52,7 @@ def test_brand_svg_is_valid_and_uses_the_brand_color(asset):
 
 @pytest.mark.django_db
 def test_dashboard_shows_the_brand_in_sidebar_and_mobile_header(logged_client):
-    response = logged_client.get(reverse("home"))
+    response = logged_client.get(reverse("transactions:list"))
 
     content = response.content.decode()
     assert "partials/brand.html" in [t.name for t in response.templates]
@@ -74,7 +74,7 @@ def test_visitor_pages_show_the_brand(client, url):
 @pytest.mark.django_db
 def test_favicon_is_the_brand_svg_on_every_layout(logged_client):
     visitor = Client().get(reverse("accounts:login"))
-    for page in (visitor, logged_client.get(reverse("home"))):
+    for page in (visitor, logged_client.get(reverse("transactions:list"))):
         content = page.content.decode()
         assert 'rel="icon" type="image/svg+xml"' in content
         assert "images/favicon.svg" in content
@@ -89,7 +89,9 @@ def test_no_tailadmin_text_on_visitor_pages(client, url):
 
 @pytest.mark.django_db
 def test_no_tailadmin_text_on_the_dashboard(logged_client):
-    assert "tailadmin" not in logged_client.get(reverse("home")).content.decode().lower()
+    assert (
+        "tailadmin" not in logged_client.get(reverse("transactions:list")).content.decode().lower()
+    )
 
 
 @pytest.mark.parametrize("name", EMAILS)
@@ -105,7 +107,7 @@ THEME_TOGGLE = 'aria-label="Alternar tema"'
 
 @pytest.mark.django_db
 def test_dashboard_keeps_the_theme_toggle_in_the_header(logged_client):
-    response = logged_client.get(reverse("home"))
+    response = logged_client.get(reverse("transactions:list"))
 
     assert "partials/theme_toggle.html" in [t.name for t in response.templates]
     assert THEME_TOGGLE in response.content.decode()
@@ -123,7 +125,10 @@ def test_visitor_pages_offer_the_theme_toggle(client, url):
 
 @pytest.mark.django_db
 def test_both_layouts_apply_the_saved_theme_before_the_stylesheet(logged_client):
-    pages = [Client().get(reverse("accounts:login")), logged_client.get(reverse("home"))]
+    pages = [
+        Client().get(reverse("accounts:login")),
+        logged_client.get(reverse("transactions:list")),
+    ]
     for response in pages:
         assert "partials/theme_init.html" in [t.name for t in response.templates]
         content = response.content.decode()

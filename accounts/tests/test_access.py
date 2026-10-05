@@ -38,7 +38,7 @@ def test_private_routes_redirect_anonymous_users_to_login(client, route):
 def test_dashboard_shows_user_name_and_logout_button(client, make_user):
     client.force_login(make_user())
 
-    content = client.get(reverse("home")).content.decode()
+    content = client.get(reverse("transactions:list")).content.decode()
 
     assert "Ana Souza" in content
     assert f'action="{reverse("accounts:logout")}"' in content
