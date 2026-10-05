@@ -10,7 +10,7 @@
   function show(html) {
     body.innerHTML = html;
     if (!dialog.open) dialog.showModal();
-    const first = body.querySelector("input:not([type=hidden]):not(.sr-only), button[type=submit]");
+    const first = body.querySelector("input:not([type=hidden]), button[type=submit]");
     if (first) first.focus();
   }
 
@@ -25,7 +25,15 @@
     }
   }
 
+  // Locked from the click until the response turns into a new fragment (or the page navigates),
+  // so a double click or a repeated Enter cannot post the same transaction twice.
+  let submitting = false;
+
   async function submit(form) {
+    if (submitting) return;
+    submitting = true;
+    const button = form.querySelector("button[type=submit]");
+    if (button) button.disabled = true;
     try {
       const response = await fetch(currentUrl, {
         method: "POST",
@@ -38,6 +46,7 @@
         window.location.assign((await response.json()).location);
       } else {
         show(await response.text());
+        submitting = false;
       }
     } catch (error) {
       window.location.assign(currentUrl);
@@ -65,9 +74,15 @@
     submit(event.target);
   });
 
-  // A click on the backdrop lands on the <dialog> itself, not on its content.
+  // A click on the backdrop lands on the <dialog> itself, not on its content. Only close when the
+  // press also started there: a text selection dragged out of the form ends on the backdrop too.
+  let pressedOnBackdrop = false;
+  dialog.addEventListener("mousedown", function (event) {
+    pressedOnBackdrop = event.target === dialog;
+  });
   dialog.addEventListener("click", function (event) {
-    if (event.target === dialog) dialog.close();
+    if (event.target === dialog && pressedOnBackdrop) dialog.close();
+    pressedOnBackdrop = false;
   });
   dialog.addEventListener("close", function () {
     body.innerHTML = "";
