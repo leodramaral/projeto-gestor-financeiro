@@ -1,0 +1,18 @@
+{% extends "base_auth.html" %}
+{# Variante dividida (entrar e criar conta): formulário de um lado, painel de marca do outro. #}
+{% block layout %}
+  <main class="flex min-h-screen flex-col lg:flex-row">
+    <div class="flex flex-1 flex-col p-4 sm:p-8 lg:w-1/2 lg:px-24">
+      <div class="min-h-6">{% block back %}{% endblock %}</div>
+      <div class="flex flex-1 items-center">
+        <div class="w-full max-w-md">
+          <div class="mb-8 flex justify-center lg:hidden">
+            {% include "partials/brand.html" with text=True %}
+          </div>
+          {% block content %}{% endblock %}
+        </div>
+      </div>
+    </div>
+    {% include "partials/auth_aside.html" %}
+  </main>
+{% endblock %}
