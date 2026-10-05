@@ -48,6 +48,19 @@ openspec validate --all                               # SEM --strict
   vermelho**. O piso de cobertura (`fail_under` no `pyproject.toml`) só sobe, nunca é rebaixado para
   fazer um PR passar.
 - `environment` vence `env_file` no Compose: ao acrescentar variável, confira que nada a sobrescreve.
+- **Worktrees ficam em `worktrees/<nome>`, dentro do repositório** (pasta já ignorada pelo
+  `.gitignore` e pelo `.dockerignore`), nunca como pasta irmã fora dele. Crie com
+  `git worktree add worktrees/<nome> -b <branch>`; o nome pode seguir o id da change
+  (`3-registrar-lancamentos`). Ao terminar, `git worktree remove worktrees/<nome>`.
+  - A worktree nova não tem `.env` nem `static/dist/` (não versionados): copie o `.env` do checkout
+    principal e gere o CSS com `docker compose run --rm css npm run build`.
+  - O Compose fixa `name: projeto-gestor-financeiro`, então todas as worktrees compartilham o mesmo
+    banco e a mesma rede. O contêiner `web` em execução monta só a pasta onde `docker compose up`
+    rodou: para testar o código de uma worktree, use
+    `docker compose run --rm --no-deps web pytest` (o `db` precisa estar de pé) ou, para um servidor,
+    `docker compose run --rm --no-deps -p 127.0.0.1:8001:8000 web python manage.py runserver 0.0.0.0:8000`.
+    Evite `docker compose up` dentro da worktree: com o mesmo nome de projeto, recria o `web` já em
+    execução apontando para ela.
 
 ## Fluxo de trabalho: Issues + OpenSpec
 
