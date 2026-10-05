@@ -1,4 +1,5 @@
 {% extends base_template %}
+{% load category_tags %}
 
 {% block title %}{% if object %}Editar lançamento{% else %}Novo lançamento{% endif %} · Gestor Financeiro{% endblock %}
 
@@ -16,7 +17,18 @@
       {% csrf_token %}
       {% include "partials/form_errors.html" %}
       {% for field in form %}
-        {% if field.name == "kind" %}{% include "partials/choice_buttons.html" %}{% else %}{% include "partials/form_field.html" %}{% endif %}
+        {% if field.name == "kind" %}
+          {% include "partials/choice_buttons.html" %}
+        {% elif field.name == "category" %}
+          <div>
+            <label for="{{ field.id_for_label }}-button" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">{{ field.label }}</label>
+            {% category_select name=field.html_name field_id=field.id_for_label categories=field.field.queryset selected=field.value placeholder="Selecione…" label=field.label %}
+            {% for error in field.errors %}<p class="text-error-500 mt-1.5 text-xs">{{ error }}</p>{% endfor %}
+            <div class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">{{ field.help_text }}</div>
+          </div>
+        {% else %}
+          {% include "partials/form_field.html" %}
+        {% endif %}
       {% endfor %}
       <div class="flex items-center gap-3 pt-2">
         <button type="submit" class="bg-brand-500 hover:bg-brand-600 h-11 rounded-lg px-4 text-sm font-medium text-white">Salvar</button>

@@ -414,3 +414,100 @@
 .tableCheckbox:checked ~ span {
   @apply border-brand-500 bg-brand-500;
 }
+
+/* Cores das categorias: lista fixa (transactions/appearance.py). Cada classe define as variáveis do
+   preenchimento, do fundo do chip e do texto do chip, no modo claro e no escuro. */
+.cat-jade {
+  --cat-fill: #0f766e;
+  --cat-bg: #e2efee;
+  --cat-text: #0f766e;
+}
+.dark .cat-jade {
+  --cat-fill: #0f766e;
+  --cat-bg: #102b36;
+  --cat-text: #87bdb9;
+}
+.cat-green {
+  --cat-fill: #039855;
+  --cat-bg: #e1f3eb;
+  --cat-text: #027b45;
+}
+.dark .cat-green {
+  --cat-fill: #039855;
+  --cat-bg: #0d3231;
+  --cat-text: #7bc9a6;
+}
+.cat-blue {
+  --cat-fill: #0086c9;
+  --cat-bg: #e0f0f9;
+  --cat-text: #0070a7;
+}
+.dark .cat-blue {
+  --cat-fill: #0086c9;
+  --cat-bg: #0d2e48;
+  --cat-text: #80c2e4;
+}
+.cat-purple {
+  --cat-fill: #7a5af8;
+  --cat-bg: #efebfe;
+  --cat-text: #6f52e2;
+}
+.dark .cat-purple {
+  --cat-fill: #7a5af8;
+  --cat-bg: #252552;
+  --cat-text: #bdadfc;
+}
+.cat-pink {
+  --cat-fill: #ee46bc;
+  --cat-bg: #fde9f7;
+  --cat-text: #b5358f;
+}
+.dark .cat-pink {
+  --cat-fill: #ee46bc;
+  --cat-bg: #3c2146;
+  --cat-text: #f69ddc;
+}
+.cat-orange {
+  --cat-fill: #ec4a0a;
+  --cat-bg: #fde9e2;
+  --cat-text: #bf3c08;
+}
+.dark .cat-orange {
+  --cat-fill: #ec4a0a;
+  --cat-bg: #3c2222;
+  --cat-text: #f5a07e;
+}
+.cat-amber {
+  --cat-fill: #dc6803;
+  --cat-bg: #fbede1;
+  --cat-text: #ac5202;
+}
+.dark .cat-amber {
+  --cat-fill: #dc6803;
+  --cat-bg: #392821;
+  --cat-text: #ebac74;
+}
+.cat-graphite {
+  --cat-fill: #475467;
+  --cat-bg: #e9eaed;
+  --cat-text: #475467;
+}
+.dark .cat-graphite {
+  --cat-fill: #616c7d;
+  --cat-bg: #202939;
+  --cat-text: #afb4bd;
+}
+.cat-badge {
+  background-color: var(--cat-bg);
+  color: var(--cat-text);
+}
+.cat-chip {
+  background-color: var(--cat-bg);
+  color: var(--cat-text);
+}
+.cat-fill {
+  background-color: var(--cat-fill);
+}
+.cat-icon {
+  stroke-width: 1.75;
+}

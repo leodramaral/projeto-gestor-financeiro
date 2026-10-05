@@ -10,15 +10,16 @@ O Gestor Financeiro é uma aplicação web para controle de finanças pessoais. 
 uma pessoa se cadastre, registre seu saldo e suas despesas e acompanhe a própria situação
 financeira. O escopo está dividido em duas fases, acompanhadas pelas Issues do repositório:
 
-- **MVP** (label `mvp`): configuração do ambiente, login e cadastro, registro de lançamentos
-  (saldo e despesas) e resumo de status financeiro.
-- **Pós-MVP** (label `pos-mvp`): categorização de custos, painel com gráficos, tarefas e metas,
-  previsão de orçamento, assistente de gestão com IA, planos de serviço, relatórios e exportação,
+- **MVP** (label `mvp`, **concluído** na `v0.1.0`): configuração do ambiente, e-mail transacional,
+  cadastro, login e recuperação de senha, e registro de lançamentos (saldo e despesas).
+- **Pós-MVP** (label `pos-mvp`): categorização de custos, painel com gráficos e resumo de status
+  financeiro, tarefas e metas, previsão de orçamento, assistente de gestão com IA, planos de serviço, relatórios e exportação,
   deploy em cloud, documentação final e pitch.
 
 **Estado atual:** fundação pronta (Django, PostgreSQL, Docker, layout
-[TailAdmin](https://tailadmin.com), testes e CI), autenticação de usuários e o registro de lançamentos (entradas e despesas).
-O resumo de status financeiro e o pós-MVP ainda não existem. As funcionalidades entram uma a uma, cada uma como uma *change* do
+[TailAdmin](https://tailadmin.com), testes e CI), autenticação de usuários e o registro de lançamentos (entradas e despesas): o MVP está completo.
+O pós-MVP, incluindo o resumo de status financeiro (que passou para o painel da Issue #6), ainda não
+existe. As funcionalidades entram uma a uma, cada uma como uma *change* do
 OpenSpec (ver [Fluxo de desenvolvimento](#parte-2--fluxo-de-desenvolvimento)); o que o sistema faz
 hoje está em [`openspec/specs/`](openspec/specs/).
 
@@ -166,7 +167,7 @@ verde-azulado **jade**. Tudo vem de poucos pontos:
 ```
 config/            projeto Django: urls, wsgi/asgi e settings/{base,dev,test,prod}.py
 accounts/          usuários: modelo `User`, cadastro, confirmação por e-mail, login/logout e testes
-transactions/      lançamentos: model `Transaction`, telas e testes
+transactions/      lançamentos e categorias: models `Transaction` e `Category`, telas, ícones/cores (`appearance.py`), os SVGs em `icons/` e testes
 core/              app Django inicial (home, que leva à listagem), envio de e-mail (`emailing.py`) e seus testes
 templates/         base.html, parciais (sidebar, header...), telas e e-mails (`email/`)
 static/            imagens versionadas; static/dist/ é gerado e não versionado
@@ -183,10 +184,14 @@ Depois de entrar, `/` leva à listagem de lançamentos (`/transactions/`). Rotas
 
 | Rota | O que faz |
 |---|---|
-| `/transactions/` | lista paginada (20 por página, data decrescente) e saldo atual |
+| `/transactions/` | lista paginada (20 por página, data decrescente) e saldo atual; `?category=<id>` filtra por categoria |
 | `/transactions/new/` | novo lançamento |
 | `/transactions/<id>/edit/` | edita um lançamento |
 | `/transactions/<id>/delete/` | pede confirmação e, no envio, exclui |
+| `/transactions/categories/` | categorias padrão e as do usuário |
+| `/transactions/categories/new/` | nova categoria (nome, ícone e cor) |
+| `/transactions/categories/<id>/edit/` | edita uma categoria do usuário |
+| `/transactions/categories/<id>/delete/` | pede confirmação e exclui; os lançamentos passam para "Outros" |
 
 Novo, editar e excluir abrem numa janela modal sobre a listagem (`static/js/transaction-modal.js`); as
 mesmas rotas continuam sendo páginas completas quando abertas direto ou sem JavaScript. O campo de
@@ -197,11 +202,24 @@ vírgula ou ponto decimal (`1234,56`), com no máximo duas casas.
 
 | Tabela | Campos principais |
 |---|---|
-| `transactions_transaction` | `user` (FK), `kind` (`income`/`expense`), `amount` (> 0, `DecimalField`), `date`, `description` (até 200) |
+| `transactions_transaction` | `user` (FK), `kind` (`income`/`expense`), `amount` (> 0, `DecimalField`), `date`, `description` (até 200), `category` (FK anulável: obrigatória na despesa, vazia na entrada) |
+| `transactions_category` | `name` (até 40, único por usuário sem diferenciar maiúsculas), `icon` (chave de um ícone da Lucide), `color` (chave da paleta), `user` (FK; vazio nas 6 categorias padrão) |
+
+As categorias padrão (Alimentação, Transporte, Moradia, Lazer, Saúde, Outros) nascem por migration. Ícone
+e cor vêm de listas fixas em `transactions/appearance.py` (20 ícones e 8 cores); o banco guarda só as
+chaves. Os ícones são SVGs em `transactions/icons/`, desenhados inline pelo template tag `category_icon`
+na cor do tema, e as cores são classes `.cat-<chave>` em `frontend/style.css`. A categoria é escolhida num
+seletor flutuante (`static/js/category-select.js`, com o `<select>` nativo como base sem JavaScript).
+Excluir uma categoria em uso move as despesas dela para "Outros".
 
 O saldo atual não é guardado: é a soma das entradas menos a das despesas, calculada a cada consulta.
 Não há tela de saldo inicial: para partir de um saldo que já existia, registre uma Entrada (por exemplo,
 "Saldo inicial").
+
+### Créditos
+
+Os ícones das categorias são da [Lucide](https://lucide.dev) (`lucide-static` 1.52.0), sob a licença
+ISC. Os 20 arquivos usados estão em `transactions/icons/`, com o texto da licença em `LICENSE`.
 
 ### Problemas comuns
 

@@ -196,7 +196,7 @@ class TestCreate:
         assert "Entrada" in content
         assert "Despesa" in content
         assert checked_kinds(response) == []
-        assert "<select" not in content
+        assert '<select name="kind"' not in content
 
     def test_missing_kind_shows_the_error_next_to_the_buttons(self, logged_client):
         response = logged_client.post(reverse("transactions:create"), {**VALID, "kind": ""})

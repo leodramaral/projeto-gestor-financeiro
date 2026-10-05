@@ -1,0 +1,2 @@
+{# Selo arredondado com o ícone da categoria sobre o tom da cor. O nome vem sempre ao lado. #}
+{% load category_tags %}<span class="cat-{{ color }} cat-badge flex shrink-0 items-center justify-center rounded-lg {% if size == 'sm' %}h-8 w-8{% else %}h-10 w-10{% endif %}" aria-hidden="true">{% if size == 'sm' %}{% category_icon icon "h-4 w-4" %}{% else %}{% category_icon icon "h-5 w-5" %}{% endif %}</span>
