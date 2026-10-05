@@ -6,7 +6,8 @@ from django.utils import timezone
 
 from accounts.forms import StyledFormMixin
 
-from .models import Transaction
+from .appearance import COLORS, DEFAULT_COLOR, DEFAULT_ICON, ICONS
+from .models import Category, Transaction
 
 MIN_AMOUNT = Decimal("0.01")
 
@@ -51,7 +52,7 @@ class MoneyField(forms.DecimalField):
 class TransactionForm(StyledFormMixin, forms.ModelForm):
     class Meta:
         model = Transaction
-        fields = ("kind", "amount", "date", "description")
+        fields = ("kind", "category", "amount", "date", "description")
         widgets = {
             "date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
             "amount": forms.TextInput(),
@@ -71,10 +72,15 @@ class TransactionForm(StyledFormMixin, forms.ModelForm):
                 "required": "Informe a descrição.",
                 "max_length": "A descrição pode ter no máximo 200 caracteres.",
             },
+            "category": {"invalid_choice": "Escolha uma categoria da lista."},
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, user, **kwargs):
         super().__init__(*args, **kwargs)
+        category = self.fields["category"]
+        category.queryset = Category.objects.for_user(user)
+        category.empty_label = "Selecione…"
+        category.help_text = "Só despesas têm categoria."
         kind = self.fields["kind"]
         kind.choices = Transaction.Kind.choices
         # Radios become buttons (hidden input + styled label), so they do not take the input style.
@@ -93,5 +99,63 @@ class TransactionForm(StyledFormMixin, forms.ModelForm):
             raise forms.ValidationError("O valor deve ser maior que zero.", code="min_amount")
         return amount
 
+    def clean(self):
+        cleaned = super().clean()
+        kind = cleaned.get("kind")
+        if kind == Transaction.Kind.INCOME:
+            cleaned["category"] = None
+        elif kind == Transaction.Kind.EXPENSE and not cleaned.get("category"):
+            if "category" not in self.errors:
+                self.add_error("category", "Escolha a categoria da despesa.")
+        return cleaned
+
     def clean_description(self):
         return self.cleaned_data["description"].strip()
+
+
+class CategoryForm(StyledFormMixin, forms.ModelForm):
+    icon = forms.ChoiceField(
+        label="Ícone",
+        choices=[(i.key, i.label) for i in ICONS],
+        initial=DEFAULT_ICON,
+        widget=forms.RadioSelect,
+        error_messages={
+            "required": "Escolha um ícone.",
+            "invalid_choice": "Escolha um dos ícones da lista.",
+        },
+    )
+    color = forms.ChoiceField(
+        label="Cor",
+        choices=[(c.key, c.label) for c in COLORS],
+        initial=DEFAULT_COLOR,
+        widget=forms.RadioSelect,
+        error_messages={
+            "required": "Escolha uma cor.",
+            "invalid_choice": "Escolha uma das cores da lista.",
+        },
+    )
+
+    class Meta:
+        model = Category
+        fields = ("name", "icon", "color")
+        error_messages = {
+            "name": {
+                "required": "Informe o nome da categoria.",
+                "max_length": "O nome pode ter no máximo 40 caracteres.",
+            },
+        }
+
+    def __init__(self, *args, user, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
+        # Radios are drawn as pickers (hidden input + styled label), so no input style.
+        for name in ("icon", "color"):
+            self.fields[name].widget.attrs["class"] = "peer sr-only"
+        self.fields["name"].widget.attrs.update({"autocomplete": "off"})
+
+    def clean_name(self):
+        name = self.cleaned_data["name"].strip()
+        taken = Category.objects.for_user(self.user).filter(name__iexact=name)
+        if taken.exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError("Você já tem uma categoria com esse nome.", code="unique")
+        return name
