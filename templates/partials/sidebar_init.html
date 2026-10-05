@@ -1,0 +1,21 @@
+{# Guarda se a sidebar está recolhida (só no desktop, ≥1280px) para valer entre navegações. No celular o mesmo estado significa "gaveta aberta" e não é guardado. A classe `sidebar-collapsed` no <html> deixa o CSS desenhar a barra já recolhida antes da primeira pintura (sem animar); o Alpine assume e marca `sidebar-ready`. #}
+<script>
+  (function () {
+    var KEY = "sidebarCollapsed";
+    var DESKTOP = 1280;
+    window.sidebarSaved = function () {
+      try {
+        return window.innerWidth >= DESKTOP && JSON.parse(localStorage.getItem(KEY)) === true;
+      } catch (e) {
+        return false;
+      }
+    };
+    if (window.sidebarSaved()) document.documentElement.classList.add("sidebar-collapsed");
+    window.saveSidebar = function (collapsed) {
+      if (window.innerWidth < DESKTOP) return;
+      try {
+        localStorage.setItem(KEY, JSON.stringify(collapsed));
+      } catch (e) {}
+    };
+  })();
+</script>

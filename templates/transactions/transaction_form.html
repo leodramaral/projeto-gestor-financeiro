@@ -1,0 +1,27 @@
+{% extends base_template %}
+
+{% block title %}{% if object %}Editar lançamento{% else %}Novo lançamento{% endif %} · Gestor Financeiro{% endblock %}
+
+{% block content %}
+  {% if is_modal %}
+    <h2 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">{% if object %}Editar lançamento{% else %}Novo lançamento{% endif %}</h2>
+  {% elif object %}
+    {% include "partials/breadcrumb.html" with title="Editar lançamento" %}
+  {% else %}
+    {% include "partials/breadcrumb.html" with title="Novo lançamento" %}
+  {% endif %}
+
+  <div {% if not is_modal %}class="max-w-xl rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]"{% endif %}>
+    <form method="post" novalidate class="space-y-4">
+      {% csrf_token %}
+      {% include "partials/form_errors.html" %}
+      {% for field in form %}
+        {% if field.name == "kind" %}{% include "partials/choice_buttons.html" %}{% else %}{% include "partials/form_field.html" %}{% endif %}
+      {% endfor %}
+      <div class="flex items-center gap-3 pt-2">
+        <button type="submit" class="bg-brand-500 hover:bg-brand-600 h-11 rounded-lg px-4 text-sm font-medium text-white">Salvar</button>
+        <a href="{% url 'transactions:list' %}" data-modal-close class="text-sm text-gray-500 hover:underline dark:text-gray-400">Cancelar</a>
+      </div>
+    </form>
+  </div>
+{% endblock %}

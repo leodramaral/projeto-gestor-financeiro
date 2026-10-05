@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Lançamentos · Gestor Financeiro{% endblock %}
+
+{% block content %}
+  {% include "partials/breadcrumb.html" with title="Lançamentos" %}
+
+  {% for message in messages %}
+    <div class="mb-4">{% include "partials/alert.html" with title="Tudo certo" message=message %}</div>
+  {% endfor %}
+
+  <div class="mb-6 rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+    <p class="text-sm text-gray-500 dark:text-gray-400">Saldo atual</p>
+    <p class="text-title-sm font-semibold {% if balance < 0 %}text-error-500{% else %}text-gray-800 dark:text-white/90{% endif %}">R$ {{ balance|floatformat:"2g" }}</p>
+  </div>
+
+  {% if transactions %}
+    <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+      <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-6">
+        <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Últimos lançamentos</h3>
+        <a href="{% url 'transactions:create' %}" data-modal class="bg-brand-500 hover:bg-brand-600 inline-flex h-11 items-center rounded-lg px-4 text-sm font-medium text-white">Novo lançamento</a>
+      </div>
+
+      <div class="overflow-x-auto md:overflow-visible">
+        <table class="w-full text-left text-sm">
+          <thead>
+            <tr class="border-y border-gray-100 text-gray-500 dark:border-gray-800 dark:text-gray-400">
+              <th scope="col" class="px-3 py-3 font-normal sm:px-6">Descrição</th>
+              <th scope="col" class="hidden px-3 py-3 font-normal sm:table-cell sm:px-6">Data</th>
+              <th scope="col" class="px-3 py-3 font-normal sm:px-6">Valor</th>
+              <th scope="col" class="hidden px-3 py-3 font-normal md:table-cell md:px-6">Tipo</th>
+              <th scope="col" class="px-2 py-3 text-right font-normal sm:px-6"><span class="sr-only">Ações</span></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+            {% for item in transactions %}
+              <tr>
+                <td class="px-3 py-3 sm:px-6">
+                  <div class="flex items-center gap-3">
+                    {% if item.kind == 'income' %}
+                      <span class="bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500 flex h-10 w-10 shrink-0 items-center justify-center rounded-full" aria-hidden="true">
+                        <svg class="stroke-current" width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 19V5m0 0-6 6m6-6 6 6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                      </span>
+                    {% else %}
+                      <span class="bg-error-50 text-error-600 dark:bg-error-500/15 dark:text-error-500 flex h-10 w-10 shrink-0 items-center justify-center rounded-full" aria-hidden="true">
+                        <svg class="stroke-current" width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 5v14m0 0 6-6m-6 6-6-6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                      </span>
+                    {% endif %}
+                    <span class="min-w-0">
+                      <span class="block font-medium text-gray-800 dark:text-white/90">{{ item.description }}</span>
+                      <span class="block text-xs text-gray-500 sm:hidden dark:text-gray-400">{{ item.date|date:"d/m/Y" }}</span>
+                    </span>
+                  </div>
+                </td>
+                <td class="hidden px-3 py-3 whitespace-nowrap text-gray-500 sm:table-cell sm:px-6 dark:text-gray-400">{{ item.date|date:"d/m/Y" }}</td>
+                <td class="px-3 py-3 font-medium whitespace-nowrap sm:px-6 {% if item.kind == 'income' %}text-success-600{% else %}text-error-500{% endif %}">
+                  {% if item.kind == 'income' %}+{% else %}−{% endif %} R$ {{ item.amount|floatformat:"2g" }}
+                </td>
+                <td class="hidden px-3 py-3 md:table-cell md:px-6">
+                  {% if item.kind == 'income' %}
+                    <span class="bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500 text-theme-xs inline-flex rounded-full px-2 py-0.5 font-medium">{{ item.get_kind_display }}</span>
+                  {% else %}
+                    <span class="bg-error-50 text-error-600 dark:bg-error-500/15 dark:text-error-500 text-theme-xs inline-flex rounded-full px-2 py-0.5 font-medium">{{ item.get_kind_display }}</span>
+                  {% endif %}
+                </td>
+                <td class="px-2 py-3 text-right sm:px-6">
+                  <div class="relative inline-block text-left" x-data="{ open: false }" @keydown.escape.window="open = false" @click.outside="open = false">
+                    <button type="button" @click="open = !open" :aria-expanded="open" aria-haspopup="menu" aria-label="Ações do lançamento {{ item.description }}" class="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5">
+                      <svg class="fill-current" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M5.99 10.25a1.75 1.75 0 1 1 0 3.5 1.75 1.75 0 0 1 0-3.5Zm6 0a1.75 1.75 0 1 1 0 3.5 1.75 1.75 0 0 1 0-3.5Zm6 0a1.75 1.75 0 1 1 0 3.5 1.75 1.75 0 0 1 0-3.5Z" /></svg>
+                    </button>
+                    <div x-show="open" x-cloak x-transition.opacity role="menu" @click="open = false" class="shadow-theme-lg absolute right-0 z-20 mt-1 w-36 rounded-xl border border-gray-200 bg-white p-1.5 text-left dark:border-gray-800 dark:bg-gray-900">
+                      <a href="{% url 'transactions:update' item.pk %}" data-modal role="menuitem" class="flex w-full rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5">Editar</a>
+                      <a href="{% url 'transactions:delete' item.pk %}" data-modal role="menuitem" class="text-error-600 dark:text-error-500 flex w-full rounded-lg px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-white/5">Excluir</a>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if is_paginated %}
+        <nav class="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-5 py-4 sm:px-6 dark:border-gray-800" aria-label="Paginação">
+          {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" rel="prev" class="shadow-theme-xs inline-flex h-10 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/5">← <span class="hidden sm:inline">Anterior</span><span class="sr-only sm:hidden">Anterior</span></a>
+          {% else %}
+            <span aria-disabled="true" class="shadow-theme-xs inline-flex h-10 cursor-not-allowed items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">← <span class="hidden sm:inline">Anterior</span><span class="sr-only sm:hidden">Anterior</span></span>
+          {% endif %}
+
+          <ul class="order-last flex w-full items-center justify-center gap-1 sm:order-none sm:w-auto">
+            {% for number in page_numbers %}
+              <li>
+                {% if number == ellipsis %}
+                  <span class="flex h-10 w-10 items-center justify-center text-sm text-gray-500 dark:text-gray-400">…</span>
+                {% elif number == page_obj.number %}
+                  <span aria-current="page" class="bg-brand-50 text-brand-500 dark:bg-brand-500/15 dark:text-brand-400 flex h-10 w-10 items-center justify-center rounded-lg text-sm font-medium">{{ number }}</span>
+                {% else %}
+                  <a href="?page={{ number }}" class="flex h-10 w-10 items-center justify-center rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5">{{ number }}</a>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+
+          {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" rel="next" class="shadow-theme-xs inline-flex h-10 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/5"><span class="hidden sm:inline">Próxima</span><span class="sr-only sm:hidden">Próxima</span> →</a>
+          {% else %}
+            <span aria-disabled="true" class="shadow-theme-xs inline-flex h-10 cursor-not-allowed items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"><span class="hidden sm:inline">Próxima</span><span class="sr-only sm:hidden">Próxima</span> →</span>
+          {% endif %}
+        </nav>
+      {% endif %}
+    </div>
+  {% else %}
+    <div class="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center dark:border-gray-700 dark:bg-white/[0.03]">
+      <p class="text-gray-800 dark:text-white/90">Você ainda não tem lançamentos.</p>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Registre sua primeira entrada ou despesa.</p>
+      <a href="{% url 'transactions:create' %}" data-modal class="bg-brand-500 hover:bg-brand-600 mt-4 inline-flex h-11 items-center rounded-lg px-4 text-sm font-medium text-white">Registrar o primeiro lançamento</a>
+    </div>
+  {% endif %}
+
+  <dialog id="transaction-modal" class="backdrop:bg-gray-900/60 shadow-theme-lg m-auto w-[calc(100%-2rem)] max-w-xl rounded-2xl border border-gray-200 bg-white p-0 text-left dark:border-gray-800 dark:bg-gray-900">
+    <div id="transaction-modal-body" class="p-6"></div>
+  </dialog>
+  <script src="{% static 'js/transaction-modal.js' %}" defer></script>
+{% endblock %}

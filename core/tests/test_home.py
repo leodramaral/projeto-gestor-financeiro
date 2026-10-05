@@ -12,9 +12,26 @@ def logged_client(client):
 
 
 @pytest.mark.django_db
-def test_home_renders_base_layout(logged_client):
-    """The dashboard renders the base layout with its sidebar and header partials."""
+def test_home_redirects_to_transaction_list(logged_client):
+    """The start page sends the signed-in user to the transaction list."""
     response = logged_client.get(reverse("home"))
+
+    assert response.status_code == 302
+    assert response.url == reverse("transactions:list")
+
+
+@pytest.mark.django_db
+def test_home_requires_login(client):
+    response = client.get(reverse("home"))
+
+    assert response.status_code == 302
+    assert response.url.startswith(reverse("accounts:login"))
+
+
+@pytest.mark.django_db
+def test_list_renders_base_layout(logged_client):
+    """The list renders the base layout with its sidebar and header partials."""
+    response = logged_client.get(reverse("transactions:list"))
 
     assert response.status_code == 200
     templates = [t.name for t in response.templates]
@@ -22,8 +39,8 @@ def test_home_renders_base_layout(logged_client):
     assert "partials/sidebar.html" in templates
     assert "partials/header.html" in templates
     content = response.content.decode()
-    assert "Olá, mundo" in content
     assert "<main>" in content
+    assert 'aria-current="page"' in content
 
 
 def test_pytest_uses_test_settings():

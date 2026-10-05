@@ -17,8 +17,8 @@ financeira. O escopo está dividido em duas fases, acompanhadas pelas Issues do 
   deploy em cloud, documentação final e pitch.
 
 **Estado atual:** fundação pronta (Django, PostgreSQL, Docker, layout
-[TailAdmin](https://tailadmin.com), testes e CI) e autenticação de usuários. O domínio financeiro
-ainda **não foi modelado**. As funcionalidades entram uma a uma, cada uma como uma *change* do
+[TailAdmin](https://tailadmin.com), testes e CI), autenticação de usuários e o registro de lançamentos (entradas e despesas).
+O resumo de status financeiro e o pós-MVP ainda não existem. As funcionalidades entram uma a uma, cada uma como uma *change* do
 OpenSpec (ver [Fluxo de desenvolvimento](#parte-2--fluxo-de-desenvolvimento)); o que o sistema faz
 hoje está em [`openspec/specs/`](openspec/specs/).
 
@@ -166,7 +166,8 @@ verde-azulado **jade**. Tudo vem de poucos pontos:
 ```
 config/            projeto Django: urls, wsgi/asgi e settings/{base,dev,test,prod}.py
 accounts/          usuários: modelo `User`, cadastro, confirmação por e-mail, login/logout e testes
-core/              app Django inicial (tela home), envio de e-mail (`emailing.py`) e seus testes
+transactions/      lançamentos: model `Transaction`, telas e testes
+core/              app Django inicial (home, que leva à listagem), envio de e-mail (`emailing.py`) e seus testes
 templates/         base.html, parciais (sidebar, header...), telas e e-mails (`email/`)
 static/            imagens versionadas; static/dist/ é gerado e não versionado
 frontend/          CSS-fonte (Tailwind) e licença do TailAdmin
@@ -175,6 +176,32 @@ openspec/          specs vigentes (specs/) e changes em andamento/arquivadas (ch
 .claude/ .agents/  comandos e skills dos agentes de IA usados no fluxo
 AGENTS.md          convenções, fronteiras e armadilhas (fonte única para agentes)
 ```
+
+### Lançamentos e modelo de dados
+
+Depois de entrar, `/` leva à listagem de lançamentos (`/transactions/`). Rotas, todas exigindo login:
+
+| Rota | O que faz |
+|---|---|
+| `/transactions/` | lista paginada (20 por página, data decrescente) e saldo atual |
+| `/transactions/new/` | novo lançamento |
+| `/transactions/<id>/edit/` | edita um lançamento |
+| `/transactions/<id>/delete/` | pede confirmação e, no envio, exclui |
+
+Novo, editar e excluir abrem numa janela modal sobre a listagem (`static/js/transaction-modal.js`); as
+mesmas rotas continuam sendo páginas completas quando abertas direto ou sem JavaScript. O campo de
+valor tem máscara (`1.234,56`) e o tipo é escolhido por dois botões.
+
+Cada usuário só acessa os próprios lançamentos; o de outro usuário responde 404. O valor aceita
+vírgula ou ponto decimal (`1234,56`), com no máximo duas casas.
+
+| Tabela | Campos principais |
+|---|---|
+| `transactions_transaction` | `user` (FK), `kind` (`income`/`expense`), `amount` (> 0, `DecimalField`), `date`, `description` (até 200) |
+
+O saldo atual não é guardado: é a soma das entradas menos a das despesas, calculada a cada consulta.
+Não há tela de saldo inicial: para partir de um saldo que já existia, registre uma Entrada (por exemplo,
+"Saldo inicial").
 
 ### Problemas comuns
 

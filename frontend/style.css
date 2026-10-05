@@ -372,6 +372,28 @@
   display: flex;
 }
 
+/* Sidebar recolhida já na primeira pintura. O Alpine só aplica o estado depois de carregar; sem isto a
+   barra nasce larga e a transição a recolhe a cada página. `sidebar-collapsed` vem do localStorage
+   (partials/sidebar_init.html) e deixa de valer quando o Alpine marca `sidebar-ready`. Espelha as classes
+   que o Alpine aplica em `sidebarToggle` (w-22.5, ícone no lugar da logo, sem textos). */
+@media (min-width: 1280px) {
+  html.sidebar-collapsed:not(.sidebar-ready) .sidebar {
+    width: 5.625rem;
+  }
+  html.sidebar-collapsed:not(.sidebar-ready) .sidebar .sidebar-header {
+    justify-content: center;
+  }
+  html.sidebar-collapsed:not(.sidebar-ready) .sidebar .logo,
+  html.sidebar-collapsed:not(.sidebar-ready) .sidebar .menu-group-title,
+  html.sidebar-collapsed:not(.sidebar-ready) .sidebar .menu-item-text {
+    display: none;
+  }
+  html.sidebar-collapsed:not(.sidebar-ready) .sidebar .logo-icon,
+  html.sidebar-collapsed:not(.sidebar-ready) .sidebar .menu-group-icon {
+    display: block;
+  }
+}
+
 @media (min-width: 1280px) {
   aside.sidebar,
   .sidebar {

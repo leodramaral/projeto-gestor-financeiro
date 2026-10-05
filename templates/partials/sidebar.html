@@ -56,9 +56,10 @@
 
         <ul class="mb-6 flex flex-col gap-1">
           <li>
-            <a href="{% url 'home' %}" class="menu-item group menu-item-active" aria-current="page">
+            {% with active=request.resolver_match.app_name %}
+            <a href="{% url 'transactions:list' %}" class="menu-item group {% if active == 'transactions' %}menu-item-active{% else %}menu-item-inactive{% endif %}"{% if active == 'transactions' %} aria-current="page"{% endif %}>
               <svg
-                class="menu-item-icon-active" width="24"
+                class="{% if active == 'transactions' %}menu-item-icon-active{% else %}menu-item-icon-inactive{% endif %}" width="24"
                 height="24"
                 viewBox="0 0 24 24"
                 fill="none"
@@ -71,8 +72,9 @@
                   fill="currentColor"
                 />
               </svg>
-              <span class="menu-item-text" :class="sidebarToggle ? 'xl:hidden' : ''">Início</span>
+              <span class="menu-item-text" :class="sidebarToggle ? 'xl:hidden' : ''">Lançamentos</span>
             </a>
+            {% endwith %}
           </li>
         </ul>
       </div>
