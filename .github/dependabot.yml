@@ -5,8 +5,10 @@
 # major chega em PR próprio, para ser revisada. O título segue o padrão do projeto (`chore(deps)`).
 #
 # As faixas do `pyproject.toml` NÃO seguram o Dependabot: ele reescreveu `django>=5.2,<5.3` para a
-# 6.1 no primeiro PR. A linha LTS adotada é fixada pelos `ignore` abaixo (Django 5.2, Node 22).
-# Para adotar outra versão, remova a entrada de `ignore` e faça a migração numa change própria.
+# 6.1 no primeiro PR. As linhas adotadas são fixadas pelos `ignore` abaixo: Django 5.2, Node 22,
+# PostgreSQL 16 e Python 3.12. Para adotar outra versão, remova a entrada de `ignore` e faça a
+# migração numa change própria (no Postgres, uma migração dos dados: a imagem 18 nem sobe com o
+# volume atual).
 version: 2
 
 updates:
@@ -52,6 +54,10 @@ updates:
     commit-message:
       prefix: "chore(deps)"
     labels: ["dependencies"]
+    # A tag `3.12-slim` já acompanha os patches da 3.12; cada minor é uma versão de linguagem nova.
+    ignore:
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
 
   # `docker-compose.yml`: node, postgres e mailpit.
   - package-ecosystem: "docker-compose"
@@ -63,9 +69,13 @@ updates:
     commit-message:
       prefix: "chore(deps)"
     labels: ["dependencies"]
-    # A imagem `node:22-alpine` já acompanha os patches da 22; a próxima major é decisão humana.
+    # `node:22-alpine` e `postgres:16-alpine` já acompanham os patches das suas linhas.
     ignore:
       - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
+      # O banco guarda dados: a major (16 → 18) exige migração, e a imagem 18 não sobe com o volume
+      # montado em /var/lib/postgresql/data.
+      - dependency-name: "postgres"
         update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
