@@ -520,3 +520,8 @@
 .cat-icon {
   stroke-width: 1.75;
 }
+
+/* Bolinha de cor da categoria (legenda da rosca do painel). */
+.cat-dot {
+  background-color: var(--cat-fill);
+}
