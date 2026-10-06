@@ -448,8 +448,10 @@ Duas ferramentas do GitHub complementam o CI. Nenhuma usa segredo do repositóri
   não espera a semana.
 - **Versões fixadas por `ignore`:** o Dependabot **não** respeita a faixa do `pyproject.toml` (ele
   reescreveu `django>=5.2,<5.3` para a 6.1 no primeiro PR). O projeto segue linhas LTS, então o
-  `dependabot.yml` ignora major e minor do **Django** (fica na 5.2, só patches) e a major do
-  **Node** (fica na 22). Para adotar uma versão nova, remova a entrada de `ignore` do arquivo e
+  `dependabot.yml` ignora major e minor do **Django** (fica na 5.2, só patches), a major do
+  **Node** (fica na 22), a major do **PostgreSQL** (fica na 16) e major e minor do **Python** da
+  imagem base (fica na 3.12). No Postgres a troca de major é uma migração dos dados: a imagem 18 nem
+  sobe com o volume atual. Para adotar uma versão nova, remova a entrada de `ignore` do arquivo e
   faça a migração numa change própria.
 - **CodeQL:** roda em todo Pull Request, em todo push na `main` e uma vez por semana (consultas
   novas podem apontar problemas em código que não mudou). Ele rastreia o caminho do dado, da entrada
