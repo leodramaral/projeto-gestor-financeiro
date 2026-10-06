@@ -1,5 +1,8 @@
-{% extends "base_auth.html" %}
+{% extends "base_auth_split.html" %}
 {% block title %}Criar conta · Gestor Financeiro{% endblock %}
+{% block back %}
+  <a href="{% url 'accounts:login' %}" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"><span aria-hidden="true">←</span> Voltar ao login</a>
+{% endblock %}
 {% block content %}
   <h1 class="mb-1 text-title-sm font-semibold text-gray-800 dark:text-white/90">Criar conta</h1>
   <p class="mb-6 text-sm text-gray-500 dark:text-gray-400">Informe seus dados. Enviaremos um e-mail para confirmar a conta.</p>

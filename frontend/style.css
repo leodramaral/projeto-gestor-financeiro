@@ -415,6 +415,15 @@
   @apply border-brand-500 bg-brand-500;
 }
 
+/* Grade decorativa das telas de visitante (própria, sem asset do TailAdmin). */
+.auth-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--color-brand-300) 14%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--color-brand-300) 14%, transparent) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+}
+
 /* Cores das categorias: lista fixa (transactions/appearance.py). Cada classe define as variáveis do
    preenchimento, do fundo do chip e do texto do chip, no modo claro e no escuro. */
 .cat-jade {
