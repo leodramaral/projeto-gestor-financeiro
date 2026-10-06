@@ -1,0 +1,36 @@
+name: CodeQL
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  # Rodada semanal (segunda-feira): o GitHub publica consultas novas sem que o código mude, e um
+  # trecho limpo ontem pode gerar alerta hoje. Sem isto, um projeto parado nunca seria reavaliado.
+  schedule:
+    - cron: "17 6 * * 1"
+
+# Um push novo na mesma branch cancela a análise anterior, que já está desatualizada.
+concurrency:
+  group: codeql-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# O workflow não ganha permissão nenhuma por padrão: a escrita de `security-events` fica só no job.
+permissions: {}
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: python
+          # Python é interpretado: não há etapa de build.
+          build-mode: none
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:python"

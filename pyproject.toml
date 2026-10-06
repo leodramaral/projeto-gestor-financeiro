@@ -26,7 +26,12 @@ target-version = "py312"
 extend-exclude = ["*/migrations/*"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "DJ", "C90"]
+select = ["E", "F", "I", "UP", "B", "DJ", "C90", "S"]
+
+[tool.ruff.lint.per-file-ignores]
+# Testes usam `assert` por natureza (S101), senhas de fixture (S105/S106/S107) e leem XML do próprio
+# repositório (S314): nada disso é risco de produção. Código fora de testes não tem isenção.
+"**/tests/**" = ["S101", "S105", "S106", "S107", "S314"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10

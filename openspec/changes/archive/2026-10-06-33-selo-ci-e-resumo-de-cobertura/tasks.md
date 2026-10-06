@@ -14,4 +14,4 @@
 
 - [x] 3.1 Simular teste quebrado localmente (sem commitar) e confirmar que o comando do passo 1.1 sai com código diferente de zero e ainda grava a tabela
 - [x] 3.2 Rodar `uvx pre-commit run --all-files` e `openspec validate --all` e confirmar sucesso
-- [ ] 3.3 Abrir o PR e verificar na aba Summary da execução que a tabela aparece e que o selo do README mostra o estado do CI
+- [x] 3.3 Abrir o PR e verificar na aba Summary da execução que a tabela aparece e que o selo do README mostra o estado do CI
