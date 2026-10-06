@@ -25,7 +25,8 @@ def category_icon(key, css="h-5 w-5"):
     if key not in ICON_BY_KEY:
         return ""
     attrs = f'class="cat-icon {css}" aria-hidden="true" focusable="false"'
-    return mark_safe(_svg(key).replace("<svg ", f"<svg {attrs} ", 1))
+    # Safe: `key` is in ICON_BY_KEY (checked above), so the markup comes from our own SVG files.
+    return mark_safe(_svg(key).replace("<svg ", f"<svg {attrs} ", 1))  # noqa: S308
 
 
 def _color_key(category):

@@ -1,0 +1,71 @@
+# Atualizações de versão do Dependabot. Os alertas e as atualizações de segurança são ajuste do
+# repositório (Settings → Advanced Security), não deste arquivo.
+#
+# Semanal, na segunda-feira: um PR por ecossistema com as atualizações de minor e patch agrupadas;
+# major chega em PR próprio, para ser revisada. O título segue o padrão do projeto (`chore(deps)`).
+# O Dependabot respeita as faixas do `pyproject.toml` (ex.: `django>=5.2,<5.3` só recebe patches).
+version: 2
+
+updates:
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "America/Sao_Paulo"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    labels: ["dependencies"]
+    groups:
+      python-minor-patch:
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "America/Sao_Paulo"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    labels: ["dependencies"]
+    groups:
+      npm-minor-patch:
+        update-types: ["minor", "patch"]
+
+  # `docker/Dockerfile`: imagem base do Python e a do uv.
+  - package-ecosystem: "docker"
+    directory: "/docker"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "America/Sao_Paulo"
+    commit-message:
+      prefix: "chore(deps)"
+    labels: ["dependencies"]
+
+  # `docker-compose.yml`: node, postgres e mailpit.
+  - package-ecosystem: "docker-compose"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "America/Sao_Paulo"
+    commit-message:
+      prefix: "chore(deps)"
+    labels: ["dependencies"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "America/Sao_Paulo"
+    commit-message:
+      prefix: "chore(deps)"
+    labels: ["dependencies"]
+    groups:
+      actions-minor-patch:
+        update-types: ["minor", "patch"]

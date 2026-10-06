@@ -364,6 +364,10 @@ CI tem três jobs, executados em paralelo e independentes entre si.
   linha. Ferramenta: Ruff.
 - **Complexidade ciclomática:** número de caminhos de execução de uma função; cada `if`, `for` ou
   `and` adiciona um. O limite é 10. Funções acima disso são reprovadas e devem ser divididas.
+- **Segurança no lint:** as regras `S` do Ruff (conjunto do Bandit) apontam padrões inseguros, como
+  senha escrita no código, `mark_safe`, hash fraco e `shell=True`. Testes são isentos de `assert` e
+  de senhas de fixture; em código de produção, um uso comprovadamente seguro leva
+  `# noqa: S<código>` com o motivo no comentário acima.
 - **Higiene de arquivos:** espaço ao final da linha, ausência de quebra de linha final, YAML
   inválido, marcador de conflito de merge e chave privada versionada.
 
@@ -403,6 +407,7 @@ GitHub pode exigir aprovação de um mantenedor antes da primeira execução.
 | `quality` | Import fora de ordem, formatação, função complexa | `uvx pre-commit run --all-files` aplica as correções automáticas. Funções complexas são divididas manualmente. |
 | `tests` (teste) | Teste reprovado | `docker compose exec web pytest`; a mensagem indica o teste e a asserção. |
 | `tests` (cobertura) | Cobertura abaixo do piso | Adicionar testes ao código novo. A coluna `Missing` do log lista as linhas sem cobertura. |
+| `quality` (segurança) | Regra `S` do Ruff em código de produção | Corrigir o padrão apontado; se o uso for seguro, `# noqa: S<código>` com o motivo. |
 | `openspec` | Spec ou change malformada | `openspec validate --all` indica o arquivo e a linha. |
 
 ### Pre-commit
@@ -427,6 +432,28 @@ uvx pre-commit run --all-files
 
 As regras estão em [`.pre-commit-config.yaml`](.pre-commit-config.yaml) e, para o Ruff, no
 `pyproject.toml`. O CI usa os mesmos arquivos; portanto, o que passa localmente passa no CI.
+
+### Segurança: Dependabot e CodeQL
+
+Duas ferramentas do GitHub complementam o CI. Nenhuma usa segredo do repositório.
+
+| Ferramenta | Olha | Configuração | Onde ver |
+|---|---|---|---|
+| **Dependabot** | Dependências de terceiros (Python, npm, Docker, Actions) | [`.github/dependabot.yml`](.github/dependabot.yml) | PRs `chore(deps)` e aba **Security → Dependabot** |
+| **CodeQL** | Vulnerabilidades no código do projeto, como injeção e XSS | [`.github/workflows/codeql.yml`](.github/workflows/codeql.yml) | Aba **Security → Code scanning** e anotações no PR |
+
+- **Dependabot:** toda segunda-feira abre PRs de atualização, com minor e patch agrupados por
+  ecossistema; versão major vem em PR próprio. Cada PR passa pelo CI antes do merge. As faixas do
+  `pyproject.toml` são respeitadas (por exemplo, Django fica na 5.2). Quando uma versão em uso tem
+  vulnerabilidade publicada, o alerta aparece na aba Security e o PR de correção não espera a semana.
+- **CodeQL:** roda em todo Pull Request, em todo push na `main` e uma vez por semana (consultas
+  novas podem apontar problemas em código que não mudou). Ele rastreia o caminho do dado, da entrada
+  do usuário até o destino, o que o lint não faz.
+- **Os achados não bloqueiam o merge:** a `main` não tem proteção de branch, então a regra é de
+  convenção, como a do CI vermelho. Antes de mesclar, leia os alertas do PR.
+- **Falso positivo:** abra o alerta em **Security → Code scanning**, escolha **Dismiss alert** e
+  informe o motivo (falso positivo, usado só em testes ou risco aceito) com um comentário. Assim a
+  decisão fica registrada e visível para quem revisar depois.
 
 ### Reprodução local do CI
 
