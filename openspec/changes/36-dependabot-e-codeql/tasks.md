@@ -13,7 +13,7 @@
 ## 3. CodeQL
 
 - [x] 3.1 Criar `.github/workflows/codeql.yml` (PR, push na `main` e cron semanal, linguagem `python`, `security-events: write` e `contents: read` só no job); verificar o YAML com o pre-commit e confirmar que o `ci.yml` não ganhou permissões
-- [ ] 3.2 Confirmar no repositório da action a major vigente de `github/codeql-action` e usá-la; verificar que o workflow roda sem erro de versão no PR
+- [x] 3.2 Confirmar no repositório da action a major vigente de `github/codeql-action` e usá-la; verificar que o workflow roda sem erro de versão no PR
 
 ## 4. Regras S do Ruff
 
@@ -27,5 +27,5 @@
 ## 6. Verificação
 
 - [x] 6.1 Rodar `uvx pre-commit run --all-files` e `openspec validate --all` e confirmar sucesso
-- [ ] 6.2 Abrir o PR e verificar que o job do CodeQL roda e conclui, e que a aba Security → Code scanning aparece com a análise
+- [x] 6.2 Abrir o PR e verificar que o job do CodeQL roda e conclui, e que a aba Security → Code scanning aparece com a análise
 - [ ] 6.3 Depois do merge, verificar em Insights → Dependency graph → Dependabot que não há erro de configuração e que a primeira rodada abre PRs `chore(deps)`; só então arquivar esta change

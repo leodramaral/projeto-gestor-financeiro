@@ -29,7 +29,7 @@ SQL ou um XSS só seria pego na revisão humana. Origem: Issue #36.
   decisão do projeto: a task 3.3 daquela change só podia ser provada depois do PR #35.
 
 Fora do escopo: análise de JavaScript,
-proteção de branch ou rulesets que tornem os checks obrigatórios.
+tornar o CodeQL um check obrigatório no ruleset da `main`.
 
 ## Capabilities
 

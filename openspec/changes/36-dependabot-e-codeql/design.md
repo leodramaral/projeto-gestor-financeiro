@@ -2,8 +2,11 @@
 
 ## Context
 
-- O repositório é **público**, sem proteção de branch na `main` (a API devolve 404 para
-  `branches/main/protection`); "não mesclar com CI vermelho" é regra de convenção do `AGENTS.md`.
+- O repositório é **público**. A `main` tem um ruleset ativo: PR obrigatório com 1 aprovação, sem
+  deleção, sem force push, histórico linear e os checks de status `quality`, `tests` e `openspec`
+  obrigatórios. O CodeQL **não** faz parte dos checks exigidos. (Esse ruleset foi ajustado pelo
+  dono do repositório durante esta change; antes ele não exigia checks. A API de proteção clássica
+  devolve 404 mesmo assim, porque o ruleset aparece só em `repos/<repo>/rulesets`.)
 - `dependabot_security_updates` está desabilitado; `secret_scanning` e a proteção de push estão
   habilitados.
 - Fontes de dependência: `pyproject.toml` + `uv.lock` (Python), `package.json` + `package-lock.json`
@@ -26,7 +29,7 @@
 - Ter o CodeQL publicando achados em Security e no PR, com permissão mínima.
 
 **Non-Goals:**
-- Tornar o CodeQL ou o Dependabot checks obrigatórios (exigiria proteção de branch ou ruleset).
+- Tornar o CodeQL ou o Dependabot checks obrigatórios (exigiria incluí-los nos checks obrigatórios do ruleset da `main`).
 - Analisar JavaScript (só há scripts de build do Tailwind/Alpine) ou ampliar o conjunto de consultas.
 
 ## Decisions
@@ -52,9 +55,9 @@
   comportamento versionado nem revisável em PR.
 - **Versão das Actions:** usar a major vigente de `github/codeql-action` no momento de implementar
   (confirmar no repositório da action); o próprio Dependabot passa a mantê-la atualizada.
-- **Não bloqueante.** Sem proteção de branch, "check obrigatório" não existe no GitHub; o resultado
-  fica visível e a regra continua sendo de convenção. Quando o time quiser bloquear, é uma change
-  de ruleset à parte.
+- **CodeQL não bloqueante por ora.** O ruleset exige só os três jobs do CI; o CodeQL fica visível
+  mas sem travar o merge, até se conhecer o ruído real. Exigi-lo depois é acrescentar a regra de
+  *code scanning* ao ruleset, que pode bloquear só por severidade.
 - **Falso positivo:** descartar o alerta em Code scanning com motivo e comentário. Só se o ruído
   se repetir, criar `.github/codeql/codeql-config.yml` com `paths-ignore` para testes.
 - **Regras `S` no `select`, com `per-file-ignores` para `**/tests/**`** (`S101`, `S105`, `S106`,
@@ -77,11 +80,12 @@
 - [Falso positivo futuro em produção] → `noqa` com justificativa, revisado no PR.
 - [`dependabot.yml` inválido não falha o CI] → conferir a aba Insights → Dependency graph →
   Dependabot após o merge, que mostra o erro de configuração.
-- [Não há proteção de branch] → o risco de mesclar com achado aberto continua dependendo do
-  revisor, como já ocorre com o CI vermelho.
+- [O CodeQL não é check obrigatório] → o risco de mesclar com achado aberto depende do revisor; a
+  aprovação obrigatória do PR é a barreira humana, e os três jobs do CI já travam o merge.
 - [`dependabot_security_updates` exige admin do repositório] → a task correspondente pede
   confirmação antes de alterar a configuração.
 
 ## Open Questions
 
-- Proteção de branch ou ruleset para exigir CI e CodeQL no merge: vale uma Issue à parte, depois.
+- Exigir o CodeQL (por severidade) no ruleset da `main`, depois de algumas semanas de uso: fica para
+  uma decisão à parte.

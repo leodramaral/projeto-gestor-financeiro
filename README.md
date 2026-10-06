@@ -449,8 +449,8 @@ Duas ferramentas do GitHub complementam o CI. Nenhuma usa segredo do repositóri
 - **CodeQL:** roda em todo Pull Request, em todo push na `main` e uma vez por semana (consultas
   novas podem apontar problemas em código que não mudou). Ele rastreia o caminho do dado, da entrada
   do usuário até o destino, o que o lint não faz.
-- **Os achados não bloqueiam o merge:** a `main` não tem proteção de branch, então a regra é de
-  convenção, como a do CI vermelho. Antes de mesclar, leia os alertas do PR.
+- **Os achados não bloqueiam o merge:** o ruleset da `main` exige os jobs `quality`, `tests` e
+  `openspec`, mas não o CodeQL, então a decisão sobre um alerta é do revisor. Antes de mesclar, leia os alertas do PR.
 - **Falso positivo:** abra o alerta em **Security → Code scanning**, escolha **Dismiss alert** e
   informe o motivo (falso positivo, usado só em testes ou risco aceito) com um comentário. Assim a
   decisão fica registrada e visível para quem revisar depois.
@@ -465,8 +465,8 @@ openspec validate --all                                           # job openspec
 
 ### Perguntas frequentes
 
-**O CI bloqueia o merge?** Somente se a *proteção de branch* exigir os três checks. Por regra do
-projeto, não se faz merge com o CI reprovado.
+**O CI bloqueia o merge?** Sim: o ruleset da `main` exige os jobs `quality`, `tests` e `openspec`
+aprovados, além de um Pull Request com uma aprovação. O CodeQL não é exigido.
 
 **É possível desativar uma regra do lint?** Apenas com justificativa. A exceção é registrada no
 `pyproject.toml`, com comentário explicando o motivo, e avaliada no Pull Request.
