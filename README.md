@@ -20,13 +20,12 @@ financeira. O escopo está dividido em duas fases, acompanhadas pelas Issues do 
 
 **Estado atual:** fundação pronta (Django, PostgreSQL, Docker, layout
 [TailAdmin](https://tailadmin.com), testes e CI), autenticação de usuários e o registro de lançamentos (entradas e despesas): o MVP está completo.
-O pós-MVP, incluindo o resumo de status financeiro (que passou para o painel da Issue #6), ainda não
-existe. As funcionalidades entram uma a uma, cada uma como uma *change* do
+O pós-MVP já tem a categorização de custos e o painel com gráficos (Issue #6). As funcionalidades entram uma a uma, cada uma como uma *change* do
 OpenSpec (ver [Fluxo de desenvolvimento](#parte-2--fluxo-de-desenvolvimento)); o que o sistema faz
 hoje está em [`openspec/specs/`](openspec/specs/).
 
-**Stack:** Python 3.12, Django 5.2 (templates no servidor, sem SPA), PostgreSQL 16, Tailwind CSS 4
-e Alpine.js. Tudo roda em Docker.
+**Stack:** Python 3.12, Django 5.2 (templates no servidor, sem SPA), PostgreSQL 16, Tailwind CSS 4,
+Alpine.js e Chart.js (MIT, servido localmente). Tudo roda em Docker.
 
 ---
 
@@ -142,7 +141,7 @@ db   ──(healthcheck ok)───────┘
 
 | Serviço | Imagem | Papel |
 |---|---|---|
-| `css` | `node:22-alpine` | Roda `npm ci && npm run build`: compila o Tailwind e copia o Alpine.js para `static/dist/`, e **termina**. O `web` só sobe depois que ele conclui. |
+| `css` | `node:22-alpine` | Roda `npm ci && npm run build`: compila o Tailwind e copia o Alpine.js e o Chart.js para `static/dist/`, e **termina**. O `web` só sobe depois que ele conclui. |
 | `db` | `postgres:16-alpine` | Banco de dados, com volume nomeado `pgdata` (os dados sobrevivem a `down`). Tem *healthcheck* (`pg_isready`), então o `web` espera o banco aceitar conexões. |
 | `mailpit` | `axllent/mailpit` | Caixa de entrada fake para dev: recebe todo e-mail da aplicação (SMTP em `mailpit:1025`, só na rede do Compose) e o exibe em <http://127.0.0.1:8025>. Sem volume: as mensagens somem ao recriar o contêiner. Nada sai da máquina. |
 | `web` | build de `docker/Dockerfile` | Aplica as migrações (`migrate`) e inicia o `runserver`. O código é montado em `/app`, então editar um arquivo recarrega a aplicação sem rebuild. |
@@ -182,10 +181,15 @@ AGENTS.md          convenções, fronteiras e armadilhas (fonte única para agen
 
 ### Lançamentos e modelo de dados
 
-Depois de entrar, `/` leva à listagem de lançamentos (`/transactions/`). Rotas, todas exigindo login:
+Depois de entrar, `/` abre o **Painel**: saldo atual com mensagem de status, entradas, despesas e taxa
+de economia do mês, gráficos (gastos por categoria, fluxo de caixa e evolução do saldo, com
+[Chart.js](https://www.chartjs.org), MIT) e os últimos lançamentos. Tudo é calculado no servidor só com os
+lançamentos de quem está logado (`transactions/dashboard.py`). A listagem fica em `/transactions/`.
+Rotas, todas exigindo login:
 
 | Rota | O que faz |
 |---|---|
+| `/` | Painel: saldo, cartões do mês, gráficos e últimos lançamentos |
 | `/transactions/` | lista paginada (20 por página, data decrescente) e saldo atual; `?category=<id>` filtra por categoria |
 | `/transactions/new/` | novo lançamento |
 | `/transactions/<id>/edit/` | edita um lançamento |

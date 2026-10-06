@@ -12,12 +12,12 @@ def logged_client(client):
 
 
 @pytest.mark.django_db
-def test_home_redirects_to_transaction_list(logged_client):
-    """The start page sends the signed-in user to the transaction list."""
+def test_home_is_the_dashboard(logged_client):
+    """The start page is the dashboard, not a redirect."""
     response = logged_client.get(reverse("home"))
 
-    assert response.status_code == 302
-    assert response.url == reverse("transactions:list")
+    assert response.status_code == 200
+    assert "core/home.html" in [t.name for t in response.templates]
 
 
 @pytest.mark.django_db
