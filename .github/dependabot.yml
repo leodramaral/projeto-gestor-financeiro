@@ -3,7 +3,10 @@
 #
 # Semanal, na segunda-feira: um PR por ecossistema com as atualizações de minor e patch agrupadas;
 # major chega em PR próprio, para ser revisada. O título segue o padrão do projeto (`chore(deps)`).
-# O Dependabot respeita as faixas do `pyproject.toml` (ex.: `django>=5.2,<5.3` só recebe patches).
+#
+# As faixas do `pyproject.toml` NÃO seguram o Dependabot: ele reescreveu `django>=5.2,<5.3` para a
+# 6.1 no primeiro PR. A linha LTS adotada é fixada pelos `ignore` abaixo (Django 5.2, Node 22).
+# Para adotar outra versão, remova a entrada de `ignore` e faça a migração numa change própria.
 version: 2
 
 updates:
@@ -20,6 +23,10 @@ updates:
     groups:
       python-minor-patch:
         update-types: ["minor", "patch"]
+    # Fica na linha LTS (5.2): só patches da 5.2 chegam.
+    ignore:
+      - dependency-name: "django"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
 
   - package-ecosystem: "npm"
     directory: "/"
@@ -56,6 +63,10 @@ updates:
     commit-message:
       prefix: "chore(deps)"
     labels: ["dependencies"]
+    # A imagem `node:22-alpine` já acompanha os patches da 22; a próxima major é decisão humana.
+    ignore:
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
     directory: "/"

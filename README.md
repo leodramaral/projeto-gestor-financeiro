@@ -443,9 +443,14 @@ Duas ferramentas do GitHub complementam o CI. Nenhuma usa segredo do repositóri
 | **CodeQL** | Vulnerabilidades no código do projeto, como injeção e XSS | [`.github/workflows/codeql.yml`](.github/workflows/codeql.yml) | Aba **Security → Code scanning** e anotações no PR |
 
 - **Dependabot:** toda segunda-feira abre PRs de atualização, com minor e patch agrupados por
-  ecossistema; versão major vem em PR próprio. Cada PR passa pelo CI antes do merge. As faixas do
-  `pyproject.toml` são respeitadas (por exemplo, Django fica na 5.2). Quando uma versão em uso tem
-  vulnerabilidade publicada, o alerta aparece na aba Security e o PR de correção não espera a semana.
+  ecossistema; versão major vem em PR próprio. Cada PR passa pelo CI antes do merge. Quando uma
+  versão em uso tem vulnerabilidade publicada, o alerta aparece na aba Security e o PR de correção
+  não espera a semana.
+- **Versões fixadas por `ignore`:** o Dependabot **não** respeita a faixa do `pyproject.toml` (ele
+  reescreveu `django>=5.2,<5.3` para a 6.1 no primeiro PR). O projeto segue linhas LTS, então o
+  `dependabot.yml` ignora major e minor do **Django** (fica na 5.2, só patches) e a major do
+  **Node** (fica na 22). Para adotar uma versão nova, remova a entrada de `ignore` do arquivo e
+  faça a migração numa change própria.
 - **CodeQL:** roda em todo Pull Request, em todo push na `main` e uma vez por semana (consultas
   novas podem apontar problemas em código que não mudou). Ele rastreia o caminho do dado, da entrada
   do usuário até o destino, o que o lint não faz.

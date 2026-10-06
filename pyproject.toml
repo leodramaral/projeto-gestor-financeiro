@@ -17,7 +17,9 @@ dev = [
 
 [tool.pytest.ini_options]
 # A opção de linha de comando vence o DJANGO_SETTINGS_MODULE do .env (dev).
-addopts = "--ds=config.settings.test"
+# `--ignore=worktrees`: as worktrees locais (ver AGENTS.md) não entram na coleta. Não use
+# `norecursedirs`: ele substitui a lista padrão do pytest.
+addopts = "--ds=config.settings.test --ignore=worktrees"
 python_files = ["test_*.py"]
 
 [tool.ruff]
