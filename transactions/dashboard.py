@@ -167,11 +167,11 @@ def build_dashboard(user, today):
     months = _month_points(user, today)
     current, previous = months[-1], months[-2]
     balance = current_balance(user)
-    transactions = Transaction.objects.filter(user=user)
+    recent = list(Transaction.objects.filter(user=user).select_related("category")[:RECENT_COUNT])
     return Dashboard(
         balance=balance,
         status=_status(balance),
-        has_transactions=transactions.exists(),
+        has_transactions=bool(recent),
         month_income=current.income,
         month_expense=current.expense,
         income_change=_change(current.income, previous.income),
@@ -179,5 +179,5 @@ def build_dashboard(user, today):
         savings_rate=_savings_rate(current.income, current.expense),
         categories=_category_slices(user, today),
         months=months,
-        recent=list(transactions.select_related("category")[:RECENT_COUNT]),
+        recent=recent,
     )

@@ -24,7 +24,7 @@ O pós-MVP já tem a categorização de custos e o painel com gráficos (Issue #
 OpenSpec (ver [Fluxo de desenvolvimento](#parte-2--fluxo-de-desenvolvimento)); o que o sistema faz
 hoje está em [`openspec/specs/`](openspec/specs/).
 
-**Stack:** Python 3.12, Django 5.2 (templates no servidor, sem SPA), PostgreSQL 16, Tailwind CSS 4
+**Stack:** Python 3.12, Django 5.2 (templates no servidor, sem SPA), PostgreSQL 16, Tailwind CSS 4,
 Alpine.js e Chart.js (MIT, servido localmente). Tudo roda em Docker.
 
 ---
