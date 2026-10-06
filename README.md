@@ -1,5 +1,7 @@
 # Gestor Financeiro
 
+[![CI](https://github.com/leodramaral/projeto-gestor-financeiro/actions/workflows/ci.yml/badge.svg)](https://github.com/leodramaral/projeto-gestor-financeiro/actions/workflows/ci.yml)
+
 > **Projeto acadêmico.** Este repositório é um trabalho de estudo, desenvolvido para fins
 > educacionais. Não é um produto comercial, não tem garantia de funcionamento e **não deve ser
 > usado para gerir dinheiro real**.
