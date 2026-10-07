@@ -1,0 +1,151 @@
+#!/usr/bin/env bash
+# Lifecycle of a development worktree with its own database (see AGENTS.md, "Worktrees").
+#
+#   scripts/worktree new <name> [branch]   create worktrees/<name> and database gestor_<name>
+#   scripts/worktree remove <name>         remove the worktree and drop its database
+#   scripts/worktree resync <name>         recreate the worktree database from the main one
+#
+# Run from the main checkout or from any worktree; the `db` container must be up.
+set -euo pipefail
+
+# Untracked local files copied from the main checkout into a new worktree.
+COPY_FILES=(.env)
+
+DB_PREFIX="gestor_"
+MAX_DB_NAME=63 # PostgreSQL identifier limit
+
+die() {
+  echo "worktree: $*" >&2
+  exit 1
+}
+
+usage() {
+  sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//' >&2
+  exit 2
+}
+
+# Main checkout = parent of the shared git dir, whichever worktree we run from.
+MAIN_DIR="$(cd "$(git rev-parse --path-format=absolute --git-common-dir)/.." && pwd)"
+
+compose() {
+  docker compose --project-directory "$MAIN_DIR" "$@"
+}
+
+env_value() { # env_value KEY: value from the main checkout's .env
+  local line
+  line="$(grep -E "^$1=" "$MAIN_DIR/.env" | tail -n 1)" || true
+  echo "${line#*=}"
+}
+
+psql_admin() { # psql_admin DB [psql args...]: reads SQL from stdin
+  local db="$1"
+  shift
+  compose exec -T db psql -U "$PG_USER" -d "$db" -v ON_ERROR_STOP=1 "$@"
+}
+
+db_exists() {
+  [[ "$(psql_admin postgres -tA -c "SELECT 1 FROM pg_database WHERE datname = '$1'")" == "1" ]]
+}
+
+# Derives and validates the database name for a worktree name.
+db_name_for() {
+  local slug
+  slug="$(echo "$1" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/_/g')"
+  [[ "$slug" =~ [a-z0-9] ]] || die "name '$1' has no letters or digits"
+  DB_NAME="$DB_PREFIX$slug"
+  ((${#DB_NAME} <= MAX_DB_NAME)) || die "database name '$DB_NAME' exceeds $MAX_DB_NAME characters"
+  guard_not_main
+}
+
+# Never touch the main database, nor anything outside the gestor_ namespace.
+guard_not_main() {
+  [[ "$DB_NAME" == "$DB_PREFIX"* ]] || die "refusing database '$DB_NAME': missing $DB_PREFIX prefix"
+  [[ "$DB_NAME" != "$MAIN_DB" ]] || die "refusing to touch the main database '$MAIN_DB'"
+}
+
+check_environment() {
+  [[ -f "$MAIN_DIR/.env" ]] || die "$MAIN_DIR/.env not found"
+  PG_USER="$(env_value POSTGRES_USER)"
+  MAIN_DB="$(env_value POSTGRES_DB)"
+  [[ -n "$PG_USER" && -n "$MAIN_DB" ]] || die "POSTGRES_USER and POSTGRES_DB must be set in .env"
+  compose exec -T db pg_isready -U "$PG_USER" -d "$MAIN_DB" >/dev/null 2>&1 \
+    || die "the db container is not running (docker compose up -d db)"
+}
+
+drop_db() {
+  psql_admin postgres -c "DROP DATABASE IF EXISTS \"$DB_NAME\" WITH (FORCE)" >/dev/null
+}
+
+# Creates DB_NAME as a copy of the main database. CREATE DATABASE ... TEMPLATE is not used
+# because it fails while `web` is connected to the source.
+copy_main_db() {
+  psql_admin postgres -c "CREATE DATABASE \"$DB_NAME\"" >/dev/null || return 1
+  if ! compose exec -T db pg_dump -U "$PG_USER" --no-owner --no-privileges "$MAIN_DB" \
+    | psql_admin "$DB_NAME" --single-transaction -q >/dev/null; then
+    drop_db
+    echo "worktree: copying '$MAIN_DB' to '$DB_NAME' failed; the new database was dropped" >&2
+    return 1
+  fi
+}
+
+cmd_new() {
+  local name="${1:-}" branch="${2:-}" dir f new_branch=false
+  [[ -n "$name" ]] || usage
+  branch="${branch:-$name}"
+  dir="$MAIN_DIR/worktrees/$name"
+  check_environment
+  db_name_for "$name"
+  [[ ! -e "$dir" ]] || die "$dir already exists"
+  ! db_exists "$DB_NAME" || die "database '$DB_NAME' already exists"
+  for f in "${COPY_FILES[@]}"; do
+    [[ -f "$MAIN_DIR/$f" ]] || die "file to copy not found: $MAIN_DIR/$f"
+  done
+
+  if git -C "$MAIN_DIR" show-ref --verify --quiet "refs/heads/$branch"; then
+    git -C "$MAIN_DIR" worktree add "$dir" "$branch"
+  else
+    git -C "$MAIN_DIR" worktree add "$dir" -b "$branch"
+    new_branch=true
+  fi
+  for f in "${COPY_FILES[@]}"; do
+    cp "$MAIN_DIR/$f" "$dir/$f"
+  done
+  # The copied .env may already carry an APP_DB_NAME line (even empty): replace, never duplicate.
+  sed -i '/^APP_DB_NAME=/d' "$dir/.env"
+  echo "APP_DB_NAME=$DB_NAME" >>"$dir/.env"
+
+  if ! copy_main_db; then
+    git -C "$MAIN_DIR" worktree remove --force "$dir"
+    ! $new_branch || git -C "$MAIN_DIR" branch -D "$branch" >/dev/null
+    exit 1
+  fi
+  echo "worktree: $dir ready, database $DB_NAME (cd there and run: docker compose up -d)"
+}
+
+cmd_remove() {
+  local name="${1:-}"
+  [[ -n "$name" ]] || usage
+  check_environment
+  db_name_for "$name"
+  git -C "$MAIN_DIR" worktree remove "$MAIN_DIR/worktrees/$name"
+  drop_db
+  echo "worktree: removed $name and database $DB_NAME"
+}
+
+cmd_resync() {
+  local name="${1:-}"
+  [[ -n "$name" ]] || usage
+  check_environment
+  db_name_for "$name"
+  [[ -d "$MAIN_DIR/worktrees/$name" ]] || die "worktree $name does not exist"
+  drop_db
+  copy_main_db || die "resync of '$DB_NAME' failed; the database may be empty, run resync again"
+  echo "worktree: database $DB_NAME recreated from $MAIN_DB"
+}
+
+case "${1:-}" in
+  new) shift; cmd_new "$@" ;;
+  remove) shift; cmd_remove "$@" ;;
+  resync) shift; cmd_resync "$@" ;;
+  *) usage ;;
+esac
