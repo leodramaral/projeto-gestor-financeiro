@@ -25,6 +25,11 @@
         <span class="{% if summary.income_change >= 0 %}{{ tone_pos }}{% else %}{{ tone_neg }}{% endif %} inline-flex rounded-full px-2 py-0.5 font-medium" data-income-change>{% if summary.income_change >= 0 %}▲ {{ summary.income_change }}{% else %}▼ {{ summary.income_change|cut:"-" }}{% endif %}%</span>
         em relação ao mês anterior
       </p>
+    {% else %}
+      <p class="text-theme-xs mt-2 text-gray-500 dark:text-gray-400">
+        <span class="font-medium text-gray-400 dark:text-gray-500" data-income-no-base>sem base</span>
+        de comparação no mês anterior
+      </p>
     {% endif %}
     <div id="tip-income" role="tooltip" x-show="tip" x-cloak class="text-theme-xs shadow-theme-lg absolute inset-x-3 top-12 z-20 rounded-lg bg-gray-800 p-3 text-white dark:bg-gray-700" data-tip>
       <strong>Tudo o que entrou no mês.</strong> Soma dos lançamentos do tipo entrada com data entre {{ month.start|date:"d/m/Y" }} e {{ month.end|date:"d/m/Y" }}.
@@ -32,7 +37,7 @@
         A variação compara com o total de {{ month.previous_label }}.
         <span class="mt-2 block font-mono">variação = (R$ {{ summary.income|floatformat:"2g" }} − R$ {{ summary.previous_income|floatformat:"2g" }}) ÷ R$ {{ summary.previous_income|floatformat:"2g" }}</span>
       {% else %}
-        Não houve entradas em {{ month.previous_label }}, então a variação não é exibida.
+        Não houve entradas em {{ month.previous_label }}, então o cartão mostra "sem base" no lugar da variação.
       {% endif %}
     </div>
   </div>
@@ -48,6 +53,11 @@
         <span class="{% if summary.expense_change > 0 %}{{ tone_neg }}{% else %}{{ tone_pos }}{% endif %} inline-flex rounded-full px-2 py-0.5 font-medium" data-expense-change>{% if summary.expense_change >= 0 %}▲ {{ summary.expense_change }}{% else %}▼ {{ summary.expense_change|cut:"-" }}{% endif %}%</span>
         em relação ao mês anterior
       </p>
+    {% else %}
+      <p class="text-theme-xs mt-2 text-gray-500 dark:text-gray-400">
+        <span class="font-medium text-gray-400 dark:text-gray-500" data-expense-no-base>sem base</span>
+        de comparação no mês anterior
+      </p>
     {% endif %}
     <div id="tip-expense" role="tooltip" x-show="tip" x-cloak class="text-theme-xs shadow-theme-lg absolute inset-x-3 top-12 z-20 rounded-lg bg-gray-800 p-3 text-white dark:bg-gray-700" data-tip>
       <strong>Tudo o que saiu no mês.</strong> Soma dos lançamentos do tipo despesa com data entre {{ month.start|date:"d/m/Y" }} e {{ month.end|date:"d/m/Y" }}. Alta de despesa aparece em vermelho e queda em verde.
@@ -55,7 +65,7 @@
         A variação compara com o total de {{ month.previous_label }}.
         <span class="mt-2 block font-mono">variação = (R$ {{ summary.expense|floatformat:"2g" }} − R$ {{ summary.previous_expense|floatformat:"2g" }}) ÷ R$ {{ summary.previous_expense|floatformat:"2g" }}</span>
       {% else %}
-        Não houve despesas em {{ month.previous_label }}, então a variação não é exibida.
+        Não houve despesas em {{ month.previous_label }}, então o cartão mostra "sem base" no lugar da variação.
       {% endif %}
     </div>
   </div>

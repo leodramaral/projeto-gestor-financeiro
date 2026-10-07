@@ -65,11 +65,13 @@ def _parse_month(raw, current):
 def resolve_month(raw, today, first_month=None):
     """The month to show for `raw` (the `month` query value), with `today` as the upper bound.
 
-    A missing, malformed, non-existent or future month falls back to the current one. The
-    selector can go back until `first_month` (the month of the first transaction).
+    A missing, malformed, non-existent or future month falls back to the current one; a month
+    before `first_month` (the month of the first transaction) is raised to it.
     """
     current = today.replace(day=1)
     start = _parse_month(raw, current)
+    if first_month and start < first_month:
+        start = first_month
     following = shift_month(start, 1)
     return MonthView(
         start=start,

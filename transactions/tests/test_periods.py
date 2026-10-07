@@ -91,3 +91,13 @@ def test_first_transaction_month_ignores_other_users(user, other_user, make_tran
 
 def test_first_transaction_month_without_transactions(user):
     assert first_transaction_month(user) is None
+
+
+def test_month_before_the_first_transaction_is_raised_to_it():
+    first = date(2026, 7, 1)
+
+    view = resolve_month("2026-03", TODAY, first)
+
+    assert view.start == first
+    assert not view.has_previous
+    assert view.next == date(2026, 8, 1)

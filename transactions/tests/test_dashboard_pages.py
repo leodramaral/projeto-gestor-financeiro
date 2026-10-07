@@ -304,6 +304,20 @@ def test_month_without_income_shows_the_unavailable_savings_rate(
     assert "sem divisão por zero" in content
 
 
+def test_cards_show_no_base_when_the_previous_month_has_no_movement(
+    logged_client, user, make_transaction
+):
+    make_transaction(user, "income", "100.00", when=date(2026, 10, 3))
+    make_transaction(user, "expense", "30.00", when=date(2026, 10, 4))
+
+    content = html(logged_client)
+
+    assert "data-income-no-base" in content
+    assert "data-expense-no-base" in content
+    assert "data-income-change" not in content
+    assert "data-expense-change" not in content
+
+
 def test_cards_show_the_change_against_the_previous_month(logged_client, user, make_transaction):
     make_transaction(user, "expense", "100.00", when=date(2026, 9, 3))
     make_transaction(user, "expense", "150.00", when=date(2026, 10, 3))
@@ -380,7 +394,7 @@ def test_change_explanation_shows_the_formula_and_the_base(logged_client, user, 
     assert "(R$ 150,00 − R$ 100,00) ÷ R$ 100,00" in tip
 
 
-def test_explanation_without_a_base_says_the_change_is_not_shown(
+def test_explanation_without_a_base_says_the_card_shows_no_base(
     logged_client, user, make_transaction
 ):
     make_transaction(user, "income", "100.00", when=date(2026, 10, 3))
@@ -388,7 +402,7 @@ def test_explanation_without_a_base_says_the_change_is_not_shown(
     tip = html(logged_client).split('id="tip-income"')[1].split("</div>")[0]
 
     assert "Não houve entradas em setembro de 2026" in tip
-    assert "variação não é exibida" in tip
+    assert 'mostra "sem base"' in tip
 
 
 # --- categories tab -------------------------------------------------------------------------
