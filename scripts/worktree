@@ -79,16 +79,17 @@ drop_db() {
 # Creates DB_NAME as a copy of the main database. CREATE DATABASE ... TEMPLATE is not used
 # because it fails while `web` is connected to the source.
 copy_main_db() {
-  psql_admin postgres -c "CREATE DATABASE \"$DB_NAME\"" >/dev/null
+  psql_admin postgres -c "CREATE DATABASE \"$DB_NAME\"" >/dev/null || return 1
   if ! compose exec -T db pg_dump -U "$PG_USER" --no-owner --no-privileges "$MAIN_DB" \
     | psql_admin "$DB_NAME" --single-transaction -q >/dev/null; then
     drop_db
-    die "copying '$MAIN_DB' to '$DB_NAME' failed; the new database was dropped"
+    echo "worktree: copying '$MAIN_DB' to '$DB_NAME' failed; the new database was dropped" >&2
+    return 1
   fi
 }
 
 cmd_new() {
-  local name="${1:-}" branch="${2:-}" dir f
+  local name="${1:-}" branch="${2:-}" dir f new_branch=false
   [[ -n "$name" ]] || usage
   branch="${branch:-$name}"
   dir="$MAIN_DIR/worktrees/$name"
@@ -100,7 +101,12 @@ cmd_new() {
     [[ -f "$MAIN_DIR/$f" ]] || die "file to copy not found: $MAIN_DIR/$f"
   done
 
-  git -C "$MAIN_DIR" worktree add "$dir" -b "$branch"
+  if git -C "$MAIN_DIR" show-ref --verify --quiet "refs/heads/$branch"; then
+    git -C "$MAIN_DIR" worktree add "$dir" "$branch"
+  else
+    git -C "$MAIN_DIR" worktree add "$dir" -b "$branch"
+    new_branch=true
+  fi
   for f in "${COPY_FILES[@]}"; do
     cp "$MAIN_DIR/$f" "$dir/$f"
   done
@@ -110,7 +116,7 @@ cmd_new() {
 
   if ! copy_main_db; then
     git -C "$MAIN_DIR" worktree remove --force "$dir"
-    git -C "$MAIN_DIR" branch -D "$branch" >/dev/null
+    ! $new_branch || git -C "$MAIN_DIR" branch -D "$branch" >/dev/null
     exit 1
   fi
   echo "worktree: $dir ready, database $DB_NAME (cd there and run: docker compose up -d)"
@@ -133,7 +139,7 @@ cmd_resync() {
   db_name_for "$name"
   [[ -d "$MAIN_DIR/worktrees/$name" ]] || die "worktree $name does not exist"
   drop_db
-  copy_main_db
+  copy_main_db || die "resync of '$DB_NAME' failed; the database may be empty, run resync again"
   echo "worktree: database $DB_NAME recreated from $MAIN_DB"
 }
 

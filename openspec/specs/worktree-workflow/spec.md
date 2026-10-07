@@ -1,7 +1,7 @@
 # worktree-workflow Specification
 
 ## Purpose
-TBD - created by archiving change 49-banco-por-worktree. Update Purpose after archive.
+Define o ciclo de vida e o isolamento de worktrees com bancos de dados dedicados no PostgreSQL, permitindo desenvolver e testar mudanças concorrentes sem interferência no banco principal.
 
 ## Requirements
 
