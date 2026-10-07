@@ -1,0 +1,13 @@
+{% extends "core/dashboard_base.html" %}
+
+{% block tab %}
+  <p class="mb-4 text-sm text-gray-500 dark:text-gray-400" data-flow-summary>
+    Saldo inicial <strong class="text-gray-800 dark:text-white/90">R$ {{ summary.opening|floatformat:"2g" }}</strong>
+    → saldo final <strong class="{% if summary.status == 'negative' %}text-error-500{% else %}text-gray-800 dark:text-white/90{% endif %}">R$ {{ summary.closing|floatformat:"2g" }}</strong>
+    ({{ month.label }})
+  </p>
+  <div class="grid grid-cols-1 gap-4 md:gap-6">
+    {% include "core/partials/cashflow.html" %}
+    {% include "core/partials/balance.html" %}
+  </div>
+{% endblock %}

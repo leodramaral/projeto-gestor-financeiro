@@ -56,14 +56,12 @@
 
         <ul class="mb-6 flex flex-col gap-1">
           <li>
-            {% with name=request.resolver_match.url_name %}
-            <a href="{% url 'home' %}" class="menu-item group {% if name == 'home' %}menu-item-active{% else %}menu-item-inactive{% endif %}"{% if name == 'home' %} aria-current="page"{% endif %}>
-              <svg class="{% if name == 'home' %}menu-item-icon-active{% else %}menu-item-icon-inactive{% endif %}" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <a href="{% url 'home' %}" class="menu-item group {% if dashboard_tab %}menu-item-active{% else %}menu-item-inactive{% endif %}"{% if dashboard_tab %} aria-current="page"{% endif %}>
+              <svg class="{% if dashboard_tab %}menu-item-icon-active{% else %}menu-item-icon-inactive{% endif %}" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path fill-rule="evenodd" clip-rule="evenodd" d="M4 4.75A.75.75 0 0 1 4.75 4h.5a.75.75 0 0 1 .75.75v14.5a.75.75 0 0 1-.75.75h-.5a.75.75 0 0 1-.75-.75V4.75ZM10 10.75a.75.75 0 0 1 .75-.75h.5a.75.75 0 0 1 .75.75v8.5a.75.75 0 0 1-.75.75h-.5a.75.75 0 0 1-.75-.75v-8.5ZM16.75 7a.75.75 0 0 0-.75.75v11.5c0 .414.336.75.75.75h.5a.75.75 0 0 0 .75-.75V7.75a.75.75 0 0 0-.75-.75h-.5Z" fill="currentColor" />
               </svg>
               <span class="menu-item-text" :class="sidebarToggle ? 'xl:hidden' : ''">Painel</span>
             </a>
-            {% endwith %}
           </li>
           <li>
             {% with active=request.resolver_match.app_name name=request.resolver_match.url_name %}

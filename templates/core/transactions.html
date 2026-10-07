@@ -1,0 +1,14 @@
+{% extends "core/dashboard_base.html" %}
+
+{% block tab %}
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+    <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-6">
+      <div>
+        <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Lançamentos de {{ month.label }}</h3>
+        <p class="text-theme-sm text-gray-500 dark:text-gray-400">{{ transactions|length }} lançamento{{ transactions|length|pluralize:",s" }}</p>
+      </div>
+      <a href="{% url 'transactions:list' %}" class="text-brand-500 dark:text-brand-400 text-sm hover:underline">Abrir a listagem completa</a>
+    </div>
+    {% include "core/partials/transactions_table.html" %}
+  </div>
+{% endblock %}

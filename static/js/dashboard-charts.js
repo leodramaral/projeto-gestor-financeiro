@@ -1,5 +1,6 @@
-// Gráficos do painel (Chart.js, servido localmente). Os dados vêm do servidor em
-// <script id="dashboard-data" type="application/json">; sem esse elemento ou sem o Chart.js, o
+// Gráficos do painel (Chart.js, servido localmente), um ponto por dia do mês. Os dados vêm do
+// servidor em <script id="dashboard-data" type="application/json">, só com as partes que a página
+// mostra (`days` e/ou `categories`); sem esse elemento ou sem o Chart.js, o
 // script não faz nada e o resto da página continua funcionando.
 (function () {
   var dataEl = document.getElementById("dashboard-data");
@@ -29,7 +30,7 @@
 
   function scales(colors) {
     return {
-      x: { grid: { display: false }, border: { display: false }, ticks: { color: colors.text } },
+      x: { grid: { display: false }, border: { display: false }, ticks: { color: colors.text, maxRotation: 0, autoSkipPadding: 8 } },
       y: {
         grid: { color: colors.grid },
         border: { display: false },
@@ -41,6 +42,9 @@
   function tooltip() {
     return {
       callbacks: {
+        title: function (items) {
+          return items.length ? "Dia " + items[0].label : "";
+        },
         label: function (ctx) {
           var label = ctx.dataset.label ? ctx.dataset.label + ": " : "";
           return " " + label + brl.format(ctx.parsed.y);
@@ -70,7 +74,7 @@
     Chart.defaults.color = colors.text;
 
     var donut = document.getElementById("chart-categories");
-    if (donut && data.categories.length) {
+    if (donut && data.categories && data.categories.length) {
       charts.push(
         new Chart(donut, {
           type: "doughnut",
@@ -96,15 +100,15 @@
     }
 
     var cashflow = document.getElementById("chart-cashflow");
-    if (cashflow) {
+    if (cashflow && data.days) {
       charts.push(
         new Chart(cashflow, {
           type: "bar",
           data: {
-            labels: data.months,
+            labels: data.days,
             datasets: [
-              { label: "Entradas", data: data.income, backgroundColor: colors.income, borderRadius: 6, maxBarThickness: 20 },
-              { label: "Despesas", data: data.expense, backgroundColor: colors.expense, borderRadius: 6, maxBarThickness: 20 },
+              { label: "Entradas", data: data.income, backgroundColor: colors.income, borderRadius: 3, maxBarThickness: 12 },
+              { label: "Despesas", data: data.expense, backgroundColor: colors.expense, borderRadius: 3, maxBarThickness: 12 },
             ],
           },
           options: {
@@ -117,14 +121,14 @@
     }
 
     var balance = document.getElementById("chart-balance");
-    if (balance) {
+    if (balance && data.days) {
       var last = data.balance[data.balance.length - 1];
       var line = last < 0 ? colors.expense : colors.income;
       charts.push(
         new Chart(balance, {
           type: "line",
           data: {
-            labels: data.months,
+            labels: data.days,
             datasets: [{
               label: "Saldo",
               data: data.balance,
@@ -133,7 +137,7 @@
               fill: true,
               tension: 0.35,
               borderWidth: 2,
-              pointRadius: 3,
+              pointRadius: 2,
               pointBackgroundColor: line,
             }],
           },
