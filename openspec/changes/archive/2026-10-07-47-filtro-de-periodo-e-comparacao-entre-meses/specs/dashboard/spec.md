@@ -1,96 +1,6 @@
-# dashboard Specification
+# Delta: dashboard
 
-## Purpose
-Define o painel inicial do usuário autenticado: um resumo de como está o saldo e gráficos de para
-onde o dinheiro vai, calculados no servidor a partir dos lançamentos do próprio usuário.
-
-## Requirements
-
-### Requirement: Painel como página inicial
-A rota `/` DEVE exibir a Visão geral do painel do usuário autenticado, referente ao mês atual ou
-ao mês escolhido, renderizada no servidor dentro do layout TailAdmin, com texto em português do
-Brasil. Visitante anônimo DEVE ser redirecionado ao login. A barra lateral DEVE ter o item
-"Painel" como primeiro do menu, marcado como página atual quando qualquer aba do painel está
-aberta.
-
-#### Cenário: Usuário autenticado abre a página inicial
-- **QUANDO** um usuário autenticado abre `/`
-- **ENTÃO** a resposta é `200` com a Visão geral do mês atual, e não um redirecionamento
-- **E** o item "Painel" da barra lateral está marcado como página atual
-
-#### Cenário: Visitante anônimo
-- **QUANDO** um visitante anônimo abre `/`
-- **ENTÃO** é redirecionado ao login, preservando o destino
-
-### Requirement: Gastos por categoria no mês
-O painel DEVE exibir um gráfico de rosca com as despesas do mês exibido agrupadas por categoria,
-usando a cor de cada categoria, acompanhado da lista de categorias com valor e percentual do
-total. Na Visão geral, a lista DEVE mostrar as 5 maiores categorias e agrupar as demais em
-"Outras"; a aba Categorias DEVE listar todas. Entradas NÃO DEVEM entrar nesse gráfico. Quando o
-mês não tiver despesas, o painel DEVE exibir uma mensagem no lugar do gráfico.
-
-#### Cenário: Despesas agrupadas por categoria
-- **QUANDO** o usuário tem despesas de categorias diferentes no mês exibido
-- **ENTÃO** o gráfico tem uma fatia por categoria, com o valor somado das despesas dela
-- **E** a soma das fatias é igual ao total de despesas do mês nos cartões
-
-#### Cenário: Valores batem com a listagem
-- **QUANDO** o usuário filtra a listagem de lançamentos por uma categoria
-- **ENTÃO** a soma das despesas do mês exibido listadas é igual ao valor da fatia dessa categoria
-
-#### Cenário: Mês sem despesas
-- **QUANDO** o usuário só tem entradas no mês exibido, ou nenhum lançamento nele
-- **ENTÃO** o cartão exibe uma mensagem de que não há gastos no mês
-- **E** nenhum gráfico vazio ou quebrado é desenhado
-
-#### Cenário: Muitas categorias na Visão geral
-- **QUANDO** o usuário tem despesas em mais de 5 categorias no mês
-- **ENTÃO** a Visão geral mostra as 5 maiores e uma fatia "Outras" com a soma das demais
-- **E** a aba Categorias mostra todas, sem "Outras"
-
-### Requirement: Últimos lançamentos no painel
-A Visão geral DEVE listar os 5 lançamentos mais recentes do mês exibido (mesma ordem da listagem:
-data e depois identificador, do mais novo ao mais antigo), com descrição, categoria, data, valor e
-tipo, e um atalho "Ver detalhes" para a aba Lançamentos, do mesmo mês.
-
-#### Cenário: Lista resumida
-- **QUANDO** o usuário tem mais de 5 lançamentos no mês exibido
-- **ENTÃO** a Visão geral exibe apenas os 5 mais recentes desse mês
-- **E** há um atalho para a aba Lançamentos, que lista todos
-
-### Requirement: Estado vazio
-Quando o usuário não tiver nenhum lançamento, o painel DEVE exibir o saldo de R$ 0,00, uma mensagem
-convidando a registrar o primeiro lançamento com um atalho para a tela de novo lançamento, e NÃO
-DEVE desenhar gráficos.
-
-#### Cenário: Conta nova
-- **QUANDO** um usuário sem lançamentos abre o painel
-- **ENTÃO** a resposta é `200` com a mensagem de estado vazio e o atalho para o novo lançamento
-- **E** nenhum gráfico é inicializado e nenhum erro de JavaScript ocorre
-
-### Requirement: Dados do painel isolados por usuário
-Todo valor exibido no painel (saldo, cartões, gráficos e lista) DEVE ser calculado apenas com os
-lançamentos do usuário logado. Dados de outros usuários NÃO DEVEM aparecer nem influenciar
-totais, percentuais ou a lista. As categorias de outros usuários NÃO DEVEM aparecer nos gráficos.
-
-#### Cenário: Dois usuários com lançamentos
-- **QUANDO** dois usuários têm lançamentos diferentes e um deles abre o painel
-- **ENTÃO** saldo, totais, fatias, colunas, pontos de saldo e lista vêm só dos lançamentos dele
-- **E** o conteúdo da resposta não contém descrições nem categorias do outro usuário
-
-### Requirement: Gráficos servidos localmente, com tema claro e escuro
-Os gráficos DEVEM ser desenhados por uma biblioteca de código aberto servida pela própria aplicação (sem CDN), a partir
-de dados calculados no servidor e embutidos na página. Os gráficos DEVEM acompanhar o tema claro ou
-escuro escolhido pelo usuário, inclusive ao alternar o tema com a página aberta. Se o script dos
-gráficos não carregar, a página DEVE continuar mostrando saldo, cartões e lista.
-
-#### Cenário: Alternar o tema
-- **QUANDO** o usuário alterna entre tema claro e escuro com o painel aberto
-- **ENTÃO** os gráficos passam a usar as cores do novo tema sem recarregar a página
-
-#### Cenário: Sem CDN
-- **QUANDO** o painel é carregado
-- **ENTÃO** nenhum script é requisitado de domínio externo
+## ADDED Requirements
 
 ### Requirement: Seleção do mês
 O painel DEVE mostrar sempre um único mês calendário, e esse mês DEVE valer para todos os valores
@@ -298,3 +208,71 @@ formato brasileiro ao passar o ponteiro, e os rótulos DEVEM estar em português
 #### Cenário: Valores em reais
 - **QUANDO** o usuário passa o ponteiro sobre uma coluna ou ponto
 - **ENTÃO** o valor é exibido em reais no formato brasileiro (`R$ 1.234,56`)
+
+## MODIFIED Requirements
+
+### Requirement: Painel como página inicial
+A rota `/` DEVE exibir a Visão geral do painel do usuário autenticado, referente ao mês atual ou
+ao mês escolhido, renderizada no servidor dentro do layout TailAdmin, com texto em português do
+Brasil. Visitante anônimo DEVE ser redirecionado ao login. A barra lateral DEVE ter o item
+"Painel" como primeiro do menu, marcado como página atual quando qualquer aba do painel está
+aberta.
+
+#### Cenário: Usuário autenticado abre a página inicial
+- **QUANDO** um usuário autenticado abre `/`
+- **ENTÃO** a resposta é `200` com a Visão geral do mês atual, e não um redirecionamento
+- **E** o item "Painel" da barra lateral está marcado como página atual
+
+#### Cenário: Visitante anônimo
+- **QUANDO** um visitante anônimo abre `/`
+- **ENTÃO** é redirecionado ao login, preservando o destino
+
+### Requirement: Gastos por categoria no mês
+O painel DEVE exibir um gráfico de rosca com as despesas do mês exibido agrupadas por categoria,
+usando a cor de cada categoria, acompanhado da lista de categorias com valor e percentual do
+total. Na Visão geral, a lista DEVE mostrar as 5 maiores categorias e agrupar as demais em
+"Outras"; a aba Categorias DEVE listar todas. Entradas NÃO DEVEM entrar nesse gráfico. Quando o
+mês não tiver despesas, o painel DEVE exibir uma mensagem no lugar do gráfico.
+
+#### Cenário: Despesas agrupadas por categoria
+- **QUANDO** o usuário tem despesas de categorias diferentes no mês exibido
+- **ENTÃO** o gráfico tem uma fatia por categoria, com o valor somado das despesas dela
+- **E** a soma das fatias é igual ao total de despesas do mês nos cartões
+
+#### Cenário: Valores batem com a listagem
+- **QUANDO** o usuário filtra a listagem de lançamentos por uma categoria
+- **ENTÃO** a soma das despesas do mês exibido listadas é igual ao valor da fatia dessa categoria
+
+#### Cenário: Mês sem despesas
+- **QUANDO** o usuário só tem entradas no mês exibido, ou nenhum lançamento nele
+- **ENTÃO** o cartão exibe uma mensagem de que não há gastos no mês
+- **E** nenhum gráfico vazio ou quebrado é desenhado
+
+#### Cenário: Muitas categorias na Visão geral
+- **QUANDO** o usuário tem despesas em mais de 5 categorias no mês
+- **ENTÃO** a Visão geral mostra as 5 maiores e uma fatia "Outras" com a soma das demais
+- **E** a aba Categorias mostra todas, sem "Outras"
+
+### Requirement: Últimos lançamentos no painel
+A Visão geral DEVE listar os 5 lançamentos mais recentes do mês exibido (mesma ordem da listagem:
+data e depois identificador, do mais novo ao mais antigo), com descrição, categoria, data, valor e
+tipo, e um atalho "Ver detalhes" para a aba Lançamentos, do mesmo mês.
+
+#### Cenário: Lista resumida
+- **QUANDO** o usuário tem mais de 5 lançamentos no mês exibido
+- **ENTÃO** a Visão geral exibe apenas os 5 mais recentes desse mês
+- **E** há um atalho para a aba Lançamentos, que lista todos
+
+## REMOVED Requirements
+
+### Requirement: Saldo atual com mensagem de status
+**Reason**: O saldo único deu lugar ao saldo inicial e final de cada mês, que explicam o número na tela.
+**Migration**: Ver "Saldo inicial e final do mês". As mensagens de status continuam, agora sobre o saldo final do mês exibido.
+
+### Requirement: Cartões do mês atual
+**Reason**: Os cartões eram fixos no mês corrente; passam a seguir o mês escolhido.
+**Migration**: Ver "Cartões do mês" e "Explicação do cálculo nos cartões".
+
+### Requirement: Fluxo de caixa e evolução do saldo
+**Reason**: A janela fixa dos últimos 6 meses deixa de existir; os gráficos passam a mostrar os dias do mês escolhido.
+**Migration**: Ver "Fluxo diário e evolução do saldo do mês".

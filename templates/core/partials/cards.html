@@ -1,0 +1,107 @@
+{# Cartões do mês. Parâmetros: summary (transactions.dashboard.Summary) e month (MonthView). #}
+{% with tone_pos="bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500" tone_neg="bg-error-50 text-error-600 dark:bg-error-500/15 dark:text-error-500" %}
+<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5 md:gap-6" data-cards>
+  <div class="relative rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]" x-data="{ tip: false }" @click.outside="tip = false">
+    <div class="flex items-center justify-between gap-2">
+      <p class="text-sm text-gray-500 dark:text-gray-400">Saldo inicial</p>
+      {% include "core/partials/info_button.html" with label="Saldo inicial" tip="tip-opening" %}
+    </div>
+    <p class="mt-1 text-xl font-semibold whitespace-nowrap {% if summary.opening < 0 %}text-error-500{% else %}text-gray-800 dark:text-white/90{% endif %}" data-opening>{% if summary.opening < 0 %}− {% endif %}R$ {{ summary.opening|floatformat:"2g"|cut:"-" }}</p>
+    <p class="text-theme-xs mt-2 text-gray-500 dark:text-gray-400">em {{ month.start|date:"d/m/Y" }}</p>
+    <div id="tip-opening" role="tooltip" x-show="tip" x-cloak class="text-theme-xs shadow-theme-lg absolute inset-x-3 top-12 z-20 rounded-lg bg-gray-800 p-3 text-white dark:bg-gray-700" data-tip>
+      <strong>Com quanto o mês começa.</strong> Soma de todas as entradas menos todas as despesas com data anterior a {{ month.start|date:"d/m/Y" }}.
+      <span class="mt-2 block font-mono">entradas até {{ month.day_before|date:"d/m/Y" }} − despesas até o mesmo dia</span>
+    </div>
+  </div>
+
+  <div class="relative rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]" x-data="{ tip: false }" @click.outside="tip = false">
+    <div class="flex items-center justify-between gap-2">
+      <p class="text-sm text-gray-500 dark:text-gray-400">Entradas do mês</p>
+      {% include "core/partials/info_button.html" with label="Entradas do mês" tip="tip-income" %}
+    </div>
+    <p class="mt-1 text-xl font-semibold whitespace-nowrap text-gray-800 dark:text-white/90" data-month-income>R$ {{ summary.income|floatformat:"2g" }}</p>
+    {% if summary.income_change is not None %}
+      <p class="text-theme-xs mt-2 text-gray-500 dark:text-gray-400">
+        <span class="{% if summary.income_change >= 0 %}{{ tone_pos }}{% else %}{{ tone_neg }}{% endif %} inline-flex rounded-full px-2 py-0.5 font-medium" data-income-change>{% if summary.income_change >= 0 %}▲ {{ summary.income_change }}{% else %}▼ {{ summary.income_change|cut:"-" }}{% endif %}%</span>
+        em relação ao mês anterior
+      </p>
+    {% else %}
+      <p class="text-theme-xs mt-2 text-gray-500 dark:text-gray-400">
+        <span class="font-medium text-gray-400 dark:text-gray-500" data-income-no-base>sem base</span>
+        de comparação no mês anterior
+      </p>
+    {% endif %}
+    <div id="tip-income" role="tooltip" x-show="tip" x-cloak class="text-theme-xs shadow-theme-lg absolute inset-x-3 top-12 z-20 rounded-lg bg-gray-800 p-3 text-white dark:bg-gray-700" data-tip>
+      <strong>Tudo o que entrou no mês.</strong> Soma dos lançamentos do tipo entrada com data entre {{ month.start|date:"d/m/Y" }} e {{ month.end|date:"d/m/Y" }}.
+      {% if summary.previous_income %}
+        A variação compara com o total de {{ month.previous_label }}.
+        <span class="mt-2 block font-mono">variação = (R$ {{ summary.income|floatformat:"2g" }} − R$ {{ summary.previous_income|floatformat:"2g" }}) ÷ R$ {{ summary.previous_income|floatformat:"2g" }}</span>
+      {% else %}
+        Não houve entradas em {{ month.previous_label }}, então o cartão mostra "sem base" no lugar da variação.
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="relative rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]" x-data="{ tip: false }" @click.outside="tip = false">
+    <div class="flex items-center justify-between gap-2">
+      <p class="text-sm text-gray-500 dark:text-gray-400">Despesas do mês</p>
+      {% include "core/partials/info_button.html" with label="Despesas do mês" tip="tip-expense" %}
+    </div>
+    <p class="mt-1 text-xl font-semibold whitespace-nowrap text-gray-800 dark:text-white/90" data-month-expense>R$ {{ summary.expense|floatformat:"2g" }}</p>
+    {% if summary.expense_change is not None %}
+      <p class="text-theme-xs mt-2 text-gray-500 dark:text-gray-400">
+        <span class="{% if summary.expense_change > 0 %}{{ tone_neg }}{% else %}{{ tone_pos }}{% endif %} inline-flex rounded-full px-2 py-0.5 font-medium" data-expense-change>{% if summary.expense_change >= 0 %}▲ {{ summary.expense_change }}{% else %}▼ {{ summary.expense_change|cut:"-" }}{% endif %}%</span>
+        em relação ao mês anterior
+      </p>
+    {% else %}
+      <p class="text-theme-xs mt-2 text-gray-500 dark:text-gray-400">
+        <span class="font-medium text-gray-400 dark:text-gray-500" data-expense-no-base>sem base</span>
+        de comparação no mês anterior
+      </p>
+    {% endif %}
+    <div id="tip-expense" role="tooltip" x-show="tip" x-cloak class="text-theme-xs shadow-theme-lg absolute inset-x-3 top-12 z-20 rounded-lg bg-gray-800 p-3 text-white dark:bg-gray-700" data-tip>
+      <strong>Tudo o que saiu no mês.</strong> Soma dos lançamentos do tipo despesa com data entre {{ month.start|date:"d/m/Y" }} e {{ month.end|date:"d/m/Y" }}. Alta de despesa aparece em vermelho e queda em verde.
+      {% if summary.previous_expense %}
+        A variação compara com o total de {{ month.previous_label }}.
+        <span class="mt-2 block font-mono">variação = (R$ {{ summary.expense|floatformat:"2g" }} − R$ {{ summary.previous_expense|floatformat:"2g" }}) ÷ R$ {{ summary.previous_expense|floatformat:"2g" }}</span>
+      {% else %}
+        Não houve despesas em {{ month.previous_label }}, então o cartão mostra "sem base" no lugar da variação.
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="relative rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]" x-data="{ tip: false }" @click.outside="tip = false">
+    <div class="flex items-center justify-between gap-2">
+      <p class="text-sm text-gray-500 dark:text-gray-400">Saldo final</p>
+      {% include "core/partials/info_button.html" with label="Saldo final" tip="tip-closing" %}
+    </div>
+    <p class="mt-1 text-xl font-semibold whitespace-nowrap {% if summary.status == 'negative' %}text-error-500{% else %}text-gray-800 dark:text-white/90{% endif %}" data-balance>{% if summary.closing < 0 %}− {% endif %}R$ {{ summary.closing|floatformat:"2g"|cut:"-" }}</p>
+    {% if summary.status == 'negative' %}
+      <span class="bg-error-50 text-error-600 dark:bg-error-500/15 dark:text-error-500 text-theme-xs mt-2 inline-flex rounded-full px-2.5 py-0.5 font-medium" data-balance-status>Você está no vermelho, cuidado</span>
+    {% elif summary.status == 'positive' %}
+      <span class="bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500 text-theme-xs mt-2 inline-flex rounded-full px-2.5 py-0.5 font-medium" data-balance-status>Você está no verde. Continue assim!</span>
+    {% endif %}
+    <div id="tip-closing" role="tooltip" x-show="tip" x-cloak class="text-theme-xs shadow-theme-lg absolute inset-x-3 top-12 z-20 rounded-lg bg-gray-800 p-3 text-white dark:bg-gray-700" data-tip>
+      <strong>Com quanto o mês termina.</strong> Saldo inicial mais as entradas e menos as despesas do mês, inclusive lançamentos com data futura dentro do mês.
+      <span class="mt-2 block font-mono">R$ {{ summary.opening|floatformat:"2g" }} + R$ {{ summary.income|floatformat:"2g" }} − R$ {{ summary.expense|floatformat:"2g" }}</span>
+    </div>
+  </div>
+
+  <div class="relative rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]" x-data="{ tip: false }" @click.outside="tip = false">
+    <div class="flex items-center justify-between gap-2">
+      <p class="text-sm text-gray-500 dark:text-gray-400">Taxa de economia</p>
+      {% include "core/partials/info_button.html" with label="Taxa de economia" tip="tip-savings" %}
+    </div>
+    <p class="mt-1 text-xl font-semibold whitespace-nowrap text-gray-800 dark:text-white/90" data-savings-rate>{% if summary.savings_rate is None %}—{% else %}{{ summary.savings_rate|floatformat:1 }}%{% endif %}</p>
+    <p class="text-theme-xs mt-2 text-gray-500 dark:text-gray-400">{% if summary.savings_rate is None %}Sem entradas neste mês{% else %}do que entrou neste mês{% endif %}</p>
+    <div id="tip-savings" role="tooltip" x-show="tip" x-cloak class="text-theme-xs shadow-theme-lg absolute inset-x-3 top-12 z-20 rounded-lg bg-gray-800 p-3 text-white dark:bg-gray-700" data-tip>
+      <strong>Quanto da renda do mês sobrou.</strong> Resultado do mês (entradas menos despesas) dividido pelas entradas, em porcentagem.
+      {% if summary.savings_rate is None %}
+        Sem entradas no mês, a taxa fica indisponível, sem divisão por zero.
+      {% else %}
+        <span class="mt-2 block font-mono">(R$ {{ summary.income|floatformat:"2g" }} − R$ {{ summary.expense|floatformat:"2g" }}) ÷ R$ {{ summary.income|floatformat:"2g" }} × 100</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endwith %}

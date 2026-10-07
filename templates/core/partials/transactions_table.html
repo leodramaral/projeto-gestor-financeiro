@@ -1,0 +1,38 @@
+{% load category_tags %}
+{# Parâmetros: transactions e month. Cabeçalho (título e link) fica com quem inclui. #}
+<div class="overflow-x-auto">
+  <table class="w-full text-left text-sm" data-recent>
+    <thead>
+      <tr class="border-y border-gray-100 text-gray-500 dark:border-gray-800 dark:text-gray-400">
+        <th scope="col" class="px-3 py-3 font-normal sm:px-6">Descrição</th>
+        <th scope="col" class="hidden px-3 py-3 font-normal sm:table-cell sm:px-6">Data</th>
+        <th scope="col" class="px-3 py-3 font-normal sm:px-6">Valor</th>
+        <th scope="col" class="hidden px-3 py-3 font-normal md:table-cell md:px-6">Tipo</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+      {% for item in transactions %}
+        <tr>
+          <td class="px-3 py-3 sm:px-6">
+            <span class="block font-medium text-gray-800 dark:text-white/90">{{ item.description }}</span>
+            {% if item.category %}<span class="mt-0.5 block">{% category_chip item.category %}</span>{% endif %}
+            <span class="block text-xs text-gray-500 sm:hidden dark:text-gray-400">{{ item.date|date:"d/m/Y" }}</span>
+          </td>
+          <td class="hidden px-3 py-3 whitespace-nowrap text-gray-500 sm:table-cell sm:px-6 dark:text-gray-400">{{ item.date|date:"d/m/Y" }}</td>
+          <td class="px-3 py-3 font-medium whitespace-nowrap sm:px-6 {% if item.kind == 'income' %}text-success-600{% else %}text-error-500{% endif %}">
+            {% if item.kind == 'income' %}+{% else %}−{% endif %} R$ {{ item.amount|floatformat:"2g" }}
+          </td>
+          <td class="hidden px-3 py-3 md:table-cell md:px-6">
+            {% if item.kind == 'income' %}
+              <span class="bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500 text-theme-xs inline-flex rounded-full px-2 py-0.5 font-medium">{{ item.get_kind_display }}</span>
+            {% else %}
+              <span class="bg-error-50 text-error-600 dark:bg-error-500/15 dark:text-error-500 text-theme-xs inline-flex rounded-full px-2 py-0.5 font-medium">{{ item.get_kind_display }}</span>
+            {% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="4" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400" data-no-transactions>Nenhum lançamento em {{ month.label }}.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

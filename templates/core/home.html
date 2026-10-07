@@ -1,144 +1,24 @@
-{% extends "base.html" %}
-{% load static category_tags %}
+{% extends "core/dashboard_base.html" %}
 
-{% block title %}Painel · Gestor Financeiro{% endblock %}
+{% block tab %}
+  {% include "core/partials/cards.html" with summary=dashboard.summary %}
 
-{% block extra_scripts %}
-  {% if dashboard.has_transactions %}
-    <script defer src="{% static 'dist/js/chart.umd.min.js' %}"></script>
-    <script defer src="{% static 'js/dashboard-charts.js' %}"></script>
-  {% endif %}
-{% endblock %}
+  <div class="mt-4 grid grid-cols-1 gap-4 md:mt-6 md:gap-6 lg:grid-cols-2">
+    {% include "core/partials/cashflow.html" with more_url=tabs.2.url %}
+    {% include "core/partials/balance.html" with more_url=tabs.2.url %}
+  </div>
 
-{% block content %}
-  {% include "partials/breadcrumb.html" with title="Painel" %}
-
-  {% if not dashboard.has_transactions %}
-    <div class="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center dark:border-gray-700 dark:bg-white/[0.03]" data-dashboard-empty>
-      <p class="text-sm text-gray-500 dark:text-gray-400">Saldo atual</p>
-      <p class="text-title-sm font-semibold text-gray-800 dark:text-white/90">R$ {{ dashboard.balance|floatformat:"2g" }}</p>
-      <h3 class="mt-4 text-base font-medium text-gray-800 dark:text-white/90">Nenhum lançamento ainda</h3>
-      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Registre sua primeira entrada ou despesa para ver o saldo e os gráficos aqui.</p>
-      <a href="{% url 'transactions:create' %}" class="bg-brand-500 hover:bg-brand-600 mt-5 inline-flex h-11 items-center rounded-lg px-4 text-sm font-medium text-white">Novo lançamento</a>
-    </div>
-  {% else %}
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 md:gap-6">
-      <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
-        <p class="text-sm text-gray-500 dark:text-gray-400">Saldo atual</p>
-        <p class="text-2xl mt-1 font-semibold {% if dashboard.status == 'negative' %}text-error-500{% else %}text-gray-800 dark:text-white/90{% endif %}" data-balance>R$ {{ dashboard.balance|floatformat:"2g" }}</p>
-        {% if dashboard.status == 'negative' %}
-          <span class="bg-error-50 text-error-600 dark:bg-error-500/15 dark:text-error-500 text-theme-xs mt-2 inline-flex rounded-full px-2.5 py-0.5 font-medium" data-balance-status>Você está no vermelho, cuidado</span>
-        {% elif dashboard.status == 'positive' %}
-          <span class="bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500 text-theme-xs mt-2 inline-flex rounded-full px-2.5 py-0.5 font-medium" data-balance-status>Você está no verde. Continue assim!</span>
-        {% endif %}
-      </div>
-
-      <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
-        <p class="text-sm text-gray-500 dark:text-gray-400">Entradas do mês</p>
-        <p class="text-2xl mt-1 font-semibold text-gray-800 dark:text-white/90" data-month-income>R$ {{ dashboard.month_income|floatformat:"2g" }}</p>
-        {% if dashboard.income_change is not None %}
-          <p class="text-theme-xs mt-2 text-gray-500 dark:text-gray-400">
-            <span class="{% if dashboard.income_change >= 0 %}bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500{% else %}bg-error-50 text-error-600 dark:bg-error-500/15 dark:text-error-500{% endif %} inline-flex rounded-full px-2 py-0.5 font-medium" data-income-change>{% if dashboard.income_change >= 0 %}▲ {{ dashboard.income_change }}{% else %}▼ {{ dashboard.income_change|cut:"-" }}{% endif %}%</span>
-            em relação ao mês anterior
-          </p>
-        {% endif %}
-      </div>
-
-      <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
-        <p class="text-sm text-gray-500 dark:text-gray-400">Despesas do mês</p>
-        <p class="text-2xl mt-1 font-semibold text-gray-800 dark:text-white/90" data-month-expense>R$ {{ dashboard.month_expense|floatformat:"2g" }}</p>
-        {% if dashboard.expense_change is not None %}
-          <p class="text-theme-xs mt-2 text-gray-500 dark:text-gray-400">
-            <span class="{% if dashboard.expense_change > 0 %}bg-error-50 text-error-600 dark:bg-error-500/15 dark:text-error-500{% else %}bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500{% endif %} inline-flex rounded-full px-2 py-0.5 font-medium" data-expense-change>{% if dashboard.expense_change >= 0 %}▲ {{ dashboard.expense_change }}{% else %}▼ {{ dashboard.expense_change|cut:"-" }}{% endif %}%</span>
-            em relação ao mês anterior
-          </p>
-        {% endif %}
-      </div>
-
-      <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
-        <p class="text-sm text-gray-500 dark:text-gray-400">Taxa de economia</p>
-        <p class="text-2xl mt-1 font-semibold text-gray-800 dark:text-white/90" data-savings-rate>{% if dashboard.savings_rate is None %}—{% else %}{{ dashboard.savings_rate|floatformat:1 }}%{% endif %}</p>
-        <p class="text-theme-xs mt-2 text-gray-500 dark:text-gray-400">{% if dashboard.savings_rate is None %}Sem entradas neste mês{% else %}do que entrou neste mês{% endif %}</p>
-      </div>
+  <div class="mt-4 grid grid-cols-1 gap-4 md:mt-6 md:gap-6 lg:grid-cols-12">
+    <div class="min-w-0 lg:col-span-5">
+      {% include "core/partials/categories_chart.html" with slices=dashboard.categories more_url=tabs.1.url %}
     </div>
 
-    <div class="mt-4 grid grid-cols-1 gap-4 md:mt-6 md:gap-6 lg:grid-cols-12">
-      <div class="rounded-2xl border border-gray-200 bg-white p-5 min-w-0 lg:col-span-5 dark:border-gray-800 dark:bg-white/[0.03]">
-        <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Gastos por categoria</h3>
-        <p class="text-theme-sm text-gray-500 dark:text-gray-400">Despesas do mês atual</p>
-        {% if dashboard.categories %}
-          <div class="mt-5 grid items-center gap-5 sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)] lg:grid-cols-1 2xl:grid-cols-[minmax(0,11rem)_minmax(0,1fr)]">
-            <div class="relative mx-auto h-44 w-44 max-w-full"><canvas id="chart-categories" role="img" aria-label="Gráfico de rosca com as despesas do mês por categoria"></canvas></div>
-            <ul class="space-y-3" data-category-legend>
-              {% for slice in dashboard.categories %}
-                <li class="cat-{{ slice.color }} flex items-center gap-2 text-sm">
-                  <span class="cat-dot h-2.5 w-2.5 shrink-0 rounded-full" aria-hidden="true"></span>
-                  <span class="min-w-0 flex-1 truncate text-gray-700 dark:text-gray-300">{{ slice.name }}</span>
-                  <span class="text-gray-800 dark:text-white/90">R$ {{ slice.amount|floatformat:"2g" }}</span>
-                  <span class="w-10 text-right text-gray-500 dark:text-gray-400">{{ slice.percent }}%</span>
-                </li>
-              {% endfor %}
-            </ul>
-          </div>
-        {% else %}
-          <p class="mt-10 mb-6 text-center text-sm text-gray-500 dark:text-gray-400" data-no-expenses>Nenhum gasto registrado neste mês.</p>
-        {% endif %}
-      </div>
-
-      <div class="rounded-2xl border border-gray-200 bg-white p-5 min-w-0 lg:col-span-7 dark:border-gray-800 dark:bg-white/[0.03]">
-        <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Fluxo de caixa</h3>
-        <p class="text-theme-sm text-gray-500 dark:text-gray-400">Entradas e despesas dos últimos 6 meses</p>
-        <div class="relative mt-5 h-64"><canvas id="chart-cashflow" role="img" aria-label="Gráfico de colunas com entradas e despesas dos últimos 6 meses"></canvas></div>
-      </div>
-    </div>
-
-    <div class="mt-4 rounded-2xl border border-gray-200 bg-white p-5 md:mt-6 dark:border-gray-800 dark:bg-white/[0.03]">
-      <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Evolução do saldo</h3>
-      <p class="text-theme-sm text-gray-500 dark:text-gray-400">Saldo ao fim de cada um dos últimos 6 meses</p>
-      <div class="relative mt-5 h-64"><canvas id="chart-balance" role="img" aria-label="Gráfico de área com o saldo ao fim de cada mês"></canvas></div>
-    </div>
-
-    <div class="mt-4 rounded-2xl border border-gray-200 bg-white md:mt-6 dark:border-gray-800 dark:bg-white/[0.03]">
+    <div class="min-w-0 rounded-2xl border border-gray-200 bg-white lg:col-span-7 dark:border-gray-800 dark:bg-white/[0.03]">
       <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-6">
         <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Últimos lançamentos</h3>
-        <a href="{% url 'transactions:list' %}" class="text-brand-500 dark:text-brand-400 text-sm hover:underline">Ver todos os lançamentos</a>
+        <a href="{{ tabs.3.url }}" class="text-brand-500 dark:text-brand-400 text-sm hover:underline">Ver detalhes</a>
       </div>
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm" data-recent>
-          <thead>
-            <tr class="border-y border-gray-100 text-gray-500 dark:border-gray-800 dark:text-gray-400">
-              <th scope="col" class="px-3 py-3 font-normal sm:px-6">Descrição</th>
-              <th scope="col" class="hidden px-3 py-3 font-normal sm:table-cell sm:px-6">Data</th>
-              <th scope="col" class="px-3 py-3 font-normal sm:px-6">Valor</th>
-              <th scope="col" class="hidden px-3 py-3 font-normal md:table-cell md:px-6">Tipo</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-            {% for item in dashboard.recent %}
-              <tr>
-                <td class="px-3 py-3 sm:px-6">
-                  <span class="block font-medium text-gray-800 dark:text-white/90">{{ item.description }}</span>
-                  {% if item.category %}<span class="mt-0.5 block">{% category_chip item.category %}</span>{% endif %}
-                  <span class="block text-xs text-gray-500 sm:hidden dark:text-gray-400">{{ item.date|date:"d/m/Y" }}</span>
-                </td>
-                <td class="hidden px-3 py-3 whitespace-nowrap text-gray-500 sm:table-cell sm:px-6 dark:text-gray-400">{{ item.date|date:"d/m/Y" }}</td>
-                <td class="px-3 py-3 font-medium whitespace-nowrap sm:px-6 {% if item.kind == 'income' %}text-success-600{% else %}text-error-500{% endif %}">
-                  {% if item.kind == 'income' %}+{% else %}−{% endif %} R$ {{ item.amount|floatformat:"2g" }}
-                </td>
-                <td class="hidden px-3 py-3 md:table-cell md:px-6">
-                  {% if item.kind == 'income' %}
-                    <span class="bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500 text-theme-xs inline-flex rounded-full px-2 py-0.5 font-medium">{{ item.get_kind_display }}</span>
-                  {% else %}
-                    <span class="bg-error-50 text-error-600 dark:bg-error-500/15 dark:text-error-500 text-theme-xs inline-flex rounded-full px-2 py-0.5 font-medium">{{ item.get_kind_display }}</span>
-                  {% endif %}
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+      {% include "core/partials/transactions_table.html" with transactions=dashboard.recent %}
     </div>
-
-    {{ dashboard.chart_data|json_script:"dashboard-data" }}
-  {% endif %}
+  </div>
 {% endblock %}
