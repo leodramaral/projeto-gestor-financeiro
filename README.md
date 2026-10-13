@@ -175,6 +175,7 @@ static/            imagens versionadas; static/dist/ é gerado e não versionado
 frontend/          CSS-fonte (Tailwind) e licença do TailAdmin
 docker/            Dockerfile da aplicação
 openspec/          specs vigentes (specs/) e changes em andamento/arquivadas (changes/)
+design/            design das telas no FigCraft (`.figcraft`) e a fonte do design (`fonts/`)
 .claude/ .agents/  comandos e skills dos agentes de IA usados no fluxo
 AGENTS.md          convenções, fronteiras e armadilhas (fonte única para agentes)
 ```
@@ -305,6 +306,37 @@ Se os comandos não aparecerem no Claude Code, rode `openspec update` e reinicie
 - Trabalho fora de change usa a área como escopo: `docs: ...`, `chore(docker): ...`.
 - O título do PR segue o mesmo padrão e o corpo traz `Closes #<n>`.
 - Nunca se versionam segredos: só o `.env.example`, sem valores reais.
+
+### Design das telas (FigCraft)
+
+O design das telas mora em [`design/`](design/), feito no [**FigCraft**](https://getartcraft.com/apps/figcraft).
+Ele não é necessário para rodar nem para desenvolver o app, só para ver, editar ou
+exportar o design.
+
+- **Arquivos:** um `design/<tela>.figcraft` por tela ou fluxo (hoje cadastro, entrar, confirmação de
+  conta, recuperação de senha, lançamentos, categorias e perfil). O `.figcraft` é a **fonte
+  editável** (um zip com `document.json`, binário para o git: o PR não mostra o diff). O painel ainda
+  não tem design, porque o FigCraft não executa o Chart.js.
+- **Frames:** nomeados `<tela> · <viewport> · <tema> · <estado>`, como
+  `login · desktop · escuro · com erros`. Cada tela cobre desktop claro, desktop escuro e mobile claro,
+  mais os estados que o código tem (erro, vazio, sucesso, modal, exclusão).
+- **Fiel ao código:** cores e tamanhos vêm de `frontend/style.css`, e os textos, dos templates e dos
+  formulários. Quem muda uma tela atualiza o design na mesma change.
+- **Instalar o FigCraft:** `scripts/figcraft-upgrade` (precisa do `gh` logado) baixa a release,
+  confere o checksum e mantém o caminho `~/.local/share/figcraft/current/bin/figcraft-cli`.
+- **Instalar a fonte:** o design usa a Outfit, a mesma do app, e o FigCraft só desenha com fontes
+  instaladas no sistema. Instale `design/fonts/Outfit[wght].ttf` antes de editar ou exportar (Linux:
+  copie para `~/.local/share/fonts/` e rode `fc-cache -f`). Sem ela, o texto sai numa fonte substituta
+  sem aviso.
+- **Usar com o Claude Code (MCP), por usuário:**
+  `claude mcp add figcraft --scope local -- "$HOME/.local/share/figcraft/current/bin/figcraft-cli" mcp`
+  (sem `--no-system-fonts`), e reinicie a sessão.
+- **Exportar PNGs** (não versionados; `design/png/` é ignorada pelo git):
+  `figcraft-cli export design/login.figcraft -o design/png/ --format png`.
+
+Os detalhes (como renomear os PNGs, o que o design não reproduz do app) estão no
+[`AGENTS.md`](AGENTS.md), e a regra de cobertura, em
+[`openspec/specs/screen-design/`](openspec/specs/screen-design/).
 
 ### Convenções de idioma
 

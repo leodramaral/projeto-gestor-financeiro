@@ -45,3 +45,13 @@ def test_login_keeps_its_elements(client):
     assert "Lembrar de mim" in html
     assert reverse("accounts:password_reset") in html
     assert reverse("accounts:signup") in html
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("name", ["accounts:resend", "accounts:signup_done"])
+def test_card_pages_center_the_card(client, name):
+    html = render(client, name)
+
+    # "relativeflex" (typo) is a class that does not exist: the card would stick to the corner.
+    assert "relativeflex" not in html
+    assert "relative flex min-h-screen items-center justify-center" in html
