@@ -41,7 +41,8 @@ openspec validate --all                               # SEM --strict
 - **O domínio ainda não foi modelado.** Não crie model, regra de negócio nem tela de domínio sem uma
   change que a autorize.
 - **`static/dist/` e `node_modules/` não são versionados:** o CSS compilado nasce do serviço `css` do
-  Compose. Node só existe dentro do contêiner.
+  Compose, que também copia para `static/dist/` o Alpine, o Chart.js e a fonte Outfit
+  (`@fontsource-variable/outfit`, `scripts/copy-alpine.mjs`). Node só existe dentro do contêiner.
 - **Qualidade e CI.** Ruff (`E,F,I,UP,B,DJ,C90`, complexidade máxima 10, linha de 100) roda só via
   pre-commit (`.pre-commit-config.yaml`; instale com `uvx pre-commit install`). O CI
   (`.github/workflows/ci.yml`: `quality`, `tests`, `openspec`) repete tudo; **não mescle com o CI
@@ -65,6 +66,55 @@ openspec validate --all                               # SEM --strict
     worktree**. Só uma worktree por vez na 8000. `--build` só se `pyproject.toml` ou `uv.lock`
     mudaram. Para voltar ao checkout principal, rode `docker compose up -d` nele.
   - Testes sem trocar o `web`: `docker compose run --rm --no-deps web pytest` (o `db` de pé).
+
+## Design (FigCraft)
+
+O design das telas mora em `design/`, versionado. A ferramenta é o FigCraft (alpha; app desktop, CLI e
+servidor MCP). Não é preciso para rodar nem para desenvolver o app, só para editar ou exportar design.
+
+- **Arquivos.** `design/<tela>.figcraft` é o **artefato de design**: a fonte editável, um zip com
+  `document.json` (binário para o git; o PR não mostra o diff).
+  `design/png/` recebe os PNGs exportados do `.figcraft` e **não é versionado** (`.gitignore`): PNG não
+  tem diff e cada ajuste criaria um binário novo no histórico; exporte quando precisar ver. `design/fonts/` tem a fonte do design
+  (`Outfit[wght].ttf` e a `OFL.txt`). `design/` fica fora da imagem Docker (`.dockerignore`).
+- **Nomes.** Frame: `<tela> · <viewport> · <tema> · <estado>`, como `signup · desktop · claro · com
+  erros`: tela é o nome da rota em inglês, viewport é `desktop` ou `mobile`, tema é `claro` ou `escuro`
+  e o estado é em português (`padrão`, `com erros`, `senha válida`). O PNG leva o mesmo nome em
+  minúsculas, sem acento e com `-`: `signup-desktop-claro-com-erros.png`.
+- **Fiel ao código.** Cores e tamanhos vêm de `frontend/style.css` (inclusive a altura de linha de cada
+  classe `text-*`), e textos, rótulos e mensagens vêm dos templates e de `accounts/forms.py`; dado de
+  exemplo é claramente fictício (`Maria Silva`, `maria@exemplo.com`). Quem muda uma tela atualiza o
+  design na mesma change.
+- **Fonte.** O app serve a Outfit pelo build, para qualquer visitante. O FigCraft só desenha com fontes
+  **instaladas no sistema** (`.ttf`): antes de editar ou exportar, instale `design/fonts/Outfit[wght].ttf`
+  (Linux: copie para `~/.local/share/fonts/` e rode `fc-cache -f`; Windows: botão direito → Instalar).
+  Sem ela o texto sai numa fonte substituta, sem aviso, e os PNGs exportados saem com a tipografia errada.
+- **Instalar e atualizar o FigCraft** (CLI, servidor MCP e app Linux): `scripts/figcraft-upgrade`
+  (precisa do `gh` logado) baixa a release, confere o `SHA256SUMS` (recusa e não instala nada se não
+  bater) e mantém o caminho `~/.local/share/figcraft/current/bin/figcraft-cli`, que não muda entre
+  versões. `scripts/figcraft-upgrade --list` mostra as versões; `scripts/figcraft-upgrade <versão>`
+  instala uma específica; para voltar, `ln -sfn ~/.local/share/figcraft/<versão> ~/.local/share/figcraft/current`.
+  O app do Windows é o `.msi` da página de releases do FigCraft, que não passa pelo script.
+- **MCP, por usuário e nunca em `.mcp.json`** (o caminho do binário é da máquina de cada pessoa):
+
+  ```bash
+  claude mcp add figcraft --scope local -- "$HOME/.local/share/figcraft/current/bin/figcraft-cli" mcp
+  ```
+
+  Sem `--no-system-fonts`, senão a Outfit instalada não aparece. Reinicie a sessão do Claude Code
+  depois de registrar ou de atualizar.
+- **Exportar os PNGs** (opcional, não vão para o git) a partir do `.figcraft`; o export nomeia `signup _ desktop _ …`, então renomeie
+  pela convenção acima:
+
+  ```bash
+  ~/.local/share/figcraft/current/bin/figcraft-cli export design/signup.figcraft -o design/png/ --format png
+  ```
+
+  A pasta `design/png/` é ignorada pelo git.
+- **Divergências conhecidas** entre o design do cadastro e o app: só o mobile claro existe; sem estados
+  de foco (o app dá `autofocus` ao campo Nome) nem `shadow-theme-xs` nos campos; sem a caixa de erro
+  geral (`form_errors`). O `-mt-2` do Tailwind não existe no auto layout: o design o reproduz com um
+  grupo de 8 px entre o campo e o item abaixo dele.
 
 ## Fluxo de trabalho: Issues + OpenSpec
 
