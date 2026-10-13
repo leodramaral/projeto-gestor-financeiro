@@ -41,6 +41,7 @@ def test_post_without_csrf_token_is_refused(user, make_goal):
         "goals:progress",
         "goals:delete",
         "goals:complete",
+        "goals:reopen",
     ):
         args = [] if name == "goals:create" else [goal.pk]
         assert strict.post(reverse(name, args=args), {"name": "x"}).status_code == 403

@@ -12,7 +12,7 @@
     <div class="mb-4">{% include "partials/alert.html" with title="Tudo certo" message=message %}</div>
   {% endfor %}
 
-  {% if goals %}
+  {% if active or completed %}
     {% if active %}
       {% include "goals/partials/goal_section.html" with title="Ativas" subtitle=active_subtitle goals=active new_button=True %}
     {% else %}
