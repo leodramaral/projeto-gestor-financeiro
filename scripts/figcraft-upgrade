@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+# Installs or upgrades FigCraft (CLI, MCP server and Linux app) from the GitHub releases (see
+# AGENTS.md, "Design").
+#
+#   scripts/figcraft-upgrade             install the latest release
+#   scripts/figcraft-upgrade <version>   install a specific version, e.g. 0.5.1
+#   scripts/figcraft-upgrade --list      list the installed versions
+#
+# Each version lives in ~/.local/share/figcraft/<version>/ and `current` points to the active one, so
+# the MCP path (~/.local/share/figcraft/current/bin/figcraft-cli) never changes. To roll back:
+#   ln -sfn ~/.local/share/figcraft/<old-version> ~/.local/share/figcraft/current
+# Needs the GitHub CLI (`gh`) logged in. The release checksum is verified before anything is installed.
+set -euo pipefail
+
+REPO="storytold/figcraft"
+ROOT="${FIGCRAFT_HOME:-$HOME/.local/share/figcraft}"
+
+die() {
+  echo "figcraft-upgrade: $*" >&2
+  exit 1
+}
+
+usage() {
+  sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//' >&2
+  exit 2
+}
+
+list_versions() {
+  local current dir name marker
+  current="$(readlink "$ROOT/current" 2>/dev/null || true)"
+  for dir in "$ROOT"/*/; do
+    [[ -d "$dir" ]] || continue
+    name="$(basename "$dir")"
+    [[ "$name" == "current" ]] && continue # the symlink to the active version, not a version
+    marker=""
+    [[ "${dir%/}" == "$current" ]] && marker=" (active)"
+    echo "$name$marker"
+  done
+}
+
+case "${1:-}" in
+  --list) list_versions; exit 0 ;;
+  -h | --help) usage ;;
+  -*) usage ;;
+esac
+
+command -v gh >/dev/null || die "the GitHub CLI (gh) is required"
+
+case "$(uname -m)" in
+  x86_64) ARCH="x86_64" ;;
+  aarch64 | arm64) ARCH="aarch64" ;;
+  *) die "no Linux build in the release for $(uname -m)" ;;
+esac
+
+if [[ -n "${1:-}" ]]; then
+  TAG="v${1#v}"
+else
+  TAG="$(gh release view -R "$REPO" --json tagName -q .tagName)" || die "could not read the latest release"
+fi
+VERSION="${TAG#v}"
+ASSET="figcraft-${VERSION}-linux-${ARCH}.tar.gz"
+TARGET="$ROOT/$VERSION"
+
+if [[ -x "$TARGET/bin/figcraft-cli" ]]; then
+  echo "FigCraft $VERSION is already installed."
+else
+  mkdir -p "$ROOT"
+  WORK="$(mktemp -d "$ROOT/.install.XXXXXX")"
+  trap 'rm -rf "$WORK"' EXIT
+
+  echo "Downloading $ASSET ($TAG)..."
+  gh release download "$TAG" -R "$REPO" -p "$ASSET" -p SHA256SUMS.txt -D "$WORK" \
+    || die "could not download $ASSET from $TAG"
+
+  echo "Verifying the checksum..."
+  # Only the line for this asset: the sums file also lists files that were not downloaded.
+  (cd "$WORK" && grep " ${ASSET}\$" SHA256SUMS.txt | sha256sum -c -) \
+    || die "checksum mismatch for $ASSET; nothing was installed"
+
+  # Extract aside and move into place, so a failure never leaves a half-installed version.
+  mkdir "$WORK/extract"
+  tar -xzf "$WORK/$ASSET" -C "$WORK/extract" --strip-components=1
+  [[ -x "$WORK/extract/bin/figcraft-cli" ]] || die "the tarball has no bin/figcraft-cli; nothing was installed"
+  mv "$WORK/extract" "$TARGET"
+fi
+
+ln -sfn "$TARGET" "$ROOT/current"
+echo "Active: $("$ROOT/current/bin/figcraft-cli" --version 2>&1 | head -n 1)"
+echo "CLI:    $ROOT/current/bin/figcraft-cli"
+echo "If the MCP server is registered, restart the Claude Code session to reconnect it."

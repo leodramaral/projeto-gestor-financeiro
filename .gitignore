@@ -28,3 +28,6 @@ worktrees/
 # Front-end
 node_modules/
 static/dist/
+
+# Design: PNGs exported from design/*.figcraft are derived, regenerate them (see AGENTS.md)
+design/png/

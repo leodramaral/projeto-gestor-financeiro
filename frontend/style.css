@@ -1,9 +1,20 @@
-/* Base visual: TailAdmin Free 2.x (MIT), ver frontend/TAILADMIN-LICENSE. Fonte Outfit via Google Fonts removida
-   para o build não depender de rede; cai na fonte do sistema. */
+/* Base visual: TailAdmin Free 2.x (MIT), ver frontend/TAILADMIN-LICENSE. */
 @import "tailwindcss";
 @plugin "@tailwindcss/forms";
 
 @custom-variant dark (&:is(.dark *));
+
+/* Outfit (OFL-1.1) is served by the app itself, not by Google Fonts, so the build needs no network and
+   visitors do not need the font installed. scripts/copy-alpine.mjs copies the file from the
+   @fontsource-variable/outfit package to static/dist/fonts/; the url is relative to this CSS in
+   static/dist/css/. Only the latin subset is shipped: it covers the accents of Portuguese. */
+@font-face {
+  font-family: "Outfit";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("../fonts/outfit-latin-wght-normal.woff2") format("woff2-variations");
+}
 
 @theme {
   --font-*: initial;

@@ -1,6 +1,6 @@
 # Instalação: `uvx pre-commit install`. Rodar em tudo: `uvx pre-commit run --all-files`.
 # O CI executa estes mesmos hooks (job `quality`), então as regras vivem só aqui.
-exclude: ^(uv\.lock|package-lock\.json|openspec/|static/dist/|node_modules/)
+exclude: ^(uv\.lock|package-lock\.json|openspec/|static/dist/|node_modules/|design/fonts/)
 
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
