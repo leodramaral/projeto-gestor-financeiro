@@ -121,6 +121,14 @@ servidor MCP). Não é preciso para rodar nem para desenvolver o app, só para e
   segue o idioma); o fundo dos modais é a casca da tela só com o título; menu `⋯` aberto não é desenhado;
   o frame é o tamanho da janela, sem a rolagem; o arquivo foi gerado por script e não usa componentes do
   FigCraft; dados fictícios (`Maria Silva`, 5 metas).
+- **Divergências conhecidas das demais telas** (login, confirmação de conta, recuperação de senha,
+  lançamentos, categorias e perfil; o painel não tem design, por causa dos gráficos): sem estados de foco e de hover
+  (o app dá `autofocus` ao primeiro campo) e sem `shadow-theme-*` em cartões, campos, modais e menus; o
+  frame é o tamanho da janela (1440×900 ou 390×844), sem a rolagem da página; menu de ações da linha aberto
+  só nos frames "menu de ações" e lista do seletor de categoria sempre fechada; o campo de data não mostra o
+  ícone de calendário do navegador; o negrito de "Outros" no aviso de exclusão de categoria não é
+  reproduzido; os dados são fictícios e coerentes entre as telas (`Maria Silva`, 8 lançamentos), não os do
+  app.
 
 ## Fluxo de trabalho: Issues + OpenSpec
 
