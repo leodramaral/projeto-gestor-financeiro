@@ -27,7 +27,7 @@ usage() {
 
 list_versions() {
   local current dir name marker
-  current="$(readlink "$ROOT/current" 2>/dev/null || true)"
+  current="$(readlink -f "$ROOT/current" 2>/dev/null || true)"
   for dir in "$ROOT"/*/; do
     [[ -d "$dir" ]] || continue
     name="$(basename "$dir")"
@@ -81,6 +81,7 @@ else
   mkdir "$WORK/extract"
   tar -xzf "$WORK/$ASSET" -C "$WORK/extract" --strip-components=1
   [[ -x "$WORK/extract/bin/figcraft-cli" ]] || die "the tarball has no bin/figcraft-cli; nothing was installed"
+  rm -rf "$TARGET" # leftovers without the binary would make mv nest extract/ inside it
   mv "$WORK/extract" "$TARGET"
 fi
 
