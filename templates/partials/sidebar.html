@@ -100,6 +100,18 @@
             </a>
             {% endwith %}
           </li>
+          <li>
+            {% with active=request.resolver_match.app_name %}
+            <a href="{% url 'goals:list' %}" class="menu-item group {% if active == 'goals' %}menu-item-active{% else %}menu-item-inactive{% endif %}"{% if active == 'goals' %} aria-current="page"{% endif %}>
+              <svg class="{% if active == 'goals' %}menu-item-icon-active{% else %}menu-item-icon-inactive{% endif %}" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.8" />
+                <circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.8" />
+                <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+              </svg>
+              <span class="menu-item-text" :class="sidebarToggle ? 'xl:hidden' : ''">Metas</span>
+            </a>
+            {% endwith %}
+          </li>
         </ul>
       </div>
     </nav>

@@ -1,0 +1,73 @@
+{# Linha de uma meta (Opção B do design). Parâmetro: goal. Tabela no xl, itens empilhados no mobile. #}
+<li class="grid grid-cols-[1fr_auto] gap-x-3 gap-y-3 px-4 py-4 md:grid-cols-[minmax(0,1.76fr)_minmax(0,1.47fr)_minmax(0,0.93fr)_minmax(0,1fr)] md:items-center md:px-6 md:py-3">
+  <div class="flex min-w-0 items-center gap-3">
+    {% if goal.is_completed %}
+      <span class="bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500 hidden h-10 w-10 shrink-0 items-center justify-center rounded-full md:flex" aria-hidden="true">
+        <svg class="stroke-current" width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+      </span>
+    {% else %}
+      <span class="bg-brand-50 text-brand-500 dark:bg-brand-500/15 dark:text-brand-400 hidden h-10 w-10 shrink-0 items-center justify-center rounded-full md:flex" aria-hidden="true">
+        <svg class="stroke-current" width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke-width="1.8" /><circle cx="12" cy="12" r="4.5" stroke-width="1.8" /><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" /></svg>
+      </span>
+    {% endif %}
+    <div class="min-w-0">
+      <p class="truncate text-sm font-medium text-gray-800 dark:text-white/90">{{ goal.name }}</p>
+      <p class="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+        {% if goal.is_completed %}
+          Concluída em {{ goal.completed_at|date:"d/m/Y" }}
+        {% elif goal.deadline %}
+          {% if goal.is_overdue %}<span class="bg-error-50 text-error-600 dark:bg-error-500/15 dark:text-error-500 text-theme-xs inline-flex rounded-full px-2 py-0.5 font-medium">Atrasada</span>{% endif %}
+          Prazo: {{ goal.deadline|date:"d/m/Y" }}
+        {% else %}
+          <span class="text-theme-xs inline-flex rounded-full bg-gray-100 px-2 py-0.5 font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300">Sem prazo</span>
+        {% endif %}
+      </p>
+    </div>
+  </div>
+
+  <div class="flex items-center justify-end gap-2 md:order-last">
+    {% if goal.is_completed %}
+      <form method="post" action="{% url 'goals:reopen' goal.pk %}" class="hidden xl:block">
+        {% csrf_token %}
+        <button type="submit" class="h-9 rounded-lg border border-gray-300 px-3.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/5">Reabrir</button>
+      </form>
+    {% else %}
+      <a href="{% url 'goals:progress' goal.pk %}" data-modal class="hidden h-9 items-center rounded-lg border border-gray-300 px-3.5 text-sm font-medium whitespace-nowrap text-gray-700 hover:bg-gray-50 xl:inline-flex dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/5">Registrar progresso</a>
+    {% endif %}
+    <div class="relative inline-block text-left" x-data="{ open: false }" @keydown.escape.window="open = false" @click.outside="open = false">
+      <button type="button" @click="open = !open" :aria-expanded="open" aria-haspopup="menu" aria-label="Ações da meta {{ goal.name }}" class="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5">
+        <svg class="fill-current" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M5.99 10.25a1.75 1.75 0 1 1 0 3.5 1.75 1.75 0 0 1 0-3.5Zm6 0a1.75 1.75 0 1 1 0 3.5 1.75 1.75 0 0 1 0-3.5Zm6 0a1.75 1.75 0 1 1 0 3.5 1.75 1.75 0 0 1 0-3.5Z" /></svg>
+      </button>
+      <div x-show="open" x-cloak x-transition.opacity role="menu" @click="open = false" class="shadow-theme-lg absolute right-0 z-20 mt-1 w-56 rounded-xl border border-gray-200 bg-white p-1.5 text-left dark:border-gray-800 dark:bg-gray-900">
+        {% if not goal.is_completed %}
+          <a href="{% url 'goals:progress' goal.pk %}" data-modal role="menuitem" class="flex w-full rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5">Registrar progresso</a>
+        {% endif %}
+        <a href="{% url 'goals:update' goal.pk %}" data-modal role="menuitem" class="flex w-full rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5">Editar</a>
+        {% if goal.is_completed %}
+          <form method="post" action="{% url 'goals:reopen' goal.pk %}">
+            {% csrf_token %}
+            <button type="submit" role="menuitem" class="flex w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5">Reabrir</button>
+          </form>
+        {% else %}
+          <form method="post" action="{% url 'goals:complete' goal.pk %}">
+            {% csrf_token %}
+            <button type="submit" role="menuitem" class="flex w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5">Marcar como concluída</button>
+          </form>
+        {% endif %}
+        <a href="{% url 'goals:delete' goal.pk %}" data-modal role="menuitem" class="text-error-600 dark:text-error-500 flex w-full rounded-lg px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-white/5">Excluir</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-span-2 flex items-center gap-3 md:col-span-1">
+    <div class="h-2 w-full rounded-full md:max-w-56 bg-gray-100 dark:bg-gray-800" role="progressbar" aria-label="Progresso da meta {{ goal.name }}" aria-valuenow="{{ goal.progress_percent }}" aria-valuemin="0" aria-valuemax="100">
+      <div class="h-2 rounded-full {% if goal.is_completed %}bg-success-500{% else %}bg-brand-500{% endif %}" style="width: {{ goal.progress_percent }}%"></div>
+    </div>
+    <span class="text-sm font-medium {% if goal.is_completed %}text-success-600{% else %}text-gray-800 dark:text-white/90{% endif %}">{{ goal.progress_percent }}%</span>
+  </div>
+
+  <div class="col-span-2 flex flex-wrap items-baseline gap-x-1 md:col-span-1 md:flex-col md:gap-x-0">
+    <span class="text-sm font-medium text-gray-800 dark:text-white/90">R$ {{ goal.saved_amount|floatformat:"2g" }}</span>
+    <span class="text-sm text-gray-500 md:text-xs dark:text-gray-400">de R$ {{ goal.target_amount|floatformat:"2g" }}</span>
+  </div>
+</li>

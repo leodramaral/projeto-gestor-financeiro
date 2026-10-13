@@ -1,6 +1,7 @@
 /* Base visual: TailAdmin Free 2.x (MIT), ver frontend/TAILADMIN-LICENSE. */
 @import "tailwindcss";
 @plugin "@tailwindcss/forms";
+@import "flatpickr/dist/flatpickr.min.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -535,4 +536,160 @@
 /* Bolinha de cor da categoria (legenda da rosca do painel). */
 .cat-dot {
   background-color: var(--cat-fill);
+}
+
+/* Seletor de data (flatpickr 4.6.13, MIT): ajuste de tema portado do CSS do TailAdmin Free, só a data
+   única (sem intervalo). O JS está em static/js/datepicker.js. */
+.flatpickr-wrapper {
+  width: 100%;
+}
+.flatpickr-calendar {
+  width: auto;
+  margin-top: 0.5rem;
+  padding: 1.25rem;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-gray-200);
+  background: #fff;
+  color: var(--color-gray-500);
+  box-shadow: var(--shadow-theme-lg);
+}
+.dark .flatpickr-calendar {
+  background: var(--color-gray-dark);
+  border-color: var(--color-gray-800);
+  color: var(--color-gray-400);
+  box-shadow: var(--shadow-theme-xl);
+}
+.flatpickr-calendar.static {
+  left: 0;
+  top: 100%;
+  z-index: 10;
+}
+.flatpickr-calendar.static.flip-up {
+  top: auto;
+  bottom: 100%;
+  margin: 0 0 0.5rem;
+}
+.flatpickr-calendar.arrowTop:before,
+.flatpickr-calendar.arrowTop:after,
+.flatpickr-calendar.arrowBottom:before,
+.flatpickr-calendar.arrowBottom:after {
+  display: none;
+}
+.flatpickr-months .flatpickr-month {
+  height: 2.25rem;
+}
+.flatpickr-months .flatpickr-month,
+.flatpickr-current-month .cur-month,
+.flatpickr-current-month input.cur-year {
+  color: var(--color-gray-800);
+  fill: var(--color-gray-800);
+  font-size: var(--text-theme-xl);
+  font-weight: 500;
+}
+.dark .flatpickr-months .flatpickr-month,
+.dark .flatpickr-current-month .cur-month,
+.dark .flatpickr-current-month input.cur-year {
+  color: rgb(255 255 255 / 0.9);
+  fill: rgb(255 255 255 / 0.9);
+}
+/* Mês e ano centralizados: o campo do ano reserva 6 caracteres e as setas de rolagem, o que empurrava o
+   texto para a esquerda. */
+.flatpickr-current-month {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0;
+  font-size: var(--text-theme-xl);
+}
+.flatpickr-current-month .numInputWrapper {
+  width: 4.5ch;
+}
+.flatpickr-current-month .numInputWrapper span.arrowUp,
+.flatpickr-current-month .numInputWrapper span.arrowDown {
+  display: none;
+}
+.flatpickr-current-month input.cur-year {
+  padding: 0;
+}
+.flatpickr-months .flatpickr-prev-month,
+.flatpickr-months .flatpickr-next-month {
+  top: 1.75rem;
+  padding: 0;
+  color: var(--color-gray-500);
+}
+.flatpickr-months .flatpickr-prev-month {
+  left: 1.75rem;
+}
+.flatpickr-months .flatpickr-next-month {
+  right: 1.75rem;
+}
+.dark .flatpickr-months .flatpickr-prev-month,
+.dark .flatpickr-months .flatpickr-next-month {
+  color: #fff;
+}
+.flatpickr-months .flatpickr-prev-month:hover,
+.flatpickr-months .flatpickr-next-month:hover {
+  color: var(--color-brand-500);
+}
+.flatpickr-months .flatpickr-prev-month svg,
+.flatpickr-months .flatpickr-next-month svg,
+.flatpickr-months .flatpickr-prev-month:hover svg,
+.flatpickr-months .flatpickr-next-month:hover svg {
+  fill: none;
+  stroke: currentColor;
+}
+.flatpickr-weekdays {
+  height: auto;
+  margin: 1.5rem 0 1rem;
+}
+span.flatpickr-weekday {
+  color: var(--color-gray-500);
+  font-size: var(--text-theme-sm);
+  font-weight: 500;
+}
+.dark span.flatpickr-weekday {
+  color: var(--color-gray-400);
+}
+.flatpickr-day {
+  display: flex;
+  align-items: center;
+  color: var(--color-gray-800);
+  font-size: var(--text-theme-sm);
+  font-weight: 500;
+}
+.dark .flatpickr-day {
+  color: rgb(255 255 255 / 0.9);
+}
+.flatpickr-day.nextMonthDay,
+.flatpickr-day.prevMonthDay,
+.flatpickr-day.flatpickr-disabled,
+.flatpickr-day.flatpickr-disabled:hover {
+  color: var(--color-gray-400);
+}
+.dark .flatpickr-day.nextMonthDay,
+.dark .flatpickr-day.prevMonthDay,
+.dark .flatpickr-day.flatpickr-disabled,
+.dark .flatpickr-day.flatpickr-disabled:hover {
+  color: var(--color-gray-600);
+}
+.flatpickr-day:hover,
+.flatpickr-day:focus {
+  background: var(--color-gray-50);
+  border-color: var(--color-gray-50);
+}
+.dark .flatpickr-day:hover,
+.dark .flatpickr-day:focus {
+  background: rgb(255 255 255 / 0.05);
+  border-color: rgb(255 255 255 / 0.05);
+}
+.flatpickr-day.today {
+  border-color: var(--color-brand-300);
+}
+.flatpickr-day.selected,
+.flatpickr-day.selected:hover,
+.flatpickr-day.selected:focus {
+  background: var(--color-brand-500);
+  border-color: var(--color-brand-500);
+  color: #fff;
 }
