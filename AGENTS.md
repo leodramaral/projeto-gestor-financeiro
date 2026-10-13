@@ -115,6 +115,14 @@ servidor MCP). Não é preciso para rodar nem para desenvolver o app, só para e
   de foco (o app dá `autofocus` ao campo Nome) nem `shadow-theme-xs` nos campos; sem a caixa de erro
   geral (`form_errors`). O `-mt-2` do Tailwind não existe no auto layout: o design o reproduz com um
   grupo de 8 px entre o campo e o item abaixo dele.
+- **Divergências conhecidas das demais telas** (login, confirmação de conta, recuperação de senha,
+  lançamentos, categorias e perfil; o painel não tem design, por causa dos gráficos): sem estados de foco e de hover
+  (o app dá `autofocus` ao primeiro campo) e sem `shadow-theme-*` em cartões, campos, modais e menus; o
+  frame é o tamanho da janela (1440×900 ou 390×844), sem a rolagem da página; menu de ações da linha aberto
+  só nos frames "menu de ações" e lista do seletor de categoria sempre fechada; o campo de data não mostra o
+  ícone de calendário do navegador; o negrito de "Outros" no aviso de exclusão de categoria não é
+  reproduzido; os dados são fictícios e coerentes entre as telas (`Maria Silva`, 8 lançamentos), não os do
+  app.
 
 ## Fluxo de trabalho: Issues + OpenSpec
 
