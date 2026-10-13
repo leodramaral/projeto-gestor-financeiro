@@ -25,7 +25,7 @@ OpenSpec (ver [Fluxo de desenvolvimento](#parte-2--fluxo-de-desenvolvimento)); o
 hoje está em [`openspec/specs/`](openspec/specs/).
 
 **Stack:** Python 3.12, Django 5.2 (templates no servidor, sem SPA), PostgreSQL 16, Tailwind CSS 4,
-Alpine.js e Chart.js (MIT, servido localmente). Tudo roda em Docker.
+Alpine.js, Chart.js e flatpickr (MIT, servidos localmente). Tudo roda em Docker.
 
 ---
 
@@ -169,6 +169,7 @@ verde-azulado **jade**. Tudo vem de poucos pontos:
 config/            projeto Django: urls, wsgi/asgi e settings/{base,dev,test,prod}.py
 accounts/          usuários: modelo `User`, cadastro, confirmação por e-mail, login/logout e testes
 transactions/      lançamentos e categorias: models `Transaction` e `Category`, telas, ícones/cores (`appearance.py`), os SVGs em `icons/` e testes
+goals/             metas financeiras: model `Goal`, formulários, telas (lista, modal, progresso) e testes
 core/              app Django inicial (home, que leva à listagem), envio de e-mail (`emailing.py`) e seus testes
 templates/         base.html, parciais (sidebar, header...), telas e e-mails (`email/`)
 static/            imagens versionadas; static/dist/ é gerado e não versionado
@@ -222,7 +223,39 @@ O saldo atual não é guardado: é a soma das entradas menos a das despesas, cal
 Não há tela de saldo inicial: para partir de um saldo que já existia, registre uma Entrada (por exemplo,
 "Saldo inicial").
 
+### Metas
+
+Em `/goals/` o usuário define metas financeiras (nome, valor-alvo e prazo opcional), registra quanto já
+guardou e acompanha o progresso por uma barra (guardado ÷ alvo, no máximo 100 %). Metas concluídas ficam
+numa seção separada das ativas, e uma meta ativa com prazo vencido aparece como "Atrasada". Rotas, todas
+exigindo login:
+
+| Rota | O que faz |
+|---|---|
+| `/goals/` | metas ativas (prazo mais próximo primeiro, sem prazo por último) e concluídas |
+| `/goals/new/` | nova meta |
+| `/goals/<id>/edit/` | edita nome, valor-alvo, valor guardado e prazo |
+| `/goals/<id>/progress/` | registra o total já guardado |
+| `/goals/<id>/delete/` | pede confirmação e, no envio, exclui |
+| `/goals/<id>/complete/` | marca como concluída (só POST) |
+| `/goals/<id>/reopen/` | reabre uma meta concluída (só POST) |
+
+Os formulários abrem em modal, como em Lançamentos (reaproveitam `static/js/transaction-modal.js`). A meta
+de outro usuário responde 404. O prazo, se informado, não pode estar no passado, mas uma meta já
+atrasada ainda aceita progresso. O valor guardado é o **total** (não uma soma de aportes) e **não** cria
+lançamento nem altera o saldo.
+
+| Tabela | Campos principais |
+|---|---|
+| `goals_goal` | `user` (FK), `name` (até 60), `target_amount` (> 0), `saved_amount` (>= 0, padrão 0), `deadline` (anulável), `completed_at` (anulável: preenchido = concluída) |
+
+O design da tela (lista em linhas, modais e seletor de data) está em `design/goals.figcraft`.
+
 ### Créditos
+
+O seletor de data do prazo das metas é o [flatpickr](https://flatpickr.js.org) 4.6.13 (MIT), copiado de
+`node_modules` para `static/dist/` pelo build, com o ajuste de tema portado do TailAdmin Free (MIT). A
+inicialização está em `static/js/datepicker.js`.
 
 Os ícones das categorias são da [Lucide](https://lucide.dev) (`lucide-static` 1.52.0), sob a licença
 ISC. Os 20 arquivos usados estão em `transactions/icons/`, com o texto da licença em `LICENSE`.

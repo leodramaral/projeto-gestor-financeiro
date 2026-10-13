@@ -1,0 +1,26 @@
+{% extends base_template %}
+
+{% block title %}Excluir meta · Gestor Financeiro{% endblock %}
+
+{% block content %}
+  {% if is_modal %}
+    <h2 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">Excluir meta</h2>
+  {% else %}
+    {% include "partials/breadcrumb.html" with title="Excluir meta" %}
+  {% endif %}
+
+  <div {% if not is_modal %}class="max-w-xl rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]"{% endif %}>
+    <p class="text-gray-800 dark:text-white/90">Tem certeza de que deseja excluir esta meta? Esta ação não pode ser desfeita.</p>
+    <dl class="mt-4 space-y-1 text-sm text-gray-700 dark:text-gray-300">
+      <div><dt class="inline font-medium">Nome:</dt> <dd class="inline">{{ object.name }}</dd></div>
+      <div><dt class="inline font-medium">Valor-alvo:</dt> <dd class="inline">R$ {{ object.target_amount|floatformat:"2g" }}</dd></div>
+      <div><dt class="inline font-medium">Valor guardado:</dt> <dd class="inline">R$ {{ object.saved_amount|floatformat:"2g" }}</dd></div>
+      {% if object.deadline %}<div><dt class="inline font-medium">Prazo:</dt> <dd class="inline">{{ object.deadline|date:"d/m/Y" }}</dd></div>{% endif %}
+    </dl>
+    <form method="post" class="mt-6 flex items-center gap-3">
+      {% csrf_token %}
+      <button type="submit" class="bg-error-500 hover:bg-error-600 h-11 rounded-lg px-4 text-sm font-medium text-white">Excluir</button>
+      <a href="{% url 'goals:list' %}" data-modal-close autofocus class="text-sm text-gray-500 hover:underline dark:text-gray-400">Cancelar</a>
+    </form>
+  </div>
+{% endblock %}

@@ -115,6 +115,12 @@ servidor MCP). Não é preciso para rodar nem para desenvolver o app, só para e
   de foco (o app dá `autofocus` ao campo Nome) nem `shadow-theme-xs` nos campos; sem a caixa de erro
   geral (`form_errors`). O `-mt-2` do Tailwind não existe no auto layout: o design o reproduz com um
   grupo de 8 px entre o campo e o item abaixo dele.
+- **Divergências conhecidas do design de metas** (`design/goals.figcraft`): sem estados de foco e de hover
+  (o app dá foco ao campo Nome no modal) e sem `shadow-theme-*`; o ícone de metas (alvo) e o de tema são
+  desenhados à mão; o hambúrguer do cabeçalho é outro; o campo de data mostra `dd/mm/aaaa` (o do navegador
+  segue o idioma); o fundo dos modais é a casca da tela só com o título; menu `⋯` aberto não é desenhado;
+  o frame é o tamanho da janela, sem a rolagem; o arquivo foi gerado por script e não usa componentes do
+  FigCraft; dados fictícios (`Maria Silva`, 5 metas).
 
 ## Fluxo de trabalho: Issues + OpenSpec
 

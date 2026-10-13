@@ -1,0 +1,26 @@
+{% extends base_template %}
+
+{% block title %}Registrar progresso · Gestor Financeiro{% endblock %}
+
+{% block content %}
+  {% if is_modal %}
+    <h2 class="mb-1 text-lg font-semibold text-gray-800 dark:text-white/90">Registrar progresso</h2>
+  {% else %}
+    {% include "partials/breadcrumb.html" with title="Registrar progresso" %}
+  {% endif %}
+
+  <div {% if not is_modal %}class="max-w-xl rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]"{% endif %}>
+    <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">{{ object.name }}</p>
+    <form method="post" novalidate class="space-y-4">
+      {% csrf_token %}
+      {% include "partials/form_errors.html" %}
+      {% for field in form %}
+        {% include "partials/form_field.html" %}
+      {% endfor %}
+      <div class="flex items-center gap-3 pt-2">
+        <button type="submit" class="bg-brand-500 hover:bg-brand-600 h-11 rounded-lg px-4 text-sm font-medium text-white">Salvar</button>
+        <a href="{% url 'goals:list' %}" data-modal-close class="text-sm text-gray-500 hover:underline dark:text-gray-400">Cancelar</a>
+      </div>
+    </form>
+  </div>
+{% endblock %}
