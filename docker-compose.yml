@@ -16,7 +16,7 @@ services:
     # o npm e o build rodam como `node`, para que static/dist/ não fique com dono root no host.
     user: root
     working_dir: /app
-    command: ["sh", "-c", "chown node:node node_modules && su node -s /bin/sh -c 'npm ci && npm run build'"]
+    command: ["sh", "-c", "chown -R node:node node_modules && su node -s /bin/sh -c 'npm ci && npm run build'"]
     volumes:
       - ./:/app
       - node_modules:/app/node_modules
