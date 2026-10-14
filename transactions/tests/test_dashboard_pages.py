@@ -210,7 +210,7 @@ def test_negative_balance_is_red_with_the_warning(logged_client, user, make_tran
     content = html(logged_client)
 
     assert "Você está no vermelho, cuidado" in content
-    assert "text-error-500" in content.split("data-balance>")[0].rsplit("<p", 1)[1]
+    assert "text-error-600" in content.split("data-balance>")[0].rsplit("<p", 1)[1]
     assert "− R$ 412,30" in content
     assert "Você está no verde" not in content
 

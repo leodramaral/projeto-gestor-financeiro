@@ -2,7 +2,7 @@
 <li class="grid grid-cols-[1fr_auto] gap-x-3 gap-y-3 px-4 py-4 md:grid-cols-[minmax(0,1.76fr)_minmax(0,1.47fr)_minmax(0,0.93fr)_minmax(0,1fr)] md:items-center md:px-6 md:py-3">
   <div class="flex min-w-0 items-center gap-3">
     {% if goal.is_completed %}
-      <span class="bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500 hidden h-10 w-10 shrink-0 items-center justify-center rounded-full md:flex" aria-hidden="true">
+      <span class="bg-success-50 text-success-700 dark:bg-success-500/15 dark:text-success-500 hidden h-10 w-10 shrink-0 items-center justify-center rounded-full md:flex" aria-hidden="true">
         <svg class="stroke-current" width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
       </span>
     {% else %}
@@ -16,7 +16,7 @@
         {% if goal.is_completed %}
           Concluída em {{ goal.completed_at|date:"d/m/Y" }}
         {% elif goal.deadline %}
-          {% if goal.is_overdue %}<span class="bg-error-50 text-error-600 dark:bg-error-500/15 dark:text-error-500 text-theme-xs inline-flex rounded-full px-2 py-0.5 font-medium">Atrasada</span>{% endif %}
+          {% if goal.is_overdue %}<span class="bg-error-50 text-error-700 dark:bg-error-500/15 dark:text-error-400 text-theme-xs inline-flex rounded-full px-2 py-0.5 font-medium">Atrasada</span>{% endif %}
           Prazo: {{ goal.deadline|date:"d/m/Y" }}
         {% else %}
           <span class="text-theme-xs inline-flex rounded-full bg-gray-100 px-2 py-0.5 font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300">Sem prazo</span>
@@ -63,7 +63,7 @@
     <div class="h-2 w-full rounded-full md:max-w-56 bg-gray-100 dark:bg-gray-800" role="progressbar" aria-label="Progresso da meta {{ goal.name }}" aria-valuenow="{{ goal.progress_percent }}" aria-valuemin="0" aria-valuemax="100">
       <div class="h-2 rounded-full {% if goal.is_completed %}bg-success-500{% else %}bg-brand-500{% endif %}" style="width: {{ goal.progress_percent }}%"></div>
     </div>
-    <span class="text-sm font-medium {% if goal.is_completed %}text-success-600{% else %}text-gray-800 dark:text-white/90{% endif %}">{{ goal.progress_percent }}%</span>
+    <span class="text-sm font-medium {% if goal.is_completed %}text-success-700 dark:text-success-500{% else %}text-gray-800 dark:text-white/90{% endif %}">{{ goal.progress_percent }}%</span>
   </div>
 
   <div class="col-span-2 flex flex-wrap items-baseline gap-x-1 md:col-span-1 md:flex-col md:gap-x-0">

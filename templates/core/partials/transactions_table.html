@@ -19,14 +19,14 @@
             <span class="block text-xs text-gray-500 sm:hidden dark:text-gray-400">{{ item.date|date:"d/m/Y" }}</span>
           </td>
           <td class="hidden px-3 py-3 whitespace-nowrap text-gray-500 sm:table-cell sm:px-6 dark:text-gray-400">{{ item.date|date:"d/m/Y" }}</td>
-          <td class="px-3 py-3 font-medium whitespace-nowrap sm:px-6 {% if item.kind == 'income' %}text-success-600{% else %}text-error-500{% endif %}">
+          <td class="px-3 py-3 font-medium whitespace-nowrap sm:px-6 {% if item.kind == 'income' %}text-success-700 dark:text-success-500{% else %}text-error-600 dark:text-error-500{% endif %}">
             {% if item.kind == 'income' %}+{% else %}−{% endif %} R$ {{ item.amount|floatformat:"2g" }}
           </td>
           <td class="hidden px-3 py-3 md:table-cell md:px-6">
             {% if item.kind == 'income' %}
-              <span class="bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500 text-theme-xs inline-flex rounded-full px-2 py-0.5 font-medium">{{ item.get_kind_display }}</span>
+              <span class="bg-success-50 text-success-700 dark:bg-success-500/15 dark:text-success-500 text-theme-xs inline-flex rounded-full px-2 py-0.5 font-medium">{{ item.get_kind_display }}</span>
             {% else %}
-              <span class="bg-error-50 text-error-600 dark:bg-error-500/15 dark:text-error-500 text-theme-xs inline-flex rounded-full px-2 py-0.5 font-medium">{{ item.get_kind_display }}</span>
+              <span class="bg-error-50 text-error-700 dark:bg-error-500/15 dark:text-error-400 text-theme-xs inline-flex rounded-full px-2 py-0.5 font-medium">{{ item.get_kind_display }}</span>
             {% endif %}
           </td>
         </tr>

@@ -16,7 +16,7 @@
       get longEnough() { return this.password1.length >= 8 },
       get notOnlyDigits() { return this.password1.length > 0 && !/^\d+$/.test(this.password1) },
       get matches() { return this.password2.length > 0 && this.password1 === this.password2 },
-      tone(started, ok) { return !started ? 'text-gray-500 dark:text-gray-400' : ok ? 'text-success-600 dark:text-success-500' : 'text-error-500' },
+      tone(started, ok) { return !started ? 'text-gray-500 dark:text-gray-400' : ok ? 'text-success-700 dark:text-success-500' : 'text-error-600 dark:text-error-500' },
       mark(started, ok) { return !started ? '○' : ok ? '✓' : '✗' },
     }"
   >

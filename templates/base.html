@@ -19,12 +19,13 @@
     x-init="$watch('sidebarToggle', collapsed => saveSidebar(collapsed)); $nextTick(() => document.documentElement.classList.add('sidebar-ready'))"
     :class="{ 'bg-gray-900': darkMode }"
   >
+    {% include "partials/skip_link.html" %}
     <div class="flex h-screen overflow-hidden">
       {% include "partials/sidebar.html" %}
       <div class="relative flex flex-1 flex-col overflow-x-hidden overflow-y-auto">
         {% include "partials/overlay.html" %}
         {% include "partials/header.html" %}
-        <main>
+        <main id="conteudo" tabindex="-1" class="outline-none">
           <div class="mx-auto max-w-(--breakpoint-2xl) p-4 pb-20 md:p-6 md:pb-6">
             {% block content %}{% endblock %}
           </div>

@@ -39,7 +39,8 @@ def test_list_renders_base_layout(logged_client):
     assert "partials/sidebar.html" in templates
     assert "partials/header.html" in templates
     content = response.content.decode()
-    assert "<main>" in content
+    assert '<main id="conteudo"' in content
+    assert 'href="#conteudo"' in content
     assert 'aria-current="page"' in content
 
 

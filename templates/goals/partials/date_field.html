@@ -8,7 +8,7 @@
     </span>
   </div>
   {% for error in field.errors %}
-    <p class="text-error-500 mt-1.5 text-xs">{{ error }}</p>
+    <p class="text-error-600 dark:text-error-500 mt-1.5 text-xs">{{ error }}</p>
   {% endfor %}
   {% if field.help_text %}
     <div class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">{{ field.help_text|safe }}</div>
