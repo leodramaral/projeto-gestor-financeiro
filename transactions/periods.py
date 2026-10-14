@@ -41,6 +41,10 @@ class MonthView:
         return _label(self.start)
 
     @property
+    def is_current(self):
+        return self.next is None
+
+    @property
     def previous_label(self):
         return _label(self.previous)
 
@@ -69,6 +73,8 @@ def resolve_month(raw, today, first_month=None):
     before `first_month` (the month of the first transaction) is raised to it.
     """
     current = today.replace(day=1)
+    if first_month:
+        first_month = min(first_month, current)  # a future-dated first transaction
     start = _parse_month(raw, current)
     if first_month and start < first_month:
         start = first_month
@@ -80,6 +86,17 @@ def resolve_month(raw, today, first_month=None):
         next=following if start < current else None,
         has_previous=start > (first_month or current),
     )
+
+
+def month_options(first_month, today):
+    """(`month` value, label) of every month from `first_month` to the current one, newest first."""
+    months = []
+    month = today.replace(day=1)
+    first_month = min(first_month, month)  # a future-dated first transaction
+    while month >= first_month:
+        months.append((month.strftime("%Y-%m"), _label(month).capitalize()))
+        month = shift_month(month, -1)
+    return months
 
 
 def first_transaction_month(user):

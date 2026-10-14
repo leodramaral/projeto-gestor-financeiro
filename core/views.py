@@ -4,7 +4,7 @@ from django.utils import timezone
 from django.views.generic import TemplateView
 
 from transactions import dashboard
-from transactions.periods import first_transaction_month, resolve_month
+from transactions.periods import first_transaction_month, month_options, resolve_month
 
 TABS = (
     ("overview", "Visão geral", "home"),
@@ -34,8 +34,10 @@ class DashboardTabView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
+        today = timezone.localdate()
         first_month = first_transaction_month(user)
-        month = resolve_month(self.request.GET.get("month"), timezone.localdate(), first_month)
+        month = resolve_month(self.request.GET.get("month"), today, first_month)
+        url_name = self.request.resolver_match.url_name
         context.update(
             dashboard_tab=self.tab,
             has_transactions=first_month is not None,
@@ -44,20 +46,18 @@ class DashboardTabView(LoginRequiredMixin, TemplateView):
                 {
                     "key": key,
                     "label": label,
-                    "url": month_url(url_name, month.start),
+                    "url": month_url(tab_url_name, month.start),
                     "active": key == self.tab,
                 }
-                for key, label, url_name in TABS
+                for key, label, tab_url_name in TABS
             ],
-            previous_url=month_url(self.request.resolver_match.url_name, month.previous)
-            if month.has_previous
-            else None,
-            next_url=month_url(self.request.resolver_match.url_name, month.next)
-            if month.next
-            else None,
+            previous_url=month_url(url_name, month.previous) if month.has_previous else None,
+            next_url=month_url(url_name, month.next) if month.next else None,
+            current_month_url=None if month.is_current else month_url(url_name, today),
             month_param=month.param,
         )
         if first_month is not None:
+            context["month_options"] = month_options(first_month, today)
             context.update(self.tab_context(user, month))
         return context
 
@@ -70,7 +70,13 @@ class OverviewView(DashboardTabView):
 
     def tab_context(self, user, month):
         overview = dashboard.build_dashboard(user, month)
-        return {"dashboard": overview, "chart_data": overview.chart_data}
+        return {
+            "dashboard": overview,
+            "summary": overview.summary,
+            "largest_expense": overview.largest_expense,
+            "lowest": overview.lowest,
+            "chart_data": overview.chart_data,
+        }
 
 
 class CategoriesView(DashboardTabView):
@@ -93,7 +99,12 @@ class FlowView(DashboardTabView):
     def tab_context(self, user, month):
         summary = dashboard.build_summary(user, month)
         days = dashboard.daily_series(user, month, summary.opening)
-        return {"summary": summary, "chart_data": dashboard.chart_data(days=days)}
+        return {
+            "summary": summary,
+            "largest_expense": dashboard.largest_expense(user, month),
+            "lowest": dashboard.lowest_balance(days, month),
+            "chart_data": dashboard.chart_data(days=days),
+        }
 
 
 class TransactionsTabView(DashboardTabView):

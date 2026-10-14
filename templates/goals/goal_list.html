@@ -6,7 +6,7 @@
 {% block extra_scripts %}{% include "goals/partials/datepicker_scripts.html" %}{% endblock %}
 
 {% block content %}
-  {% include "partials/breadcrumb.html" with title="Metas" %}
+  {% include "partials/page_title.html" with title="Metas" %}
 
   {% for message in messages %}
     <div class="mb-4">{% include "partials/alert.html" with title="Tudo certo" message=message %}</div>
