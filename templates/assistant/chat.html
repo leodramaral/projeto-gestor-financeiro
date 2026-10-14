@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Assistente · Gestor Financeiro{% endblock %}
+
+{% block content %}
+  <div class="flex min-h-[calc(100dvh-10rem)] flex-col gap-4 md:min-h-[calc(100dvh-8.5rem)]">
+    <div class="flex h-10 items-center justify-between gap-3">
+      <h1 class="text-xl font-semibold text-gray-800 dark:text-white/90">Assistente</h1>
+      {% if conversation %}
+        <form method="post" action="{% url 'assistant:new' %}">
+          {% csrf_token %}
+          <button type="submit" class="inline-flex h-10 items-center gap-2 rounded-lg border border-gray-300 bg-white px-3.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-white/[0.03] dark:text-gray-300 dark:hover:bg-white/[0.06]">
+            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 2v12M2 8h12" /></svg>
+            Nova conversa
+          </button>
+        </form>
+      {% endif %}
+    </div>
+
+    <section aria-label="Conversa" class="flex flex-1 flex-col items-center {% if not conversation %}justify-center{% endif %}">
+      {% if conversation %}
+        <ol class="w-full max-w-3xl space-y-6">
+          {% for message in conversation %}
+            {% if message.role == "user" %}
+              <li class="flex justify-end">
+                <p class="max-w-[85%] rounded-2xl bg-gray-100 px-5 py-3.5 text-base text-gray-800 md:max-w-[480px] dark:bg-white/5 dark:text-white/90"><span class="sr-only">Você: </span>{{ message.content|linebreaksbr }}</p>
+              </li>
+            {% else %}
+              <li>
+                <div class="mb-2 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                  <svg aria-hidden="true" class="text-brand-500 dark:text-brand-400" width="18" height="18" viewBox="0 0 18 18" fill="currentColor"><path d="M9 0l2 7 7 2-7 2-2 7-2-7-7-2 7-2z" /></svg>
+                  <span>Assistente</span>
+                </div>
+                <p class="text-base text-gray-800 dark:text-white/90">{{ message.content|linebreaksbr }}</p>
+              </li>
+            {% endif %}
+          {% endfor %}
+        </ol>
+      {% else %}
+        <div class="max-w-3xl text-center">
+          <p class="text-lg font-medium text-gray-800 dark:text-white/90">Pergunte sobre seus gastos por categoria.</p>
+          <p class="mt-1.5 text-sm text-gray-500 dark:text-gray-400">Escreva a pergunta por inteiro, por exemplo: {{ example }}</p>
+        </div>
+      {% endif %}
+    </section>
+
+    <div class="sticky bottom-0 mx-auto w-full max-w-3xl space-y-3 bg-gray-50 pb-1 dark:bg-gray-900">
+      {% if notice %}
+        <div class="{% if notice_is_error %}border-error-500 bg-error-50 dark:bg-error-500/15{% else %}border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-white/[0.03]{% endif %} rounded-lg border p-3 text-sm text-gray-700 dark:text-gray-300" role="{% if notice_is_error %}alert{% else %}status{% endif %}">{{ notice }}</div>
+      {% endif %}
+
+      <form
+        method="post"
+        novalidate
+        x-data="{ sending: false }"
+        @submit="sending = true"
+        @pageshow.window="sending = false"
+        class="focus-within:border-brand-300 focus-within:ring-brand-500/10 rounded-2xl border border-gray-300 bg-white p-4 focus-within:ring-3 dark:border-gray-800 dark:bg-gray-900 dark:focus-within:border-brand-500/40"
+      >
+        {% csrf_token %}
+        <label for="{{ form.question.id_for_label }}" class="sr-only">{{ form.question.label }}</label>
+        {{ form.question }}
+        {% for error in form.question.errors %}
+          <p class="text-error-600 dark:text-error-500 mt-2 text-xs">{{ error }}</p>
+        {% endfor %}
+        <div class="mt-3 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5 text-xs text-gray-500 dark:text-gray-400">
+            <div class="h-1.5 w-20 shrink-0 rounded-full bg-gray-100 dark:bg-gray-800" role="progressbar" aria-label="Créditos de hoje usados" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ percent }}">
+              <div class="bg-brand-500 h-1.5 rounded-full" style="width: {{ percent }}%"></div>
+            </div>
+            <span><span class="hidden sm:inline">Créditos de hoje: </span>{{ used|floatformat:"0g" }} de {{ limit|floatformat:"0g" }}<span class="hidden sm:inline"> tokens</span></span>
+          </div>
+          <button
+            type="submit"
+            aria-label="Enviar"
+            class="bg-brand-500 hover:bg-brand-600 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white disabled:opacity-70"
+            :disabled="sending"
+          >
+            <svg x-show="!sending" aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 14V2M2 8l6-6 6 6" /></svg>
+            <svg x-show="sending" x-cloak aria-hidden="true" class="animate-spin motion-reduce:animate-none" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 2a6 6 0 1 0 6 6" /></svg>
+          </button>
+        </div>
+      </form>
+
+      <p class="text-center text-xs text-gray-500 dark:text-gray-400">{{ disclaimer }}</p>
+    </div>
+  </div>
+{% endblock %}
