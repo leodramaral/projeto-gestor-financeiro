@@ -2,7 +2,7 @@
 within one calendar month (see `periods.MonthView`)."""
 
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import date, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 
 from django.db.models import Q, Sum
@@ -14,6 +14,7 @@ from .models import ZERO, Transaction
 TOP_CATEGORIES = 5
 RECENT_COUNT = 5
 OTHER_SLICES_NAME = "Outras"
+WEEK_DAYS = 7
 
 
 @dataclass(frozen=True)
@@ -22,6 +23,24 @@ class DayPoint:
     income: Decimal
     expense: Decimal
     balance: Decimal  # at the end of the day
+
+
+@dataclass(frozen=True)
+class WeekPoint:
+    """A block of up to 7 days from day 1 of the month; the last one holds the remaining days."""
+
+    label: str  # "Sem 1"
+    span: str  # "1–7", or a single day when the block has only one
+    income: Decimal
+    expense: Decimal
+
+
+@dataclass(frozen=True)
+class LowestBalance:
+    """The lowest end-of-day balance of the month (the earliest day wins a tie)."""
+
+    day: date
+    balance: Decimal
 
 
 @dataclass(frozen=True)
@@ -56,6 +75,8 @@ class Dashboard:
     days: list
     categories: list
     recent: list
+    largest_expense: Transaction | None
+    lowest: LowestBalance
 
     @property
     def chart_data(self):
@@ -73,6 +94,13 @@ def chart_data(days=None, categories=None):
         data["income"] = [float(d.income) for d in days]
         data["expense"] = [float(d.expense) for d in days]
         data["balance"] = [float(d.balance) for d in days]
+        weeks = weekly_series(days)
+        data["weeks"] = {
+            "labels": [[w.label, w.span] for w in weeks],
+            "income": [float(w.income) for w in weeks],
+            "expense": [float(w.expense) for w in weeks],
+        }
+        data["lowest"] = lowest_index(days)
     if categories is not None:
         data["categories"] = [
             {
@@ -168,6 +196,44 @@ def daily_series(user, month, opening):
     return points
 
 
+def weekly_series(days):
+    """The daily points summed in blocks of `WEEK_DAYS`, so the blocks add up to the month."""
+    weeks = []
+    for number, first in enumerate(range(0, len(days), WEEK_DAYS), start=1):
+        block = days[first : first + WEEK_DAYS]
+        first_day, last_day = block[0].label, block[-1].label
+        weeks.append(
+            WeekPoint(
+                label=f"Sem {number}",
+                span=first_day if first_day == last_day else f"{first_day}–{last_day}",
+                income=sum((d.income for d in block), ZERO),
+                expense=sum((d.expense for d in block), ZERO),
+            )
+        )
+    return weeks
+
+
+def lowest_index(days):
+    """Index of the day with the lowest end-of-day balance (the earliest one on a tie)."""
+    return min(range(len(days)), key=lambda i: (days[i].balance, i))
+
+
+def lowest_balance(days, month):
+    """The lowest end-of-day balance of the month and its date."""
+    index = lowest_index(days)
+    return LowestBalance(month.start + timedelta(days=index), days[index].balance)
+
+
+def largest_expense(user, month):
+    """The biggest expense of the month (the newest one on a tie), or None without expenses."""
+    return (
+        _in_month(user, month.start, month.end)
+        .filter(kind=Transaction.Kind.EXPENSE)
+        .order_by("-amount", "-date", "-id")
+        .first()
+    )
+
+
 def category_slices(user, month, limit=None):
     """Expenses of the month by category, largest first.
 
@@ -208,9 +274,12 @@ def month_transactions(user, month, limit=None):
 def build_dashboard(user, month):
     """Everything the overview tab shows for `user` in `month`."""
     summary = build_summary(user, month)
+    days = daily_series(user, month, summary.opening)
     return Dashboard(
         summary=summary,
-        days=daily_series(user, month, summary.opening),
+        days=days,
         categories=category_slices(user, month, limit=TOP_CATEGORIES),
         recent=month_transactions(user, month, limit=RECENT_COUNT),
+        largest_expense=largest_expense(user, month),
+        lowest=lowest_balance(days, month),
     )

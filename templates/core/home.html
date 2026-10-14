@@ -1,7 +1,11 @@
 {% extends "core/dashboard_base.html" %}
 
 {% block tab %}
-  {% include "core/partials/cards.html" with summary=dashboard.summary %}
+  {% include "core/partials/balance_hero.html" %}
+
+  <div class="mt-4 md:mt-6">
+    {% include "core/partials/cards.html" %}
+  </div>
 
   <div class="mt-4 grid grid-cols-1 gap-4 md:mt-6 md:gap-6 lg:grid-cols-2">
     {% include "core/partials/cashflow.html" with more_url=tabs.2.url %}

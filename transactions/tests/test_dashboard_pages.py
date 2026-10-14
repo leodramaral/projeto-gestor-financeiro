@@ -96,7 +96,7 @@ def test_default_month_is_the_current_one(logged_client, user, make_transaction)
     response = page(logged_client)
 
     assert response.context["month"].param == "2026-10"
-    assert "outubro de 2026" in response.content.decode()
+    assert "outubro de 2026" in response.content.decode().lower()
 
 
 def test_selector_links_carry_the_neighbour_months(logged_client, user, make_transaction):
@@ -106,7 +106,7 @@ def test_selector_links_carry_the_neighbour_months(logged_client, user, make_tra
 
     assert f'href="{reverse("home")}?month=2026-07"' in content
     assert f'href="{reverse("home")}?month=2026-09"' in content
-    assert "agosto de 2026" in content
+    assert "agosto de 2026" in content.lower()
 
 
 def test_next_arrow_is_disabled_on_the_current_month(logged_client, user, make_transaction):
@@ -464,7 +464,14 @@ def test_flow_tab_has_the_two_daily_charts_and_the_summary(logged_client, user, 
     assert 'id="chart-cashflow"' in content and 'id="chart-balance"' in content
     assert 'id="chart-categories"' not in content
     assert "R$ 1.000,00" in content.split("data-flow-summary>")[1].split("</p>")[0]
-    assert set(response.context["chart_data"]) == {"days", "income", "expense", "balance"}
+    assert set(response.context["chart_data"]) == {
+        "days",
+        "income",
+        "expense",
+        "balance",
+        "weeks",
+        "lowest",
+    }
 
 
 # --- transactions tab -----------------------------------------------------------------------
@@ -571,3 +578,259 @@ def test_pages_only_show_the_users_own_data(
 
     assert "Da Bia" not in content and "Segredo da Bia" not in content
     assert "900,00" not in content
+
+
+# --- month field, "Este mês" and the new-transaction shortcut ------------------------------------
+
+
+def test_month_field_lists_the_months_from_the_first_transaction_and_only_those(
+    logged_client, user, make_transaction
+):
+    make_transaction(user, "income", "10.00", when=date(2026, 7, 2))
+
+    response = page(logged_client, month="2026-08")
+    content = response.content.decode()
+
+    assert [value for value, _ in response.context["month_options"]] == [
+        "2026-10",
+        "2026-09",
+        "2026-08",
+        "2026-07",
+    ]
+    for label in ("Outubro de 2026", "Setembro de 2026", "Agosto de 2026", "Julho de 2026"):
+        assert f">{label}</option>" in content
+    assert 'value="2026-08" selected' in content
+    assert "Junho de 2026" not in content
+
+
+def test_month_field_submits_by_get_to_the_same_tab(logged_client, user, make_transaction):
+    make_transaction(user, "income", "10.00", when=date(2026, 7, 2))
+
+    content = html(logged_client, "dashboard_flow")
+
+    assert '<form method="get" action=""' in content
+    assert 'name="month"' in content
+
+
+def test_this_month_shortcut_is_a_link_away_and_disabled_on_the_current_month(
+    logged_client, user, make_transaction
+):
+    make_transaction(user, "income", "10.00", when=date(2026, 7, 2))
+
+    away = html(logged_client, month="2026-09")
+    current = html(logged_client)
+
+    assert f'href="{reverse("home")}?month=2026-10" class' in away
+    assert "data-current-month" in away and "data-this-month-off" not in away
+    # The slot stays on the current month, disabled like the next arrow, so the layout holds still.
+    assert "data-current-month" not in current
+    assert 'aria-disabled="true" data-this-month-off>Este mês' in current
+
+
+@pytest.mark.parametrize("route", TAB_ROUTES)
+def test_new_transaction_shortcut_is_on_every_tab(logged_client, user, make_transaction, route):
+    make_transaction(user, "income", "10.00", when=date(2026, 10, 2))
+
+    content = html(logged_client, route)
+
+    assert f'href="{reverse("transactions:create")}"' in content
+    assert "data-new-transaction" in content
+
+
+def test_empty_account_has_no_header_shortcut(logged_client):
+    assert "data-new-transaction" not in html(logged_client)
+
+
+def test_month_controls_have_a_touch_area_of_44px(logged_client, user, make_transaction):
+    make_transaction(user, "income", "10.00", when=date(2026, 7, 2))
+
+    content = html(logged_client, month="2026-09")
+
+    assert content.count("h-11 w-11") >= 2  # both arrows
+    assert "h-11 w-full" in content  # the month field
+
+
+# --- hero block, savings phrase and text summaries ----------------------------------------------
+
+
+def test_hero_shows_the_closing_balance_status_and_opening_without_any_script(
+    logged_client, user, make_transaction
+):
+    make_transaction(user, "income", "1000.00", when=date(2026, 9, 5))
+    make_transaction(user, "income", "500.00", when=date(2026, 10, 5))
+
+    content = html(logged_client)
+    hero = content.split("data-hero>")[1].split("</section>")[0]
+
+    assert "R$ 1.500,00" in hero.split("data-balance>")[1].split("</p>")[0]
+    assert "Você está no verde. Continue assim!" in hero
+    assert "Começou o mês com" in hero
+    assert "R$ 1.000,00" in hero.split("data-opening>")[1].split("</span>")[0]
+    assert "chart-hero" in hero
+
+
+def test_hero_is_only_on_the_overview(logged_client, user, make_transaction):
+    make_transaction(user, "income", "10.00", when=date(2026, 10, 2))
+
+    for route in ("dashboard_categories", "dashboard_flow", "dashboard_transactions"):
+        assert "data-hero" not in html(logged_client, route)
+
+
+def test_hero_has_a_text_alternative_with_the_lowest_and_the_final_balance(
+    logged_client, user, make_transaction
+):
+    make_transaction(user, "income", "100.00", when=date(2026, 9, 1))
+    make_transaction(user, "expense", "300.00", when=date(2026, 10, 4))
+    make_transaction(user, "income", "1000.00", when=date(2026, 10, 9))
+
+    hero = html(logged_client).split("data-hero>")[1]
+    label = hero.split('id="chart-hero"')[1].split(">")[0]
+
+    assert "Menor saldo: − R$ 200,00 em 04/10" in label
+    assert "Saldo final: R$ 800,00" in label
+
+
+def test_negative_closing_in_the_hero_is_red_with_the_warning(
+    logged_client, user, make_transaction
+):
+    make_transaction(user, "expense", "50.00", when=date(2026, 10, 2))
+
+    hero = html(logged_client).split("data-hero>")[1].split("</section>")[0]
+
+    assert "text-error-600" in hero.split("data-balance>")[0].rsplit("<p", 1)[1]
+    assert "− R$ 50,00" in hero.split("data-balance>")[1].split("</p>")[0]
+    assert "Você está no vermelho, cuidado" in hero
+
+
+@pytest.mark.parametrize(
+    ("income", "expense", "phrase"),
+    [
+        ("1000.00", "754.00", "Sobrou 24,6% de tudo o que entrou neste mês"),
+        ("1000.00", "1100.00", "Gastou 10,0% a mais do que entrou neste mês"),
+    ],
+)
+def test_savings_phrase(logged_client, user, make_transaction, income, expense, phrase):
+    make_transaction(user, "income", income, when=date(2026, 10, 2))
+    make_transaction(user, "expense", expense, when=date(2026, 10, 3))
+
+    content = html(logged_client)
+
+    assert phrase in content.split("data-savings-phrase>")[1].split("</p>")[0]
+
+
+def test_savings_phrase_without_income(logged_client, user, make_transaction):
+    make_transaction(user, "expense", "10.00", when=date(2026, 10, 3))
+
+    content = html(logged_client)
+
+    assert "Sem entradas neste mês" in content.split("data-savings-phrase>")[1].split("</p>")[0]
+
+
+def test_overview_has_three_indicators_and_no_opening_or_closing_card(
+    logged_client, user, make_transaction
+):
+    make_transaction(user, "income", "10.00", when=date(2026, 10, 2))
+
+    cards = html(logged_client).split("data-cards>")[1].split("data-hero")[0]
+
+    for label in ("Entradas do mês", "Despesas do mês", "Taxa de economia"):
+        assert label in cards
+    assert "Saldo inicial" not in cards and "Saldo final" not in cards
+    assert cards.count("data-tip") == 3
+
+
+def test_largest_expense_sentence(logged_client, user, make_transaction):
+    make_transaction(user, "expense", "1500.00", when=date(2026, 10, 2), description="Aluguel")
+    make_transaction(user, "expense", "20.00", when=date(2026, 10, 3), description="Café")
+
+    content = html(logged_client)
+
+    assert (
+        "Maior despesa: dia 02, R$ 1.500,00 (Aluguel)"
+        in content.split("data-largest-expense>")[1].split("</p>")[0]
+    )
+
+
+def test_largest_expense_description_is_escaped(logged_client, user, make_transaction):
+    make_transaction(user, "expense", "20.00", when=date(2026, 10, 3), description="<b>x</b>")
+
+    sentence = html(logged_client).split("data-largest-expense>")[1].split("</p>")[0]
+
+    assert "&lt;b&gt;x&lt;/b&gt;" in sentence
+    assert "<b>" not in sentence
+
+
+def test_no_expense_sentence(logged_client, user, make_transaction):
+    make_transaction(user, "income", "20.00", when=date(2026, 10, 3))
+
+    sentence = html(logged_client).split("data-largest-expense>")[1].split("</p>")[0]
+
+    assert sentence == "Nenhuma despesa neste mês."
+
+
+def test_lowest_balance_sentence(logged_client, user, make_transaction):
+    make_transaction(user, "income", "1250.00", when=date(2026, 9, 20))
+    make_transaction(user, "expense", "1500.00", when=date(2026, 10, 2))
+    make_transaction(user, "expense", "745.80", when=date(2026, 10, 3))
+    make_transaction(user, "expense", "212.35", when=date(2026, 10, 4))
+    make_transaction(user, "income", "5600.00", when=date(2026, 10, 5))
+
+    sentence = html(logged_client).split("data-lowest-balance>")[1].split("</p>")[0]
+
+    assert sentence == "Menor saldo: − R$ 1.208,15 em 04/10 · termina o mês em R$ 4.391,85"
+
+
+def test_lowest_balance_sentence_of_a_month_without_transactions(
+    logged_client, user, make_transaction
+):
+    make_transaction(user, "income", "500.00", when=date(2026, 8, 2))
+
+    sentence = html(logged_client).split("data-lowest-balance>")[1].split("</p>")[0]
+
+    assert sentence == "Sem lançamentos neste mês; o saldo ficou em R$ 500,00."
+
+
+def test_the_flow_tab_has_the_two_sentences_too(logged_client, user, make_transaction):
+    make_transaction(user, "expense", "20.00", when=date(2026, 10, 3))
+
+    content = html(logged_client, "dashboard_flow")
+
+    assert "data-largest-expense" in content and "data-lowest-balance" in content
+
+
+def test_money_values_use_tabular_numerals(logged_client, user, make_transaction):
+    make_transaction(user, "income", "10.00", when=date(2026, 10, 2))
+
+    content = html(logged_client)
+
+    assert content.split("data-balance>")[0].rsplit("<p", 1)[1].count("tabular-nums") == 1
+    assert "tabular-nums" in content.split("data-month-income>")[0].rsplit("<p", 1)[1]
+
+
+def test_flow_toggle_is_in_the_page_but_hidden_until_the_script_runs(
+    logged_client, user, make_transaction
+):
+    make_transaction(user, "income", "10.00", when=date(2026, 10, 2))
+
+    toggle = html(logged_client).split("data-flow-toggle>")[0].rsplit("<div", 1)[1]
+
+    assert "hidden" in toggle
+
+
+def test_negative_savings_rate_uses_the_minus_sign(logged_client, user, make_transaction):
+    make_transaction(user, "income", "1000.00", when=date(2026, 10, 2))
+    make_transaction(user, "expense", "1100.00", when=date(2026, 10, 3))
+
+    value = html(logged_client).split("data-savings-rate>")[1].split("</p>")[0]
+
+    assert value == "− 10,0%"
+
+
+def test_hero_does_not_clip_the_explanations(logged_client, user, make_transaction):
+    """The "i" explanations open inside the hero and overflow it: it must not clip them."""
+    make_transaction(user, "income", "10.00", when=date(2026, 10, 2))
+
+    opening_tag = html(logged_client).split("<section")[1].split("data-hero>")[0]
+
+    assert "data-hero" not in opening_tag  # the split landed on the hero's own tag
+    assert "overflow-hidden" not in opening_tag

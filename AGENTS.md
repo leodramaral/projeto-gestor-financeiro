@@ -122,13 +122,24 @@ servidor MCP). Não é preciso para rodar nem para desenvolver o app, só para e
   o frame é o tamanho da janela, sem a rolagem; o arquivo foi gerado por script e não usa componentes do
   FigCraft; dados fictícios (`Maria Silva`, 5 metas).
 - **Divergências conhecidas das demais telas** (login, confirmação de conta, recuperação de senha,
-  lançamentos, categorias e perfil; o painel não tem design, por causa dos gráficos): sem estados de foco e de hover
+  lançamentos, categorias e perfil; o painel tem a lista abaixo): sem estados de foco e de hover
   (o app dá `autofocus` ao primeiro campo) e sem `shadow-theme-*` em cartões, campos, modais e menus; o
   frame é o tamanho da janela (1440×900 ou 390×844), sem a rolagem da página; menu de ações da linha aberto
   só nos frames "menu de ações" e lista do seletor de categoria sempre fechada; o campo de data não mostra o
   ícone de calendário do navegador; o negrito de "Outros" no aviso de exclusão de categoria não é
   reproduzido; os dados são fictícios e coerentes entre as telas (`Maria Silva`, 8 lançamentos), não os do
   app.
+- **Divergências conhecidas do design do painel** (`design/dashboard.figcraft`, só a Visão geral; as abas
+  Categorias, Fluxo e saldo e Lançamentos e o estado vazio não têm desenho): os gráficos e a linha do
+  saldo são **desenhados à mão** a partir dos dados de exemplo, porque o FigCraft não executa o Chart.js,
+  e por isso têm menos marcas no eixo e o cruzamento do zero é exato (no app, o segmento que cruza fica todo
+  vermelho); sem estados de foco e de hover e sem `shadow-theme-*`; o frame mostra a página inteira, não só a
+  janela; o campo de mês é o `<select>` fechado, o atalho "Este mês" aparece desativado e o "Novo lançamento" fica na linha da data (no app, no celular, sobe para a linha do título); o ícone de tema do
+  cabeçalho escuro continua sendo a lua; o estado de saldo negativo é só o bloco de destaque
+  (`saldo negativo`), com números próprios; abaixo dos gráficos aparece uma nota no lugar de "Gastos por
+  categoria" e "Últimos lançamentos", que não mudaram; o menu lateral tem três itens, sem "Metas"; os dados
+  batem com os lançamentos só no saldo final (R$ 2.628,75) e nos lançamentos de outubro, e o painel tem
+  lançamentos a mais.
 
 ## Impeccable (opcional)
 

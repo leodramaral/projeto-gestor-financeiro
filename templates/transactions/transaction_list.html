@@ -4,7 +4,7 @@
 {% block title %}Lançamentos · Gestor Financeiro{% endblock %}
 
 {% block content %}
-  {% include "partials/breadcrumb.html" with title="Lançamentos" %}
+  {% include "partials/page_title.html" with title="Lançamentos" %}
 
   {% for message in messages %}
     <div class="mb-4">{% include "partials/alert.html" with title="Tudo certo" message=message %}</div>

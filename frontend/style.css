@@ -192,6 +192,12 @@
   --chart-income: var(--color-brand-500);
   --chart-expense: var(--color-error-600);
   --chart-card: var(--color-white);
+  --chart-hero-line: var(--color-brand-200);
+  --chart-hero-fill: #ffffff1f;
+  --chart-hero-zero: #ffffff66;
+  --chart-hero-mark: var(--color-warning-300);
+  --chart-hero-text: var(--color-warning-100);
+  --chart-alert-text: var(--color-error-700);
 }
 .dark {
   --chart-text: var(--color-gray-400);
@@ -199,6 +205,7 @@
   --chart-income: var(--color-brand-400);
   --chart-expense: var(--color-error-400);
   --chart-card: #12161f;
+  --chart-alert-text: var(--color-error-400);
 }
 
 

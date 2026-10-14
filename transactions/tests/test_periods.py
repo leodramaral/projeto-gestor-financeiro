@@ -2,7 +2,12 @@ from datetime import date
 
 import pytest
 
-from transactions.periods import first_transaction_month, resolve_month, shift_month
+from transactions.periods import (
+    first_transaction_month,
+    month_options,
+    resolve_month,
+    shift_month,
+)
 
 TODAY = date(2026, 10, 15)
 
@@ -101,3 +106,29 @@ def test_month_before_the_first_transaction_is_raised_to_it():
     assert view.start == first
     assert not view.has_previous
     assert view.next == date(2026, 8, 1)
+
+
+def test_month_options_run_from_the_first_month_to_the_current_one_newest_first():
+    options = month_options(date(2026, 7, 1), TODAY)
+
+    assert options == [
+        ("2026-10", "Outubro de 2026"),
+        ("2026-09", "Setembro de 2026"),
+        ("2026-08", "Agosto de 2026"),
+        ("2026-07", "Julho de 2026"),
+    ]
+
+
+def test_month_options_cross_the_year_boundary():
+    options = month_options(date(2025, 11, 1), date(2026, 1, 20))
+
+    assert [value for value, _ in options] == ["2026-01", "2025-12", "2025-11"]
+
+
+def test_month_options_of_the_current_month_only_has_one_entry():
+    assert month_options(date(2026, 10, 1), TODAY) == [("2026-10", "Outubro de 2026")]
+
+
+def test_is_current_only_on_the_current_month():
+    assert resolve_month("2026-10", TODAY).is_current
+    assert not resolve_month("2026-09", TODAY).is_current

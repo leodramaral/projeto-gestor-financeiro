@@ -7,9 +7,9 @@
   {% if is_modal %}
     <h2 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">{% if object %}Editar categoria{% else %}Nova categoria{% endif %}</h2>
   {% elif object %}
-    {% include "partials/breadcrumb.html" with title="Editar categoria" %}
+    {% include "partials/page_title.html" with title="Editar categoria" %}
   {% else %}
-    {% include "partials/breadcrumb.html" with title="Nova categoria" %}
+    {% include "partials/page_title.html" with title="Nova categoria" %}
   {% endif %}
 
   <div {% if not is_modal %}class="max-w-xl rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]"{% endif %}>

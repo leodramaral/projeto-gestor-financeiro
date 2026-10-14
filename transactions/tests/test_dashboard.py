@@ -11,8 +11,11 @@ from transactions.dashboard import (
     category_slices,
     chart_data,
     daily_series,
+    largest_expense,
+    lowest_balance,
     month_transactions,
     opening_balance,
+    weekly_series,
 )
 from transactions.models import Category, current_balance
 from transactions.periods import resolve_month
@@ -380,9 +383,10 @@ def test_chart_data_has_only_the_requested_parts(user, make_transaction, make_ca
     make_transaction(user, "expense", "10.00", when=date(2026, 10, 2), category=pets)
     dashboard = build_dashboard(user, month_of())
 
-    assert set(chart_data(days=dashboard.days)) == {"days", "income", "expense", "balance"}
+    day_keys = {"days", "income", "expense", "balance", "weeks", "lowest"}
+    assert set(chart_data(days=dashboard.days)) == day_keys
     assert set(chart_data(categories=dashboard.categories)) == {"categories"}
-    assert set(dashboard.chart_data) == {"days", "income", "expense", "balance", "categories"}
+    assert set(dashboard.chart_data) == day_keys | {"categories"}
     assert len(dashboard.chart_data["days"]) == len(dashboard.chart_data["balance"]) == 31
     assert dashboard.chart_data["categories"][0]["amount"] == 10.0
 
@@ -408,3 +412,119 @@ def test_nothing_of_another_user_leaks_into_the_numbers(
     assert [d.income for d in dashboard.days][:3] == [0, 10, 0]
     assert [t.description for t in dashboard.recent] == ["Meu"]
     assert [t.description for t in month_transactions(user, month_of())] == ["Meu"]
+
+
+# --- weeks, largest expense and lowest balance ------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("raw", "spans"),
+    [
+        ("2026-02", ["1–7", "8–14", "15–21", "22–28"]),
+        ("2028-02", ["1–7", "8–14", "15–21", "22–28", "29"]),
+        ("2026-09", ["1–7", "8–14", "15–21", "22–28", "29–30"]),
+        ("2026-10", ["1–7", "8–14", "15–21", "22–28", "29–31"]),
+    ],
+)
+def test_weeks_are_blocks_of_seven_days_and_the_last_one_holds_the_rest(user, raw, spans):
+    month = month_of(raw, today=date(2030, 1, 1))
+
+    weeks = weekly_series(daily_series(user, month, dec("0")))
+
+    assert [w.span for w in weeks] == spans
+    assert [w.label for w in weeks] == [f"Sem {n}" for n in range(1, len(spans) + 1)]
+
+
+def test_weeks_add_up_to_the_month_totals(user, make_transaction):
+    make_transaction(user, "income", "5600.00", when=date(2026, 10, 5))
+    make_transaction(user, "expense", "1500.00", when=date(2026, 10, 2))
+    make_transaction(user, "expense", "745.80", when=date(2026, 10, 7))
+    make_transaction(user, "expense", "86.70", when=date(2026, 10, 8))
+    make_transaction(user, "expense", "66.50", when=date(2026, 10, 31))
+    month = month_of()
+    summary = build_summary(user, month)
+
+    weeks = weekly_series(daily_series(user, month, summary.opening))
+
+    assert [w.expense for w in weeks] == [
+        dec("2245.80"),
+        dec("86.70"),
+        dec("0"),
+        dec("0"),
+        dec("66.50"),
+    ]
+    assert sum(w.income for w in weeks) == summary.income
+    assert sum(w.expense for w in weeks) == summary.expense
+
+
+def test_chart_data_carries_the_weeks_and_the_lowest_day(user, make_transaction):
+    make_transaction(user, "income", "100.00", when=date(2026, 9, 1))
+    make_transaction(user, "expense", "300.00", when=date(2026, 10, 4))
+    month = month_of()
+    days = daily_series(user, month, build_summary(user, month).opening)
+
+    data = chart_data(days=days)
+
+    assert data["weeks"]["labels"][0] == ["Sem 1", "1–7"]
+    assert len(data["weeks"]["income"]) == len(data["weeks"]["expense"]) == 5
+    assert data["lowest"] == 3  # the 4th day, where the balance dropped to -200
+
+
+def test_largest_expense_is_the_biggest_single_expense_of_the_month(user, make_transaction):
+    make_transaction(user, "expense", "1500.00", when=date(2026, 10, 2), description="Aluguel")
+    make_transaction(user, "expense", "200.00", when=date(2026, 10, 3), description="Mercado")
+    make_transaction(user, "income", "9000.00", when=date(2026, 10, 5), description="Salário")
+    make_transaction(user, "expense", "9000.00", when=date(2026, 9, 5), description="Antes")
+
+    found = largest_expense(user, month_of())
+
+    assert (found.description, found.amount, found.date) == (
+        "Aluguel",
+        dec("1500.00"),
+        date(2026, 10, 2),
+    )
+
+
+def test_largest_expense_tie_goes_to_the_most_recent(user, make_transaction):
+    make_transaction(user, "expense", "50.00", when=date(2026, 10, 2), description="Antiga")
+    make_transaction(user, "expense", "50.00", when=date(2026, 10, 9), description="Nova")
+
+    assert largest_expense(user, month_of()).description == "Nova"
+
+
+def test_no_largest_expense_without_expenses(user, make_transaction):
+    make_transaction(user, "income", "50.00", when=date(2026, 10, 2))
+
+    assert largest_expense(user, month_of()) is None
+
+
+def test_lowest_balance_is_the_lowest_end_of_day_and_its_date(user, make_transaction):
+    make_transaction(user, "income", "1250.00", when=date(2026, 9, 20))
+    make_transaction(user, "expense", "1500.00", when=date(2026, 10, 2))
+    make_transaction(user, "expense", "745.80", when=date(2026, 10, 3))
+    make_transaction(user, "expense", "212.35", when=date(2026, 10, 4))
+    make_transaction(user, "income", "5600.00", when=date(2026, 10, 5))
+    month = month_of()
+
+    lowest = lowest_balance(daily_series(user, month, build_summary(user, month).opening), month)
+
+    assert lowest.balance == dec("-1208.15")
+    assert lowest.day == date(2026, 10, 4)
+
+
+def test_lowest_balance_tie_goes_to_the_earliest_day(user, make_transaction):
+    make_transaction(user, "income", "500.00", when=date(2026, 9, 20))
+    month = month_of()
+
+    lowest = lowest_balance(daily_series(user, month, build_summary(user, month).opening), month)
+
+    assert lowest.balance == dec("500.00")
+    assert lowest.day == date(2026, 10, 1)
+
+
+def test_lowest_balance_without_transactions_is_the_opening_balance_on_day_one(user):
+    month = month_of()
+
+    lowest = lowest_balance(daily_series(user, month, dec("0")), month)
+
+    assert (lowest.day, lowest.balance) == (date(2026, 10, 1), dec("0"))

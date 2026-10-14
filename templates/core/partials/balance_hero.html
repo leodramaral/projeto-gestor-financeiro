@@ -1,0 +1,37 @@
+{% load money_tags %}
+{# Bloco de destaque do saldo final. Parâmetros: summary (transactions.dashboard.Summary), lowest (LowestBalance) e month (MonthView). #}
+<section class="relative rounded-2xl p-5 sm:p-7 {% if summary.status == 'negative' %}border border-error-200 bg-error-50 text-gray-800 dark:border-error-500/30 dark:bg-error-500/10 dark:text-white/90{% else %}bg-gradient-to-br from-brand-500 to-brand-600 text-white dark:from-brand-800 dark:to-brand-900{% endif %}" data-hero>
+  <div class="flex flex-col gap-6 md:flex-row md:items-center md:justify-between md:gap-10">
+    <div class="min-w-0">
+      <div class="relative inline-flex items-center gap-2" x-data="{ tip: false }" @click.outside="tip = false">
+        <p class="text-sm {% if summary.status == 'negative' %}text-gray-600 dark:text-gray-300{% else %}text-brand-100{% endif %}">Saldo final</p>
+        {% if summary.status == 'negative' %}{% include "core/partials/info_button.html" with label="Saldo final" tip="tip-closing" %}{% else %}{% include "core/partials/info_button.html" with label="Saldo final" tip="tip-closing" tone="light" %}{% endif %}
+        <div id="tip-closing" role="tooltip" x-show="tip" x-cloak class="text-theme-xs shadow-theme-lg absolute top-full left-0 z-20 mt-2 w-72 max-w-[calc(100vw-4rem)] rounded-lg bg-gray-800 p-3 text-white dark:bg-gray-700" data-tip>
+          <strong>Com quanto o mês termina.</strong> Saldo inicial mais as entradas e menos as despesas do mês, inclusive lançamentos com data futura dentro do mês.
+          <span class="mt-2 block font-mono">{{ summary.opening|brl }} + {{ summary.income|brl }} − {{ summary.expense|brl }}</span>
+        </div>
+      </div>
+
+      <p class="mt-1 text-title-md font-semibold whitespace-nowrap tabular-nums sm:text-title-lg {% if summary.status == 'negative' %}text-error-600 dark:text-error-500{% endif %}" data-balance>{{ summary.closing|brl }}</p>
+
+      {% if summary.status == 'negative' %}
+        <span class="bg-error-100 text-error-700 dark:bg-error-500/15 dark:text-error-400 text-theme-xs mt-3 inline-flex rounded-full px-3 py-1 font-medium" data-balance-status>Você está no vermelho, cuidado</span>
+      {% elif summary.status == 'positive' %}
+        <span class="text-theme-xs mt-3 inline-flex rounded-full bg-brand-900/40 px-3 py-1 font-medium text-white" data-balance-status>Você está no verde. Continue assim!</span>
+      {% endif %}
+
+      <div class="relative mt-3 flex flex-wrap items-center gap-2" x-data="{ tip: false }" @click.outside="tip = false">
+        <p class="text-sm {% if summary.status == 'negative' %}text-gray-600 dark:text-gray-300{% else %}text-brand-100{% endif %}">Começou o mês com <span class="font-medium tabular-nums {% if summary.status == 'negative' %}text-gray-800 dark:text-white/90{% else %}text-white{% endif %}" data-opening>{{ summary.opening|brl }}</span></p>
+        {% if summary.status == 'negative' %}{% include "core/partials/info_button.html" with label="Saldo inicial" tip="tip-opening" %}{% else %}{% include "core/partials/info_button.html" with label="Saldo inicial" tip="tip-opening" tone="light" %}{% endif %}
+        <div id="tip-opening" role="tooltip" x-show="tip" x-cloak class="text-theme-xs shadow-theme-lg absolute top-full left-0 z-20 mt-2 w-72 max-w-[calc(100vw-4rem)] rounded-lg bg-gray-800 p-3 text-white dark:bg-gray-700" data-tip>
+          <strong>Com quanto o mês começa.</strong> Soma de todas as entradas menos todas as despesas com data anterior a {{ month.start|date:"d/m/Y" }}.
+          <span class="mt-2 block font-mono">entradas até {{ month.day_before|date:"d/m/Y" }} − despesas até o mesmo dia</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="relative h-28 w-full min-w-0 md:w-[26rem] lg:w-[30rem]">
+      <canvas id="chart-hero" data-lowest-label="{{ lowest.day|date:"d/m" }}" data-tone="{% if summary.status == 'negative' %}alert{% else %}brand{% endif %}" role="img" aria-label="Linha do saldo ao fim de cada dia do mês. Menor saldo: {{ lowest.balance|brl }} em {{ lowest.day|date:"d/m" }}. Saldo final: {{ summary.closing|brl }}."></canvas>
+    </div>
+  </div>
+</section>
