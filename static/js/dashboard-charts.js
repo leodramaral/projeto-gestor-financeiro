@@ -11,10 +11,23 @@
   var charts = [];
   var drawnMode = null;
 
-  var PALETTE = {
-    light: { text: "#667085", grid: "#eaecf0", income: "#0f766e", expense: "#f04438", card: "#ffffff" },
-    dark: { text: "#98a2b3", grid: "#232a3b", income: "#1ea596", expense: "#f97066", card: "#12161f" },
-  };
+  // Colors come from the --chart-* tokens in frontend/style.css, so the palette has one home and
+  // follows the theme class on <html>.
+  function palette() {
+    var style = getComputedStyle(root);
+    function token(name) {
+      return style.getPropertyValue(name).trim();
+    }
+    return {
+      text: token("--chart-text"),
+      grid: token("--chart-grid"),
+      income: token("--chart-income"),
+      expense: token("--chart-expense"),
+      card: token("--chart-card"),
+    };
+  }
+
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) Chart.defaults.animation = false;
 
   var brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -69,7 +82,7 @@
 
     var mode = theme();
     drawnMode = mode;
-    var colors = PALETTE[mode];
+    var colors = palette();
     Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
     Chart.defaults.color = colors.text;
 

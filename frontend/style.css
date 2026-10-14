@@ -165,7 +165,7 @@
     0px 20px 24px -4px rgba(16, 24, 40, 0.08),
     0px 8px 8px -4px rgba(16, 24, 40, 0.03);
   --shadow-datepicker: -5px 0 0 #262d3c, 5px 0 0 #262d3c;
-  --shadow-focus-ring: 0px 0px 0px 4px rgba(70, 95, 255, 0.12);
+  --shadow-focus-ring: 0px 0px 0px 4px rgba(15, 118, 110, 0.2);
   --shadow-slider-navigation:
     0px 1px 2px 0px rgba(16, 24, 40, 0.1), 0px 1px 3px 0px rgba(16, 24, 40, 0.1);
   --shadow-tooltip:
@@ -183,6 +183,24 @@
   --z-index-99999: 99999;
   --z-index-999999: 999999;
 }
+
+/* Cores dos gráficos do painel, lidas por static/js/dashboard-charts.js. Os tons de despesa e de
+   entrada usam os mesmos tokens do texto, então mantêm contraste mínimo de 3:1 (elemento gráfico). */
+:root {
+  --chart-text: var(--color-gray-500);
+  --chart-grid: #eaecf0;
+  --chart-income: var(--color-brand-500);
+  --chart-expense: var(--color-error-600);
+  --chart-card: var(--color-white);
+}
+.dark {
+  --chart-text: var(--color-gray-400);
+  --chart-grid: #232a3b;
+  --chart-income: var(--color-brand-400);
+  --chart-expense: var(--color-error-400);
+  --chart-card: #12161f;
+}
+
 
 [x-cloak] {
   display: none !important;
@@ -242,7 +260,7 @@
 }
 
 @utility menu-dropdown-badge {
-  @apply text-success-600 dark:text-success-500 block rounded-full px-2.5 py-0.5 text-xs font-medium uppercase;
+  @apply text-success-700 dark:text-success-500 block rounded-full px-2.5 py-0.5 text-xs font-medium uppercase;
 }
 
 @utility menu-dropdown-badge-active {

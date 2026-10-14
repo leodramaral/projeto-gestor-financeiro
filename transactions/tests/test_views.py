@@ -88,8 +88,8 @@ class TestList:
 
         assert "+ R$ 5,00" in content
         assert "− R$ 7,00" in content
-        assert "text-success-600" in content
-        assert "text-error-500" in content
+        assert "text-success-700" in content
+        assert "text-error-600" in content
 
 
 class TestTableUI:

@@ -9,6 +9,11 @@
 
   function show(html) {
     body.innerHTML = html;
+    const title = body.querySelector("h2");
+    if (title) {
+      title.id = "transaction-modal-title";
+      dialog.setAttribute("aria-labelledby", title.id);
+    }
     if (!dialog.open) dialog.showModal();
     const first =
       body.querySelector("[autofocus]") ||
