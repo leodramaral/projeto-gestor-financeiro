@@ -120,6 +120,11 @@ com o intervalo de datas.
 - **ENTÃO** o painel exibe agosto de 2026, com a URL em `month=2026-08`
 - **E** o campo lista julho, agosto, setembro e outubro de 2026, e só esses
 
+#### Cenário: Primeiro lançamento em mês futuro
+- **QUANDO** o único lançamento do usuário é de dezembro de 2026 e o mês atual é outubro de 2026
+- **ENTÃO** o painel exibe outubro de 2026
+- **E** o campo lista só outubro de 2026
+
 #### Cenário: Atalho para o mês atual
 - **QUANDO** o painel está em setembro de 2026 e o mês atual é outubro de 2026
 - **ENTÃO** há um atalho "Este mês" ativo que abre outubro de 2026

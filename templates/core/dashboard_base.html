@@ -42,7 +42,7 @@
                 <option value="{{ value }}"{% if value == month_param %} selected{% endif %}>{{ label }}</option>
               {% endfor %}
             </select>
-            <noscript><button type="submit" class="mt-2 h-11 rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-700">Ir para o mês</button></noscript>
+            <noscript><button type="submit" class="mt-2 h-11 rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-700 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/[0.03]">Ir para o mês</button></noscript>
           </form>
           {% if next_url %}
             <a href="{{ next_url }}" class="{{ arrow }} border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/[0.03]" aria-label="Próximo mês" data-month-next>›</a>

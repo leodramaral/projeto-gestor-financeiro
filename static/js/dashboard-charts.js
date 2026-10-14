@@ -129,6 +129,7 @@
           borderWidth: 2,
           pointRadius: 2,
           pointBackgroundColor: function (ctx) { return ctx.parsed && ctx.parsed.y < 0 ? colors.expense : colors.income; },
+          pointBorderColor: function (ctx) { return ctx.parsed && ctx.parsed.y < 0 ? colors.expense : colors.income; },
           segment: {
             borderColor: function (ctx) { return ctx.p0.parsed.y < 0 || ctx.p1.parsed.y < 0 ? colors.expense : colors.income; },
           },

@@ -132,3 +132,13 @@ def test_month_options_of_the_current_month_only_has_one_entry():
 def test_is_current_only_on_the_current_month():
     assert resolve_month("2026-10", TODAY).is_current
     assert not resolve_month("2026-09", TODAY).is_current
+
+
+def test_a_future_first_transaction_month_is_capped_at_the_current_month():
+    first = date(2026, 12, 1)
+
+    view = resolve_month(None, TODAY, first)
+    assert view.start == date(2026, 10, 1)
+    assert view.next is None
+    assert not view.has_previous
+    assert month_options(first, TODAY) == [("2026-10", "Outubro de 2026")]
