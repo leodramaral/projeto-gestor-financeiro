@@ -130,6 +130,26 @@ servidor MCP). Não é preciso para rodar nem para desenvolver o app, só para e
   reproduzido; os dados são fictícios e coerentes entre as telas (`Maria Silva`, 8 lançamentos), não os do
   app.
 
+## Impeccable (opcional)
+
+Skill de design para o Claude Code (`/impeccable ...`: critique, audit, polish etc.). Não é preciso
+para rodar nem para desenvolver o app.
+
+- **Não é versionada.** Instale na sua máquina com `npx impeccable install` e ignore localmente, sem
+  tocar no `.gitignore` do projeto, acrescentando ao `.git/info/exclude`:
+
+  ```
+  .claude/skills/impeccable/
+  .claude/agents/impeccable-*
+  ```
+
+- **Binário.** Na primeira execução a skill baixa um binário de `github.com/pbakaus/impeccable`
+  para `~/.impeccable/` (precisa de rede e de `curl` ou `wget`).
+- **`PRODUCT.md` é versionado:** é o contexto de produto (usuários, propósito, restrições) que a skill
+  lê. Quem muda o produto atualiza esse arquivo.
+- **Não muda o fluxo do projeto.** Mudança de tela continua exigindo uma change do OpenSpec e a
+  atualização do design em `design/` (ver acima); a skill não substitui nenhum dos dois.
+
 ## Fluxo de trabalho: Issues + OpenSpec
 
 Spec-Driven Development. **Não implemente sem uma change.**
