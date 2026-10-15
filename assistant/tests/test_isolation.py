@@ -73,7 +73,8 @@ def test_a_category_name_reaches_the_model_only_as_data_inside_the_tool_result(
     client, _ = run(monkeypatch, user, "Em agosto, Transporte: R$ 842,10.")
 
     first_call, second_call = client.calls
-    assert INJECTION not in json.dumps(first_call)
+    assert INJECTION not in json.dumps(first_call, ensure_ascii=False)
+    assert INJECTION not in json.dumps(second_call["tools"], ensure_ascii=False)
     system = second_call["messages"][0]
     assert system["role"] == "system" and INJECTION not in system["content"]
     carriers = [

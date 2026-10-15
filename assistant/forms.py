@@ -1,4 +1,5 @@
 from django import forms
+from django.utils.text import normalize_newlines
 
 from .messages import EXAMPLE_QUESTION
 
@@ -11,8 +12,16 @@ FIELD_CLASS = (
 )
 
 
+class NormalizedCharField(forms.CharField):
+    """Browsers submit each line break of a textarea as CRLF but count it as one character in
+    `maxlength`; normalizing first keeps the length check in line with what the user saw."""
+
+    def to_python(self, value):
+        return super().to_python(normalize_newlines(value) if value else value)
+
+
 class QuestionForm(forms.Form):
-    question = forms.CharField(
+    question = NormalizedCharField(
         label="Sua pergunta",
         max_length=MAX_QUESTION_CHARS,
         strip=True,
@@ -24,7 +33,7 @@ class QuestionForm(forms.Form):
                 "autofocus": True,
                 "@keydown.enter": (
                     "if (!$event.shiftKey && !$event.isComposing) "
-                    "{ $event.preventDefault(); $el.form.requestSubmit() }"
+                    "{ $event.preventDefault(); if (!sending) $el.form.requestSubmit() }"
                 ),
             }
         ),

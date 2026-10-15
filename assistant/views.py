@@ -8,12 +8,14 @@ from django.views import View
 
 from . import messages
 from .forms import QuestionForm
-from .models import add_tokens, tokens_used_today
+from .models import reserve_tokens, settle_tokens, tokens_used_today
 from .service import MAX_HISTORY_MESSAGES, TEXT, AssistantError, answer
 
 logger = logging.getLogger(__name__)
 
 SESSION_KEY = "assistant_conversation"
+# Held from the daily credit while a question runs: about what the longest one spends.
+RESERVED_TOKENS = 4000
 
 
 class ChatView(LoginRequiredMixin, View):
@@ -28,23 +30,28 @@ class ChatView(LoginRequiredMixin, View):
         form = QuestionForm(request.POST)
         if not form.is_valid():
             return self._render(request, form)
-        if tokens_used_today(request.user) >= settings.LLM_DAILY_TOKEN_LIMIT:
+        reservation = reserve_tokens(request.user, RESERVED_TOKENS, settings.LLM_DAILY_TOKEN_LIMIT)
+        if reservation is None:
             return self._render(request, form, notice=messages.NO_CREDITS)
         question = form.cleaned_data["question"]
         history = request.session.get(SESSION_KEY, [])
         started = time.monotonic()
+        spent, failure = 0, None
         try:
             result = answer(request.user, history, question)
+            spent = result.tokens
         except AssistantError as error:
-            add_tokens(request.user, error.tokens)
+            failure, spent = error, error.tokens
+        finally:
+            settle_tokens(reservation, RESERVED_TOKENS, spent)
+        if failure:
             logger.warning(
                 "Assistant failure: cause=%s status=%s seconds=%.2f",
-                error.cause,
-                error.status,
+                failure.cause,
+                failure.status,
                 time.monotonic() - started,
             )
-            return self._render(request, form, notice=error.message, error=True)
-        add_tokens(request.user, result.tokens)
+            return self._render(request, form, notice=failure.message, error=True)
         if result.outcome != TEXT:
             logger.info("Assistant declined: reason=%s tokens=%s", result.reason, result.tokens)
             return self._render(request, form, notice=result.text)

@@ -9,7 +9,7 @@ ancorada nos dados, os créditos diários em tokens, a falha amigável e o prove
 ## ADDED Requirements
 
 ### Requirement: Tela do assistente protegida por login
-A aplicação DEVE servir a tela do assistente em `/assistente/` apenas ao usuário autenticado, com um item
+A aplicação DEVE servir a tela do assistente em `/assistant/` apenas ao usuário autenticado, com um item
 "Assistente" na barra lateral, marcado com o selo "BETA". Visitante sem sessão DEVE ser redirecionado para a entrada, e nenhuma consulta
 ao provedor DEVE acontecer para ele. A tela DEVE ter o título "Assistente", sem breadcrumb, e todo texto
 exibido DEVE estar em português do Brasil. O layout DEVE seguir o de um chat: as mensagens ocupam a área
@@ -19,12 +19,12 @@ abaixo; e o botão "Nova conversa" fica no topo, só quando há conversa. O camp
 acessível "Sua pergunta" e o botão de envio, que só mostra um ícone, o nome acessível "Enviar".
 
 #### Cenário: Visitante sem login
-- **QUANDO** um visitante abre `/assistente/` ou envia uma pergunta para ela
+- **QUANDO** um visitante abre `/assistant/` ou envia uma pergunta para ela
 - **ENTÃO** ele é redirecionado para a entrada
 - **E** nenhuma chamada ao provedor é feita
 
 #### Cenário: Usuário autenticado
-- **QUANDO** um usuário autenticado abre `/assistente/`
+- **QUANDO** um usuário autenticado abre `/assistant/`
 - **ENTÃO** vê o campo de pergunta, o aviso fixo e os créditos do dia
 - **E** o item "Assistente" aparece ativo na barra lateral
 
@@ -113,7 +113,7 @@ DEVE poder zerar a conversa com "Nova conversa", e a conversa DEVE sumir ao ence
 O assistente DEVE obter os dados por uma única ferramenta de dados, a de gastos por categoria, que devolve, para um
 mês, o total e, por categoria, nome, valor e porcentagem das despesas. A ferramenta DEVE usar sempre o
 usuário autenticado e NÃO DEVE aceitar identificação de usuário vinda do modelo. O mês DEVE ser `AAAA-MM`
-e, quando omitido, o mês atual. Mês em formato inválido ou futuro DEVE gerar erro devolvido ao modelo, sem
+e, quando omitido, o mês atual. Mês em formato inválido, anterior a janeiro de 2025 ou futuro DEVE gerar erro devolvido ao modelo, sem
 consulta ao banco. O prompt enviado ao modelo DEVE conter apenas dados agregados do usuário autenticado.
 
 #### Cenário: Mês informado
@@ -129,8 +129,8 @@ consulta ao banco. O prompt enviado ao modelo DEVE conter apenas dados agregados
 - **QUANDO** o usuário não tem despesas no mês pedido
 - **ENTÃO** a ferramenta devolve total zero e nenhuma categoria
 
-#### Cenário: Mês inválido ou futuro
-- **QUANDO** o modelo pede `2026-13`, `agosto` ou um mês depois do atual
+#### Cenário: Mês inválido, anterior ao piso ou futuro
+- **QUANDO** o modelo pede `2026-13`, `agosto`, `0001-01`, `2024-12` ou um mês depois do atual
 - **ENTÃO** a ferramenta devolve um erro ao modelo
 - **E** nenhuma consulta ao banco é feita
 
@@ -196,8 +196,9 @@ final, DEVE mostrar a mensagem amigável de falha, sem entrar em laço.
 ### Requirement: Resposta ancorada nos dados
 A aplicação DEVE aceitar o texto final do modelo apenas se, naquela pergunta, a ferramenta de gastos por
 categoria foi chamada e devolveu um resultado com sucesso. Todo valor em reais citado no texto (como
-`R$ 1.234,56`) DEVE constar do resultado da ferramenta daquela pergunta, como total ou como valor de
-categoria, e o texto DEVE ter no máximo 1200 caracteres. O texto que falhar em qualquer dessas checagens
+`R$ 1.234,56`, escrito com algarismos) DEVE constar do resultado da ferramenta daquela pergunta, como total
+ou como valor de categoria (o nome de uma categoria citado no texto não conta como valor), valor arredondado
+com "mil", "milhão" ou "k" NÃO DEVE ser aceito, e o texto DEVE ter no máximo 1200 caracteres. O texto que falhar em qualquer dessas checagens
 NÃO DEVE ser exibido: a aplicação DEVE mostrar uma mensagem fixa no lugar, a de recusa de assunto quando
 não houve consulta bem-sucedida e a de resposta não confiável nos demais casos, sem repetir a chamada.
 
@@ -238,8 +239,9 @@ não houve consulta bem-sucedida e a de resposta não confiável nos demais caso
 ### Requirement: Créditos diários em tokens
 A aplicação DEVE contar os tokens consumidos por cada usuário em cada dia, somando o consumo informado pelo
 provedor em todas as chamadas de cada pergunta, e DEVE ter um teto diário de tokens por usuário vindo da
-variável de ambiente `LLM_DAILY_TOKEN_LIMIT`. A checagem DEVE ocorrer antes de chamar o provedor: com o
-teto atingido, NÃO DEVE haver chamada. A tela DEVE mostrar os créditos do dia (usados e teto). O dia DEVE
+variável de ambiente `LLM_DAILY_TOKEN_LIMIT`. A checagem DEVE ocorrer antes de chamar o provedor e reservar créditos
+para a pergunta em andamento, de modo que perguntas paralelas do mesmo usuário não passem todas pelo mesmo
+saldo, e a reserva DEVE ser trocada pelo consumo real ao fim: com o teto atingido, NÃO DEVE haver chamada. A tela DEVE mostrar os créditos do dia (usados e teto). O dia DEVE
 seguir o fuso `America/Sao_Paulo`. Chamada que falha sem informar consumo NÃO DEVE gastar créditos, e o
 consumo de chamadas que deram certo antes de uma falha DEVE ser contado.
 
@@ -263,6 +265,21 @@ consumo de chamadas que deram certo antes de uma falha DEVE ser contado.
 #### Cenário: Falha depois de uma volta bem-sucedida
 - **QUANDO** a primeira chamada de uma pergunta consome 900 tokens e a segunda falha
 - **ENTÃO** os 900 tokens são contados no uso do dia
+
+#### Cenário: Resposta inesperada do provedor
+- **QUANDO** o provedor devolve uma resposta malformada ou o cliente não pode ser criado
+- **ENTÃO** a tela mostra o aviso de indisponível, com status 200, e não uma página de erro
+- **E** os tokens das chamadas anteriores da pergunta são contados no uso do dia
+
+#### Cenário: Perguntas paralelas
+- **QUANDO** uma pergunta do usuário está em andamento e outra chega antes de ela terminar, com o saldo do dia perto do teto
+- **ENTÃO** os créditos reservados pela primeira contam para a segunda, que pode ser barrada sem chamar o provedor
+- **E** ao fim da primeira a reserva é trocada pelo consumo real, também quando ela falha
+
+#### Cenário: Resposta cortada pelo limite de saída
+- **QUANDO** o provedor encerra a resposta por limite de tokens de saída
+- **ENTÃO** a tela mostra o aviso de indisponível, o texto cortado não é exibido nem guardado na conversa
+- **E** os tokens gastos são contados no uso do dia
 
 #### Cenário: Recusa consome créditos
 - **QUANDO** uma pergunta é recusada pela ferramenta de recusa

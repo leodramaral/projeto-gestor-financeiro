@@ -98,3 +98,44 @@ def test_the_length_limit_is_inclusive():
 
 def test_no_query_wins_over_the_other_reasons():
     assert check_answer("a" * (MAX_CHARS + 1), []) == NO_QUERY
+
+
+def test_a_number_inside_a_category_name_is_not_a_claimed_amount():
+    results = [
+        {
+            "month": "2026-08",
+            "label": "agosto de 2026",
+            "total": "100.00",
+            "categories": [{"name": "Mesada R$ 200", "amount": "100.00", "percent": 100}],
+        }
+    ]
+
+    assert check_answer("Com Mesada R$ 200 você gastou R$ 100,00.", results) is None
+    assert check_answer("Com Mesada R$ 200 você gastou R$ 300,00.", results) == VALUE_MISMATCH
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Foram cerca de 4 mil reais.",
+        "Foram R$ 1,5 mil.",
+        "Foram R$ 2 mil em Alimentação.",
+        "Foram R$ 1,2 milhão.",
+        "Foram R$ 2k.",
+    ],
+)
+def test_a_rounded_amount_with_a_scale_word_is_rejected(text):
+    assert check_answer(text, RESULTS) == VALUE_MISMATCH
+
+
+@pytest.mark.parametrize(
+    "text",
+    ["Foram R$ -5.000,00.", "Foram R$ **900,00**.", "Foram BRL 5.000,00.", "Foram R$ _900,00_."],
+)
+def test_amounts_with_a_sign_or_markup_or_brl_are_still_checked(text):
+    assert check_answer(text, RESULTS) == VALUE_MISMATCH
+
+
+def test_an_amount_with_markup_is_accepted_when_it_is_right():
+    assert check_answer("Alimentação: R$ **1.234,56**.", RESULTS) is None
+    assert check_answer("Foram BRL 265,44.", RESULTS) is None

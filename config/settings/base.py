@@ -103,5 +103,5 @@ LLM_BASE_URL = env("LLM_BASE_URL", default="https://api.groq.com/openai/v1")
 LLM_MODEL = env("LLM_MODEL", default="openai/gpt-oss-120b")
 # Tokens each user can spend per day (the provider's daily quota is shared by the whole key).
 LLM_DAILY_TOKEN_LIMIT = env.int("LLM_DAILY_TOKEN_LIMIT", default=40000)
-# Seconds to wait for the provider before giving up.
+# Seconds to wait for the provider on each call before giving up (a question makes up to 4).
 LLM_TIMEOUT_SECONDS = env.int("LLM_TIMEOUT_SECONDS", default=20)

@@ -1,10 +1,11 @@
 import pytest
+from django.test import Client
 from django.urls import reverse
 
 from assistant import views
 
-CHAT = "/assistente/"
-NEW = "/assistente/nova/"
+CHAT = "/assistant/"
+NEW = "/assistant/new/"
 
 
 @pytest.fixture(autouse=True)
@@ -100,7 +101,7 @@ def test_the_new_conversation_button_only_shows_with_a_conversation(logged):
     html = logged.get(CHAT).content.decode()
 
     assert "Nova conversa" in html
-    assert 'action="/assistente/nova/"' in html
+    assert 'action="/assistant/new/"' in html
 
 
 def test_the_messages_are_identified_for_screen_readers(logged):
@@ -125,7 +126,7 @@ def test_the_empty_page_shows_no_conversation_list(logged):
 def test_the_sidebar_item_carries_the_beta_tag(logged):
     for url in (CHAT, "/"):
         html = logged.get(url).content.decode()
-        item = html.split('href="/assistente/"', 1)[1].split("</a>", 1)[0]
+        item = html.split('href="/assistant/"', 1)[1].split("</a>", 1)[0]
 
         assert ">BETA</span>" in item
         assert "menu-item-badge" in item
@@ -135,3 +136,11 @@ def test_the_notice_in_the_body_says_the_assistant_is_in_beta(logged):
     html = logged.get(CHAT).content.decode()
 
     assert "Assistente em fase BETA: as respostas são sugestões automatizadas" in html
+
+
+@pytest.mark.parametrize("route", [CHAT, NEW])
+def test_a_post_without_the_csrf_token_is_refused(user, route):
+    strict = Client(enforce_csrf_checks=True)
+    strict.force_login(user)
+
+    assert strict.post(route, {"question": "q"}).status_code == 403

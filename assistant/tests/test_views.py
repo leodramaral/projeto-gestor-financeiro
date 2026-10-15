@@ -11,8 +11,8 @@ from assistant.tools import SPENDING
 
 from .fakes import FakeClient, text_response, tool_response
 
-CHAT = "/assistente/"
-NEW = "/assistente/nova/"
+CHAT = "/assistant/"
+NEW = "/assistant/new/"
 KEY = views.SESSION_KEY
 
 
@@ -369,3 +369,60 @@ def test_a_refusal_is_logged_without_the_question(logged, ask, caplog):
 
     assert "reason=off_topic" in caplog.text
     assert "segredo-da-pergunta" not in caplog.text
+
+
+def test_a_question_in_flight_holds_credits_against_a_parallel_one(
+    logged, user, settings, monkeypatch
+):
+    settings.LLM_DAILY_TOKEN_LIMIT = 40000
+    add_tokens(user, 39000)
+    parallel = Client()
+    parallel.force_login(user)
+    seen = []
+
+    def fake_answer(user, history, question):
+        seen.append(question)
+        if question == "first":  # arrives while the first is still waiting for the provider
+            response = parallel.post(CHAT, {"question": "second"})
+            assert messages.NO_CREDITS in response.content.decode()
+        return Answer(TEXT, "ok", 1500)
+
+    monkeypatch.setattr(views, "answer", fake_answer)
+
+    logged.post(CHAT, {"question": "first"})
+
+    assert seen == ["first"]
+    assert tokens_used_today(user) == 40500  # the reservation was replaced by what was spent
+
+
+def test_a_failed_question_gives_the_reservation_back(logged, user, ask):
+    ask(error=Unavailable(0))
+
+    logged.post(CHAT, {"question": "q"})
+
+    assert tokens_used_today(user) == 0
+
+
+def test_line_breaks_sent_as_crlf_count_as_one_character(logged, ask):
+    calls = ask(Answer(TEXT, "x", 1))
+    body = "question=" + "a%0D%0A" * 250  # 750 characters on the wire, 500 as typed
+
+    response = logged.post(CHAT, body, content_type="application/x-www-form-urlencoded")
+
+    assert response.status_code == 302
+    assert calls[0]["question"] == "\n".join(["a"] * 250)
+
+
+def test_a_second_enter_or_submit_while_sending_does_nothing(logged):
+    html = logged.get(CHAT).content.decode()
+
+    assert "if (!sending) $el.form.requestSubmit()" in html
+    assert "if (sending) $event.preventDefault(); else sending = true" in html
+
+
+def test_long_words_in_the_conversation_wrap(logged):
+    seed(logged, [{"role": "user", "content": "q"}, {"role": "assistant", "content": "a"}])
+
+    html = logged.get(CHAT).content.decode()
+
+    assert html.count("break-words") == 2

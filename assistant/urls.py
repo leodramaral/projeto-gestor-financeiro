@@ -6,5 +6,5 @@ app_name = "assistant"
 
 urlpatterns = [
     path("", views.ChatView.as_view(), name="chat"),
-    path("nova/", views.NewConversationView.as_view(), name="new"),
+    path("new/", views.NewConversationView.as_view(), name="new"),
 ]

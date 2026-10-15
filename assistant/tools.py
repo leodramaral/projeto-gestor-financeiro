@@ -12,7 +12,7 @@ from datetime import date
 from django.utils import timezone
 
 from transactions.dashboard import category_slices
-from transactions.periods import MONTH_PATTERN, resolve_month
+from transactions.periods import MIN_MONTH, MONTH_PATTERN, resolve_month
 
 SPENDING = "get_spending_by_category"
 DECLINE = "decline_out_of_scope"
@@ -105,6 +105,8 @@ def _month_view(raw):
         first_day = date(int(match.group(1)), int(match.group(2)), 1)
     except ValueError:
         raise ToolError("That month does not exist.") from None
+    if first_day < MIN_MONTH:
+        raise ToolError("The month must be January 2025 or later.")
     if first_day > today.replace(day=1):
         raise ToolError("That month is in the future.")
     return resolve_month(raw, today)

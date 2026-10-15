@@ -187,10 +187,10 @@ def test_savings_rate_is_unavailable_without_income(user, make_transaction):
 
 
 @pytest.mark.parametrize(
-    ("raw", "days"), [("2026-02", 28), ("2024-02", 29), ("2026-09", 30), ("2026-10", 31)]
+    ("raw", "days"), [("2026-02", 28), ("2028-02", 29), ("2026-09", 30), ("2026-10", 31)]
 )
 def test_series_has_one_point_per_day_of_the_month(user, raw, days):
-    month = month_of(raw)
+    month = month_of(raw, date(2030, 1, 1))
 
     points = daily_series(user, month, Decimal("0"))
 

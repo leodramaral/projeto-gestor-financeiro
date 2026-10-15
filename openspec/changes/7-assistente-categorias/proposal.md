@@ -13,7 +13,7 @@ novas ferramentas.
 
 ## What Changes
 
-- **Nova app `assistant`** com a tela `/assistente/` (item "Assistente" na barra lateral), protegida por
+- **Nova app `assistant`** com a tela `/assistant/` (item "Assistente" na barra lateral), protegida por
   login: campo de pergunta, resposta, aviso fixo e saldo de créditos do dia.
 - **Conversa só na sessão.** O histórico da conversa em andamento fica em `request.session`, limitado às
   últimas mensagens e só com texto (perguntas e respostas, sem o resultado bruto da ferramenta). Não há

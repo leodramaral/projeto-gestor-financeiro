@@ -147,9 +147,10 @@ HTTP nem sessão, então é testável sem cliente de teste.
 Model `Usage` com `user` (FK, `CASCADE`), `day` (`DateField`, `timezone.localdate()`), `tokens`
 (`PositiveIntegerField`) e unicidade `(user, day)`. A gravação soma de forma atômica
 (`get_or_create` seguido de `update(tokens=F("tokens") + n)`), para duas perguntas simultâneas do mesmo
-usuário não perderem contagem. A checagem do teto acontece antes da chamada, lendo `tokens` do dia; a
-última pergunta pode ultrapassar o teto por poucos tokens, e isso é aceito (não dá para saber antes quanto
-uma pergunta vai custar). `LLM_DAILY_TOKEN_LIMIT` tem padrão 40000: 200 mil por dia na organização divididos
+usuário não perderem contagem. Antes da chamada a view **reserva** 4.000 tokens do dia (`UPDATE` condicional em `tokens < teto`) e,
+ao fim, troca a reserva pelo consumo real; assim perguntas paralelas do mesmo usuário não passam todas pelo
+mesmo saldo. A última pergunta ainda pode ultrapassar o teto por poucos tokens, e isso é aceito (não dá para
+saber antes quanto uma pergunta vai custar). `LLM_DAILY_TOKEN_LIMIT` tem padrão 40000: 200 mil por dia na organização divididos
 por cerca de 5 usuários de teste; deve ser ajustado ao número real de usuários. A tela mostra "usados de
 teto". O contador mede o consumo **do nosso lado**; os cabeçalhos `x-ratelimit-*` da Groq são da
 organização inteira e não servem de saldo por usuário.
@@ -170,8 +171,8 @@ sessão (`SESSION_EXPIRE_AT_BROWSER_CLOSE`) ou com "Nova conversa".
 (dado financeiro em texto persistente, migração e regras de exclusão que a decisão evita).
 
 ### View e tela
-- `GET /assistente/` mostra a conversa, o formulário, o aviso e os créditos; `POST /assistente/` envia a
-  pergunta; `POST /assistente/nova/` zera a conversa. Tudo atrás de `LoginRequiredMixin`, CSRF padrão.
+- `GET /assistant/` mostra a conversa, o formulário, o aviso e os créditos; `POST /assistant/` envia a
+  pergunta; `POST /assistant/new/` zera a conversa. Tudo atrás de `LoginRequiredMixin`, CSRF padrão.
 - **Sucesso:** grava histórico e consumo e redireciona para o `GET` (post/redirect/get), para recarregar
   não reenviar a pergunta. **Erro** (pergunta inválida, créditos esgotados, falha do provedor): responde
   200 na mesma página com a mensagem e o texto digitado preservado, sem tocar no histórico. A recusa, a

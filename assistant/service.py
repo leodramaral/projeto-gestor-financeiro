@@ -92,6 +92,16 @@ class _Question:
         self.results = []  # spending results that worked, for this question only
 
     def run(self):
+        """Whatever goes wrong becomes `Unavailable` with the tokens spent so far: an odd reply
+        from the provider (an HTML page, a null field) must not end as a 500 that loses them."""
+        try:
+            return self._loop()
+        except AssistantError:
+            raise
+        except Exception as error:
+            raise Unavailable(self.tokens, type(error).__name__) from None
+
+    def _loop(self):
         client = get_client()
         for number in range(MAX_MODEL_CALLS):
             message = self._ask(client, first=number == 0)
@@ -122,7 +132,10 @@ class _Question:
         self.tokens += getattr(response.usage, "total_tokens", None) or 0
         if not response.choices:
             raise Unavailable(self.tokens)
-        return response.choices[0].message
+        choice = response.choices[0]
+        if getattr(choice, "finish_reason", None) == "length":
+            raise Unavailable(self.tokens, "Truncated")  # cut off by max_completion_tokens
+        return choice.message
 
     def _use_tools(self, message):
         """Runs the tools the model asked for. A refusal wins: nothing else runs and it is

@@ -402,6 +402,9 @@
 .sidebar:hover .menu-item-text {
   display: inline;
 }
+.sidebar:hover .menu-item-badge {
+  display: block;
+}
 .sidebar:hover .menu-item-arrow {
   display: block;
 }

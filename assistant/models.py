@@ -35,6 +35,24 @@ def tokens_used_today(user):
     return used.first() or 0
 
 
+def reserve_tokens(user, amount, limit):
+    """Reserves `amount` tokens of today's usage before the provider is called, so parallel
+    questions cannot all pass a check made before any of them has spent anything. Returns the
+    usage row's pk, or None when the user is already at `limit`; `settle_tokens` fixes the
+    difference afterwards."""
+    usage, _ = Usage.objects.get_or_create(user=user, day=timezone.localdate())
+    reserved = Usage.objects.filter(pk=usage.pk, tokens__lt=limit).update(
+        tokens=F("tokens") + amount
+    )
+    return usage.pk if reserved else None
+
+
+def settle_tokens(pk, reserved, spent):
+    """Replaces the `reserved` tokens of the usage row `pk` by what was `spent`."""
+    if spent != reserved:
+        Usage.objects.filter(pk=pk).update(tokens=F("tokens") + spent - reserved)
+
+
 def add_tokens(user, tokens):
     """Add `tokens` to today's usage of `user`; the sum is done by the database, so concurrent
     questions of the same user do not lose any."""

@@ -83,7 +83,7 @@ As variáveis `LLM_*` são opcionais e configuram o **assistente de IA** (ver "A
 | `LLM_API_KEY` | Chave do provedor (padrão: [Groq](https://console.groq.com), plano gratuito). Em branco, só a tela do assistente fica indisponível. Nunca versione a chave. |
 | `LLM_BASE_URL`, `LLM_MODEL` | Endereço da API compatível com a da OpenAI e o modelo. Padrão: `https://api.groq.com/openai/v1` e `openai/gpt-oss-120b`. Trocar de provedor é só mudar estas duas. |
 | `LLM_DAILY_TOKEN_LIMIT` | Tokens que cada usuário pode gastar por dia (padrão 40000; a cota gratuita da Groq, de 200 mil por dia, é da chave inteira). |
-| `LLM_TIMEOUT_SECONDS` | Tempo máximo de espera pelo provedor (padrão 20). |
+| `LLM_TIMEOUT_SECONDS` | Tempo máximo de espera **por chamada** ao provedor (padrão 20); uma pergunta faz até 4 chamadas, então pode levar mais que isso no total. |
 
 Com o plano gratuito, **não use dados financeiros reais**: o provedor pode usar o conteúdo enviado.
 
@@ -266,14 +266,14 @@ O design da tela (lista em linhas, modais e seletor de data) está em `design/go
 
 ### Assistente
 
-Em `/assistente/` o usuário conversa com um assistente de IA sobre os **gastos por categoria** dos próprios
+Em `/assistant/` o usuário conversa com um assistente de IA sobre os **gastos por categoria** dos próprios
 lançamentos ("Quanto gastei com transporte em agosto?"). É uma fatia da Issue #7: resumo automático e
 sugestões de economia ficam para uma continuação. Rotas, todas exigindo login:
 
 | Rota | O que faz |
 |---|---|
-| `/assistente/` | a conversa; `POST` envia a pergunta (até 500 caracteres) |
-| `/assistente/nova/` | zera a conversa (só POST) |
+| `/assistant/` | a conversa; `POST` envia a pergunta (até 500 caracteres) |
+| `/assistant/new/` | zera a conversa (só POST) |
 
 Como funciona (`assistant/`):
 

@@ -1,5 +1,6 @@
 import json
 from datetime import date
+from types import SimpleNamespace
 
 import httpx2
 import pytest
@@ -19,7 +20,7 @@ from assistant.service import (
 )
 from assistant.tools import DECLINE, SPENDING
 
-from .fakes import FakeClient, text_response, tool_response
+from .fakes import FakeClient, text_response, tool_response, usage
 
 REQUEST = httpx2.Request("POST", "https://llm.test/v1/chat/completions")
 
@@ -258,6 +259,50 @@ def test_a_failure_after_a_good_call_keeps_the_tokens_already_spent(august, fake
     assert raised.value.tokens == 900
 
 
+def broken_tool_call(tokens=100):
+    call = SimpleNamespace(id="call_1", type="function", function=None)
+    message = SimpleNamespace(content=None, tool_calls=[call])
+    return SimpleNamespace(choices=[SimpleNamespace(message=message)], usage=usage(tokens))
+
+
+@pytest.mark.parametrize(
+    "response",
+    [
+        SimpleNamespace(choices=[SimpleNamespace()], usage=usage(70)),  # no message
+        SimpleNamespace(choices=None, usage=usage(70)),
+        broken_tool_call(70),  # function is null
+    ],
+)
+def test_a_malformed_response_is_unavailable_and_keeps_the_tokens(user, fake, response):
+    fake(response)
+
+    with pytest.raises(Unavailable) as raised:
+        answer(user, [], "q")
+
+    assert raised.value.tokens == 70
+
+
+def test_a_malformed_second_response_keeps_the_first_tokens(august, fake):
+    fake(tool_response(spending(), tokens=900), broken_tool_call(40))
+
+    with pytest.raises(Unavailable) as raised:
+        answer(august, [], "q")
+
+    assert raised.value.tokens == 940
+
+
+def test_a_client_that_cannot_be_created_is_unavailable(user, monkeypatch):
+    def broken():
+        raise ValueError("bad url")
+
+    monkeypatch.setattr("assistant.service.get_client", broken)
+
+    with pytest.raises(Unavailable) as raised:
+        answer(user, [], "q")
+
+    assert raised.value.cause == "ValueError"
+
+
 def test_a_response_without_usage_counts_zero(august, fake):
     fake(tool_response(spending(), tokens=None), text_response("Foram R$ 842,10.", tokens=None))
 
@@ -299,3 +344,15 @@ def test_the_calls_do_not_share_one_mutating_list(august, fake):
     answer(august, [], "q")
 
     assert len(client.calls[0]["messages"]) < len(client.calls[1]["messages"])
+
+
+def test_an_answer_cut_by_the_token_limit_is_unavailable(august, fake):
+    cut = text_response("Em agosto você gastou R$ 842,10 com", tokens=1300)
+    cut.choices[0].finish_reason = "length"
+    fake(tool_response(spending(), tokens=900), cut)
+
+    with pytest.raises(Unavailable) as raised:
+        answer(august, [], "q")
+
+    assert raised.value.tokens == 2200
+    assert raised.value.cause == "Truncated"
