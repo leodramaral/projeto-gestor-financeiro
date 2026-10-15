@@ -128,6 +128,10 @@ def test_a_rounded_amount_with_a_scale_word_is_rejected(text):
     assert check_answer(text, RESULTS) == VALUE_MISMATCH
 
 
+def test_a_scale_word_after_the_sentence_end_is_not_a_scaled_amount():
+    assert check_answer("Você gastou R$ 1.234,56. Mil desculpas pela demora.", RESULTS) is None
+
+
 @pytest.mark.parametrize(
     "text",
     ["Foram R$ -5.000,00.", "Foram R$ **900,00**.", "Foram BRL 5.000,00.", "Foram R$ _900,00_."],

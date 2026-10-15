@@ -22,8 +22,10 @@ _AMOUNTS = re.compile(
 )
 # "4 mil reais", "R$ 2 mil", "R$ 1,5 milhão": a rounded amount the tool never returned.
 _SCALE = r"(?:mil|milh(?:ão|ões|ao|oes)|k)\b"
+_SCALED_AMOUNT = r"\d(?:[\d.,]*\d)?"  # no trailing "." or ",": "R$ 1.200,00. Mil desculpas" is fine
 _SCALED = re.compile(
-    rf"(?:R\$|BRL)\s*[*_~]*\s*-?\s*{_AMOUNT}\s*{_SCALE}|{_AMOUNT}\s*{_SCALE}\s*reais",
+    rf"(?:R\$|BRL)\s*[*_~]*\s*-?\s*{_SCALED_AMOUNT}\s*{_SCALE}"
+    rf"|{_SCALED_AMOUNT}\s*{_SCALE}\s*reais",
     re.IGNORECASE,
 )
 _THOUSANDS = re.compile(r"\d{1,3}(?:\.\d{3})+")

@@ -113,7 +113,7 @@ DEVE poder zerar a conversa com "Nova conversa", e a conversa DEVE sumir ao ence
 O assistente DEVE obter os dados por uma única ferramenta de dados, a de gastos por categoria, que devolve, para um
 mês, o total e, por categoria, nome, valor e porcentagem das despesas. A ferramenta DEVE usar sempre o
 usuário autenticado e NÃO DEVE aceitar identificação de usuário vinda do modelo. O mês DEVE ser `AAAA-MM`
-e, quando omitido, o mês atual. Mês em formato inválido, anterior a janeiro de 2025 ou futuro DEVE gerar erro devolvido ao modelo, sem
+e, quando omitido, o mês atual. Mês em formato inválido, anterior a janeiro de 2000 ou futuro DEVE gerar erro devolvido ao modelo, sem
 consulta ao banco. O prompt enviado ao modelo DEVE conter apenas dados agregados do usuário autenticado.
 
 #### Cenário: Mês informado

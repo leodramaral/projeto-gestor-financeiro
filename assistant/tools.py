@@ -106,7 +106,7 @@ def _month_view(raw):
     except ValueError:
         raise ToolError("That month does not exist.") from None
     if first_day < MIN_MONTH:
-        raise ToolError("The month must be January 2025 or later.")
+        raise ToolError("The month must be January 2000 or later.")
     if first_day > today.replace(day=1):
         raise ToolError("That month is in the future.")
     return resolve_month(raw, today)

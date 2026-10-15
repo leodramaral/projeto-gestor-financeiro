@@ -92,17 +92,20 @@ def test_a_bad_month_is_an_error_and_no_query(user, month, django_assert_num_que
     assert "error" in json.loads(outcome.content)
 
 
-@pytest.mark.parametrize("month", ["0001-01", "2024-12"])
-def test_a_month_before_the_floor_is_an_error_and_no_query(user, month, django_assert_num_queries):
+def test_a_month_before_the_floor_is_an_error_and_no_query(user, django_assert_num_queries):
     with django_assert_num_queries(0):
-        outcome = spending(user, json.dumps({"month": month}))
+        outcome = spending(user, json.dumps({"month": "0001-01"}))
 
     assert outcome.data is None
-    assert "January 2025" in json.loads(outcome.content)["error"]
+    assert "January 2000" in json.loads(outcome.content)["error"]
 
 
 def test_the_floor_month_is_accepted(user):
-    assert spending(user, '{"month": "2025-01"}').data["total"] == "0.00"
+    assert spending(user, '{"month": "2000-01"}').data["total"] == "0.00"
+
+
+def test_a_month_before_2025_is_accepted(user):
+    assert spending(user, '{"month": "2024-12"}').data["total"] == "0.00"
 
 
 def test_a_future_month_is_an_error_and_no_query(user, django_assert_num_queries):

@@ -48,16 +48,22 @@ def test_unusable_values_fall_back_to_the_current_month(raw):
     assert resolve_month(raw, TODAY).start == date(2026, 10, 1)
 
 
-@pytest.mark.parametrize("raw", ["0001-01", "2024-12"])
-def test_months_before_the_floor_fall_back_to_the_current_month(raw):
-    assert resolve_month(raw, TODAY).start == date(2026, 10, 1)
+def test_a_month_before_the_floor_falls_back_to_the_current_month():
+    assert resolve_month("0001-01", TODAY).start == date(2026, 10, 1)
+
+
+def test_a_month_before_2025_is_still_reachable():
+    view = resolve_month("2024-12", TODAY, first_month=date(2024, 12, 1))
+
+    assert view.start == date(2024, 12, 1)
+    assert not view.has_previous
 
 
 def test_the_floor_month_itself_is_allowed():
-    view = resolve_month("2025-01", TODAY)
+    view = resolve_month("2000-01", TODAY)
 
-    assert view.start == date(2025, 1, 1)
-    assert view.previous == date(2024, 12, 1)
+    assert view.start == date(2000, 1, 1)
+    assert view.previous == date(1999, 12, 1)
 
 
 @pytest.mark.parametrize("raw", ["2026-11", "2027-01", "9999-12"])

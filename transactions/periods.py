@@ -10,8 +10,9 @@ from django.utils.dates import MONTHS
 from .models import Transaction
 
 MONTH_PATTERN = re.compile(r"^(\d{4})-(\d{2})$")
-# The earliest month anyone can look at; also keeps `shift_month` far from year 1.
-MIN_MONTH = date(2025, 1, 1)
+# Only keeps `shift_month` away from year 1 (`date(0, 12, 1)` raises); far below any real
+# transaction, so no month a user can reach is ever replaced silently.
+MIN_MONTH = date(2000, 1, 1)
 
 
 def shift_month(day, delta):
