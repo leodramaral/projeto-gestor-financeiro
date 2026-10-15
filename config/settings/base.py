@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     "core",
     "transactions",
     "goals",
+    "assistant",
 ]
 
 MIDDLEWARE = [
@@ -94,3 +95,13 @@ LOGIN_LOCKOUT_SECONDS = 60 * 15
 
 # Transactions shown per page in the list.
 TRANSACTIONS_PER_PAGE = 20
+
+# Assistant: an OpenAI-compatible provider (Groq by default). The key has no usable default: without
+# it the assistant page says it is unavailable and the rest of the app keeps working.
+LLM_API_KEY = env("LLM_API_KEY", default="")
+LLM_BASE_URL = env("LLM_BASE_URL", default="https://api.groq.com/openai/v1")
+LLM_MODEL = env("LLM_MODEL", default="openai/gpt-oss-120b")
+# Tokens each user can spend per day (the provider's daily quota is shared by the whole key).
+LLM_DAILY_TOKEN_LIMIT = env.int("LLM_DAILY_TOKEN_LIMIT", default=40000)
+# Seconds to wait for the provider on each call before giving up (a question makes up to 4).
+LLM_TIMEOUT_SECONDS = env.int("LLM_TIMEOUT_SECONDS", default=20)

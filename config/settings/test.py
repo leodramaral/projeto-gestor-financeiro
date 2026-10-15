@@ -11,3 +11,11 @@ PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 DEFAULT_FROM_EMAIL = "Gestor Financeiro <nao-responda@example.com>"
 SITE_URL = "http://testserver"
+
+# The assistant never reaches a real provider in tests (see assistant/tests/conftest.py); these
+# keep a real key or limit from the developer's `.env` out of the suite.
+LLM_API_KEY = "test-key"
+LLM_BASE_URL = "https://llm.test/v1"
+LLM_MODEL = "test-model"
+LLM_DAILY_TOKEN_LIMIT = 40000
+LLM_TIMEOUT_SECONDS = 20

@@ -76,6 +76,17 @@ docker run --rm python:3.12-slim python -c "import secrets; print(secrets.token_
 As variáveis `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS` e `SECURE_SSL_REDIRECT` são só de produção e
 podem ficar como estão.
 
+As variáveis `LLM_*` são opcionais e configuram o **assistente de IA** (ver "Assistente" abaixo):
+
+| Variável | O que é |
+|---|---|
+| `LLM_API_KEY` | Chave do provedor (padrão: [Groq](https://console.groq.com), plano gratuito). Em branco, só a tela do assistente fica indisponível. Nunca versione a chave. |
+| `LLM_BASE_URL`, `LLM_MODEL` | Endereço da API compatível com a da OpenAI e o modelo. Padrão: `https://api.groq.com/openai/v1` e `openai/gpt-oss-120b`. Trocar de provedor é só mudar estas duas. |
+| `LLM_DAILY_TOKEN_LIMIT` | Tokens que cada usuário pode gastar por dia (padrão 40000; a cota gratuita da Groq, de 200 mil por dia, é da chave inteira). |
+| `LLM_TIMEOUT_SECONDS` | Tempo máximo de espera **por chamada** ao provedor (padrão 20); uma pergunta faz até 4 chamadas, então pode levar mais que isso no total. |
+
+Com o plano gratuito, **não use dados financeiros reais**: o provedor pode usar o conteúdo enviado.
+
 **4. Suba tudo**
 
 ```bash
@@ -170,6 +181,7 @@ config/            projeto Django: urls, wsgi/asgi e settings/{base,dev,test,pro
 accounts/          usuários: modelo `User`, cadastro, confirmação por e-mail, login/logout e testes
 transactions/      lançamentos e categorias: models `Transaction` e `Category`, telas, ícones/cores (`appearance.py`), os SVGs em `icons/` e testes
 goals/             metas financeiras: model `Goal`, formulários, telas (lista, modal, progresso) e testes
+assistant/        assistente de IA: ferramentas, serviço de tool-calling, guardrails, uso diário de tokens (`Usage`), tela e testes
 core/              app Django inicial (home, que leva à listagem), envio de e-mail (`emailing.py`) e seus testes
 templates/         base.html, parciais (sidebar, header...), telas e e-mails (`email/`)
 static/            imagens versionadas; static/dist/ é gerado e não versionado
@@ -251,6 +263,40 @@ lançamento nem altera o saldo.
 | `goals_goal` | `user` (FK), `name` (até 60), `target_amount` (> 0), `saved_amount` (>= 0, padrão 0), `deadline` (anulável), `completed_at` (anulável: preenchido = concluída) |
 
 O design da tela (lista em linhas, modais e seletor de data) está em `design/goals.figcraft`.
+
+### Assistente
+
+Em `/assistant/` o usuário conversa com um assistente de IA sobre os **gastos por categoria** dos próprios
+lançamentos ("Quanto gastei com transporte em agosto?"). É uma fatia da Issue #7: resumo automático e
+sugestões de economia ficam para uma continuação. Rotas, todas exigindo login:
+
+| Rota | O que faz |
+|---|---|
+| `/assistant/` | a conversa; `POST` envia a pergunta (até 500 caracteres) |
+| `/assistant/new/` | zera a conversa (só POST) |
+
+Como funciona (`assistant/`):
+
+- **Conversa só na sessão:** as 6 últimas mensagens (texto) ficam em `request.session`; não há tabela de
+  conversas e ela some ao encerrar a sessão ou em "Nova conversa".
+- **Ferramentas, só leitura:** o modelo só pode chamar `get_spending_by_category` (gastos do mês, sempre do
+  usuário autenticado, sobre `transactions/dashboard.py`) e `decline_out_of_scope`. Tudo o mais é recusado
+  com um **texto fixo** (`assistant/messages.py`); "oi" e "obrigado" recebem uma resposta de ajuda fixa.
+- **Resposta ancorada:** o texto do modelo só aparece se a ferramenta de gastos foi consultada nessa
+  pergunta, se cada valor em reais citado consta do resultado dela e se tem até 1200 caracteres; senão, o
+  usuário vê uma mensagem fixa (`assistant/guard.py`).
+- **Créditos em tokens:** o consumo informado pelo provedor é somado por usuário e dia; ao atingir
+  `LLM_DAILY_TOKEN_LIMIT` a tela avisa e não chama o provedor. Falha do provedor mostra mensagem amigável.
+- **Sem rede nos testes:** os testes usam um cliente falso (`assistant/tests/fakes.py`); criar o cliente
+  real num teste falha de propósito.
+- A tela está marcada como **BETA** (selo no menu e aviso no corpo) e mostra que as respostas são sugestões
+  automatizadas, e não aconselhamento financeiro.
+
+| Tabela | Campos principais |
+|---|---|
+| `assistant_usage` | `user` (FK), `day` (dia local), `tokens` (somados no dia); único por `(user, day)` |
+
+O design da tela está em `design/assistant.figcraft`.
 
 ### Créditos
 

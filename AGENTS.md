@@ -121,6 +121,13 @@ servidor MCP). Não é preciso para rodar nem para desenvolver o app, só para e
   segue o idioma); o fundo dos modais é a casca da tela só com o título; menu `⋯` aberto não é desenhado;
   o frame é o tamanho da janela, sem a rolagem; o arquivo foi gerado por script e não usa componentes do
   FigCraft; dados fictícios (`Maria Silva`, 5 metas).
+- **Divergências conhecidas do design do assistente** (`design/assistant.figcraft`, desktop claro e escuro, mobile
+  claro; o visual segue o chat da demo do TailAdmin Pro, reproduzido em Tailwind próprio): sem estados de foco e de hover e sem `shadow-theme-*`; o frame é o tamanho da janela (1440×900 ou
+  390×844), sem a rolagem; o ícone do assistente (balão com três pontos) é desenhado à mão; o botão de envio
+  aparece só no estado normal (sem o indicador de carregamento) e o campo, sem o anel de foco; só o desktop claro tem os estados com erro, com recusa e sem
+  créditos; o cabeçalho e a barra lateral são cópias de `goals.figcraft` (o item "Assistente" ativo e "Metas"
+  inativo), e o arquivo foi gerado por script, sem componentes do FigCraft; dados fictícios (`Maria Silva`, uma
+  pergunta e uma resposta de exemplo, 1.340 de 40.000 tokens).
 - **Divergências conhecidas das demais telas** (login, confirmação de conta, recuperação de senha,
   lançamentos, categorias e perfil; o painel tem a lista abaixo): sem estados de foco e de hover
   (o app dá `autofocus` ao primeiro campo) e sem `shadow-theme-*` em cartões, campos, modais e menus; o

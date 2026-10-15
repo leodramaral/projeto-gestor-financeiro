@@ -132,7 +132,9 @@ def test_previous_arrow_is_disabled_on_the_first_transaction_month(
     assert page(logged_client, month="2026-09").context["previous_url"].endswith("month=2026-08")
 
 
-@pytest.mark.parametrize("raw", ["2026-13", "abc", "", "2027-01", "2026-11", "2026-10-05"])
+@pytest.mark.parametrize(
+    "raw", ["2026-13", "0001-01", "abc", "", "2027-01", "2026-11", "2026-10-05"]
+)
 def test_invalid_or_future_month_falls_back_to_the_current_one(
     logged_client, user, make_transaction, raw
 ):
@@ -142,6 +144,14 @@ def test_invalid_or_future_month_falls_back_to_the_current_one(
 
     assert response.status_code == 200
     assert response.context["month"].param == "2026-10"
+
+
+def test_a_month_before_2025_with_transactions_is_shown(logged_client, user, make_transaction):
+    make_transaction(user, "income", "10.00", when=date(2024, 12, 5))
+
+    response = page(logged_client, month="2024-12")
+
+    assert response.context["month"].param == "2024-12"
 
 
 @pytest.mark.parametrize("route", TAB_ROUTES)

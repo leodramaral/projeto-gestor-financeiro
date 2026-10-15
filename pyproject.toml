@@ -5,6 +5,7 @@ requires-python = ">=3.12"
 dependencies = [
     "django>=5.2,<5.3",
     "django-environ>=0.14.0",
+    "openai>=3.31.0",
     "psycopg[binary]>=3.3.6",
 ]
 
@@ -40,12 +41,12 @@ max-complexity = 10
 
 [tool.coverage.run]
 branch = true
-source = ["config", "core", "accounts", "transactions", "goals"]
+source = ["config", "core", "accounts", "transactions", "goals", "assistant"]
 omit = ["*/migrations/*"]
 
 [tool.coverage.report]
 show_missing = true
 precision = 2
-# Piso = cobertura medida (98,91...%), truncada para baixo, nunca arredondada para cima. Só sobe
+# Piso = cobertura medida (99,17...%), truncada para baixo, nunca arredondada para cima. Só sobe
 # quando a cobertura real sobe.
-fail_under = 98.9
+fail_under = 99.1

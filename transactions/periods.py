@@ -10,6 +10,9 @@ from django.utils.dates import MONTHS
 from .models import Transaction
 
 MONTH_PATTERN = re.compile(r"^(\d{4})-(\d{2})$")
+# Only keeps `shift_month` away from year 1 (`date(0, 12, 1)` raises); far below any real
+# transaction, so no month a user can reach is ever replaced silently.
+MIN_MONTH = date(2000, 1, 1)
 
 
 def shift_month(day, delta):
@@ -55,13 +58,16 @@ class MonthView:
 
 
 def _parse_month(raw, current):
-    """The first day of the month in `raw` ("YYYY-MM"), or `current` when it is not usable."""
+    """The first day of the month in `raw` ("YYYY-MM"), or `current` when it is not usable (or
+    before `MIN_MONTH`)."""
     match = MONTH_PATTERN.match(raw or "")
     if not match:
         return current
     try:
         month = date(int(match.group(1)), int(match.group(2)), 1)
     except ValueError:
+        return current
+    if month < MIN_MONTH:
         return current
     return min(month, current)
 

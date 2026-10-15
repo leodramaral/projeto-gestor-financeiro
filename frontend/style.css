@@ -402,6 +402,9 @@
 .sidebar:hover .menu-item-text {
   display: inline;
 }
+.sidebar:hover .menu-item-badge {
+  display: block;
+}
 .sidebar:hover .menu-item-arrow {
   display: block;
 }
@@ -422,7 +425,8 @@
   }
   html.sidebar-collapsed:not(.sidebar-ready) .sidebar .logo,
   html.sidebar-collapsed:not(.sidebar-ready) .sidebar .menu-group-title,
-  html.sidebar-collapsed:not(.sidebar-ready) .sidebar .menu-item-text {
+  html.sidebar-collapsed:not(.sidebar-ready) .sidebar .menu-item-text,
+  html.sidebar-collapsed:not(.sidebar-ready) .sidebar .menu-item-badge {
     display: none;
   }
   html.sidebar-collapsed:not(.sidebar-ready) .sidebar .logo-icon,
