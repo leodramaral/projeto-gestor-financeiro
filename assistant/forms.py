@@ -33,7 +33,7 @@ class QuestionForm(forms.Form):
                 "autofocus": True,
                 "@keydown.enter": (
                     "if (!$event.shiftKey && !$event.isComposing) "
-                    "{ $event.preventDefault(); if (!sending) $el.form.requestSubmit() }"
+                    "{ $event.preventDefault(); if (!$data.busy) $el.form.requestSubmit() }"
                 ),
             }
         ),

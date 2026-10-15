@@ -7,9 +7,10 @@
 (function () {
   if (typeof flatpickr === "undefined") return;
 
+  // Lucide chevron-left / chevron-right (the same icons as `core/icons/`, which a template tag cannot reach here).
   const ARROW = (path) =>
     '<svg class="stroke-current" width="24" height="24" viewBox="0 0 24 24" fill="none" ' +
-    'xmlns="http://www.w3.org/2000/svg"><path d="' + path + '" stroke="" stroke-width="1.5" ' +
+    'xmlns="http://www.w3.org/2000/svg"><path d="' + path + '" stroke-width="2" ' +
     'stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
   function pad(n) {
@@ -38,8 +39,8 @@
       disableMobile: true,
       monthSelectorType: "static",
       minDate: overdue ? null : "today",
-      prevArrow: ARROW("M15.25 6L9 12.25L15.25 18.5"),
-      nextArrow: ARROW("M8.75 19L15 12.75L8.75 6.5"),
+      prevArrow: ARROW("m15 18-6-6 6-6"),
+      nextArrow: ARROW("m9 18 6-6-6-6"),
       onOpen: function (selectedDates, dateStr, instance) {
         // Not enough room below the field (typical inside the modal): open above it instead.
         const room = window.innerHeight - instance.altInput.getBoundingClientRect().bottom;

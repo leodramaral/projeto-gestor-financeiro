@@ -305,7 +305,9 @@ O seletor de data do prazo das metas é o [flatpickr](https://flatpickr.js.org) 
 inicialização está em `static/js/datepicker.js`.
 
 Os ícones das categorias são da [Lucide](https://lucide.dev) (`lucide-static` 1.52.0), sob a licença
-ISC. Os 20 arquivos usados estão em `transactions/icons/`, com o texto da licença em `LICENSE`.
+ISC. Os 20 arquivos usados estão em `transactions/icons/`, com o texto da licença em `LICENSE`. Os ícones da interface (menu, chat do assistente) são da mesma
+versão e ficam em `core/icons/`, com a licença em `LICENSE`, desenhados pelo template tag `lucide`
+(`core/templatetags/icon_tags.py`).
 
 ### Problemas comuns
 

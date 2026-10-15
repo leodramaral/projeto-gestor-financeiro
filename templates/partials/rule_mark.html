@@ -1,0 +1,6 @@
+{% load icon_tags %}{# Marca de uma regra no cadastro: círculo (não começou), check (ok) ou x (falhou). Parâmetros Alpine: started, ok. #}
+<span aria-hidden="true" class="inline-flex align-middle">
+  <span x-show="!({{ started }})">{% lucide "circle" "h-3.5 w-3.5" %}</span>
+  <span x-show="({{ started }}) && ({{ ok }})" x-cloak>{% lucide "check" "h-3.5 w-3.5" %}</span>
+  <span x-show="({{ started }}) && !({{ ok }})" x-cloak>{% lucide "x" "h-3.5 w-3.5" %}</span>
+</span>

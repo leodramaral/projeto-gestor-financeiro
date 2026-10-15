@@ -37,6 +37,12 @@ openspec validate --all                               # SEM --strict
 
 - **Não versione segredos.** `.env` está no `.gitignore`; só `.env.example` é versionado, sem valores
   reais. `SECRET_KEY` e `DATABASE_URL` não têm valor padrão: a aplicação deve falhar sem elas.
+- **Ícones são da Lucide.** Todo ícone novo da interface vem da [Lucide](https://lucide.dev) (`lucide-static`
+  1.52.0, ISC): copie o SVG para `core/icons/<nome-lucide>.svg` e use `{% load icon_tags %}{% lucide "nome" "h-5 w-5" %}`;
+  os ícones das categorias ficam em `transactions/icons/` (`category_icon`). Não desenhe SVG à mão; só o
+  indicador de espera do assistente (pontos animados) e as marcas (logo) são desenho próprio. Os `.figcraft`
+  das outras telas ainda mostram os ícones antigos do TailAdmin (menu, cabeçalho, ações); só o do assistente
+  já usa os da Lucide.
 - **Dependências com `uv`** (`pyproject.toml` + `uv.lock`); nunca `requirements.txt`.
 - **O domínio ainda não foi modelado.** Não crie model, regra de negócio nem tela de domínio sem uma
   change que a autorize.
@@ -123,11 +129,14 @@ servidor MCP). Não é preciso para rodar nem para desenvolver o app, só para e
   FigCraft; dados fictícios (`Maria Silva`, 5 metas).
 - **Divergências conhecidas do design do assistente** (`design/assistant.figcraft`, desktop claro e escuro, mobile
   claro; o visual segue o chat da demo do TailAdmin Pro, reproduzido em Tailwind próprio): sem estados de foco e de hover e sem `shadow-theme-*`; o frame é o tamanho da janela (1440×900 ou
-  390×844), sem a rolagem; o ícone do assistente (balão com três pontos) é desenhado à mão; o botão de envio
-  aparece só no estado normal (sem o indicador de carregamento) e o campo, sem o anel de foco; só o desktop claro tem os estados com erro, com recusa e sem
-  créditos; o cabeçalho e a barra lateral são cópias de `goals.figcraft` (o item "Assistente" ativo e "Metas"
+  390×844), sem a rolagem; os ícones do assistente (menu, marca nas mensagens e erro) são da Lucide, redesenhados em traço; o botão de envio
+  aparece só no estado normal (sem o indicador de carregamento) e o campo, sem o anel de foco; só o desktop claro tem os estados aguardando (pergunta enviada com o
+  indicador de espera, que no app salta), com erro (falha do provedor: pergunta marcada como não enviada e linha
+  de erro no chat), com recusa, com cortesia, não confiável e sem créditos (mensagem dentro da caixa, envio
+  desativado), além de um quadro à parte com as quatro faixas do medidor de créditos (`assistant · medidor de
+  créditos · claro · faixas`); o cabeçalho e a barra lateral são cópias de `goals.figcraft` (o item "Assistente" ativo e "Metas"
   inativo), e o arquivo foi gerado por script, sem componentes do FigCraft; dados fictícios (`Maria Silva`, uma
-  pergunta e uma resposta de exemplo, 1.340 de 40.000 tokens).
+  pergunta e uma resposta de exemplo, medidor de créditos em 3%).
 - **Divergências conhecidas das demais telas** (login, confirmação de conta, recuperação de senha,
   lançamentos, categorias e perfil; o painel tem a lista abaixo): sem estados de foco e de hover
   (o app dá `autofocus` ao primeiro campo) e sem `shadow-theme-*` em cartões, campos, modais e menus; o

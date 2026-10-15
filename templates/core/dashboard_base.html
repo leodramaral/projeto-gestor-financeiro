@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load icon_tags %}
 {% load static %}
 {# Estrutura comum das abas do painel: seletor de mês, abas e estado vazio. #}
 
@@ -31,9 +32,9 @@
       <div class="order-3 flex w-full flex-wrap items-center gap-x-2 gap-y-3 md:order-2 md:ml-auto md:w-auto md:justify-end md:gap-x-4" data-month-selector>
         <div class="flex w-full items-center gap-2 sm:w-auto">
           {% if previous_url %}
-            <a href="{{ previous_url }}" class="{{ arrow }} border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/[0.03]" aria-label="Mês anterior" data-month-previous>‹</a>
+            <a href="{{ previous_url }}" class="{{ arrow }} border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/[0.03]" aria-label="Mês anterior" data-month-previous>{% lucide "chevron-left" "h-5 w-5" %}</a>
           {% else %}
-            <span class="{{ arrow }} cursor-not-allowed border-gray-200 text-gray-300 dark:border-gray-800 dark:text-gray-600" aria-disabled="true" aria-label="Mês anterior" data-month-previous>‹</span>
+            <span class="{{ arrow }} cursor-not-allowed border-gray-200 text-gray-300 dark:border-gray-800 dark:text-gray-600" aria-disabled="true" aria-label="Mês anterior" data-month-previous>{% lucide "chevron-left" "h-5 w-5" %}</span>
           {% endif %}
           <form method="get" action="" class="min-w-0 flex-1 sm:w-56 sm:flex-none" x-data>
             <label for="month-select" class="sr-only">Mês</label>
@@ -45,9 +46,9 @@
             <noscript><button type="submit" class="mt-2 h-11 rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-700 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/[0.03]">Ir para o mês</button></noscript>
           </form>
           {% if next_url %}
-            <a href="{{ next_url }}" class="{{ arrow }} border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/[0.03]" aria-label="Próximo mês" data-month-next>›</a>
+            <a href="{{ next_url }}" class="{{ arrow }} border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/[0.03]" aria-label="Próximo mês" data-month-next>{% lucide "chevron-right" "h-5 w-5" %}</a>
           {% else %}
-            <span class="{{ arrow }} cursor-not-allowed border-gray-200 text-gray-300 dark:border-gray-800 dark:text-gray-600" aria-disabled="true" aria-label="Próximo mês" data-month-next>›</span>
+            <span class="{{ arrow }} cursor-not-allowed border-gray-200 text-gray-300 dark:border-gray-800 dark:text-gray-600" aria-disabled="true" aria-label="Próximo mês" data-month-next>{% lucide "chevron-right" "h-5 w-5" %}</span>
           {% endif %}
         </div>
 
