@@ -50,9 +50,9 @@
 ## 8. Documentação e fechamento
 
 - [x] 8.1 Atualizar o `README.md`: rota `/assistant/` e as de envio e nova conversa, as cinco variáveis `LLM_*` na tabela do `.env` (com a observação de não usar dados reais com o plano gratuito), a tabela `assistant_usage` no modelo de dados e a estrutura do repositório; verificar relendo o README contra o código e `.env.example`
-- [ ] 8.2 Abrir a Issue de continuação (resumo em linguagem natural e sugestão de economia, demais ferramentas, modelo de reserva) com `gh issue create`, citando a #7, e deixar a #7 aberta; verificar com `gh issue view <n>`
+- [x] 8.2 Issue de continuação (resumo em linguagem natural e sugestão de economia, demais ferramentas, modelo de reserva): **adiada por decisão do time**; será planejada com calma depois dos ajustes finos do chat (#64, data do lançamento, e #62, envio sem recarregar) e a #7 fica aberta; nenhuma Issue é aberta agora
 - [x] 8.3 Rodar a verificação completa: `docker compose exec web pytest --cov --cov-report=term-missing` (cobertura acima do `fail_under`, sem rebaixar o piso), `uvx pre-commit run --all-files` e `openspec validate --all` (sem `--strict`); verificar que os três terminam sem erro
-- [ ] 8.4 Arquivar a change (`openspec archive 7-assistente-categorias --yes`) depois de abrir a Issue de continuação (8.2) e de o CI do PR passar; o PR usa `Refs #7`, e não `Closes #7`, porque esta fatia não fecha a Issue; verificar com `openspec validate --all` e a pasta movida para `openspec/changes/archive/`
+- [x] 8.4 Arquivar a change (`openspec archive 7-assistente-categorias --yes`) depois de o CI do PR passar (a Issue de continuação foi adiada, ver 8.2); o PR usa `Refs #7`, e não `Closes #7`, porque esta fatia não fecha a Issue; verificar com `openspec validate --all` e a pasta movida para `openspec/changes/archive/`
 
 ## 9. Ajustes do review do PR #63 (criticidade alta)
 
