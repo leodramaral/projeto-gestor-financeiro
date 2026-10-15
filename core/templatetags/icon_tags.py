@@ -3,6 +3,7 @@ from functools import cache
 from pathlib import Path
 
 from django import template
+from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 
 register = template.Library()
@@ -29,6 +30,7 @@ def lucide(name, css="h-5 w-5"):
     """
     if not NAME.fullmatch(name) or not (ICON_DIR / f"{name}.svg").is_file():
         raise ValueError(f"Unknown Lucide icon: {name!r}; add it to core/icons/.")
-    attrs = f'class="{css}" aria-hidden="true" focusable="false"'
-    # Safe: `name` is a plain name of a file in ICON_DIR (checked above), so the markup is our own.
+    attrs = format_html('class="{}" aria-hidden="true" focusable="false"', css)
+    # Safe: `name` is a plain name of a file in ICON_DIR (checked above), so the markup is our own;
+    # `css` goes through format_html, which escapes it.
     return mark_safe(_svg(name).replace("<svg ", f"<svg {attrs} ", 1))  # noqa: S308

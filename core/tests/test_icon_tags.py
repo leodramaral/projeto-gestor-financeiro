@@ -15,6 +15,15 @@ def test_the_tag_draws_the_icon_inline_with_the_given_classes():
     assert 'stroke="currentColor"' in html and html.endswith("</svg>")
 
 
+def test_the_classes_are_escaped_even_when_they_come_from_a_variable():
+    html = Template('{% load icon_tags %}{% lucide "plus" css %}').render(
+        Context({"css": 'x" onload="alert(1)'})
+    )
+
+    assert 'onload="alert(1)"' not in html
+    assert "&quot; onload=&quot;alert(1)" in html
+
+
 def test_the_default_size_is_applied():
     assert 'class="h-5 w-5"' in render('{% lucide "circle-alert" %}')
 

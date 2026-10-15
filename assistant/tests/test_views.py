@@ -447,8 +447,8 @@ def test_a_second_enter_or_submit_while_sending_does_nothing(logged):
     html = logged.get(CHAT).content.decode()
     script = Path("static/js/assistant-chat.js").read_text()
 
-    assert "if (!busy) $el.form.requestSubmit()" in html
-    assert '@submit="send($event)"' in html and ':disabled="busy"' in html
+    assert "if (!$data.busy) $el.form.requestSubmit()" in html
+    assert '@submit="$data.send && $data.send($event)"' in html and ':disabled="$data.busy"' in html
     assert "if (this.busy) {" in script and "event.preventDefault()" in script
 
 
@@ -590,3 +590,14 @@ def test_the_meter_shows_credits_and_a_percent_in_the_tone(logged, user, setting
     assert bar in region(html, "div", 'id="chat-credits"')
     assert f">{used // 10}%</span>" in html
     assert "tokens" not in html.lower()
+
+
+def test_the_form_does_not_depend_on_names_only_the_script_defines(logged):
+    """Without assistant-chat.js a bare name would throw, and Enter would stop sending."""
+    html = logged.get(CHAT).content.decode()
+    form = region(html, "form", 'x-data="assistantChat"')
+    handlers = re.findall(r'(?:@[\w.:]+|:disabled|x-show)="([^"]*)"', form)
+
+    for expression in handlers:
+        for name in ("busy", "sending", "blocked", "send"):
+            assert not re.search(rf"(?<![\w$.]){name}\b(?!\s*:)", expression), expression
