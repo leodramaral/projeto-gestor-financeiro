@@ -17,6 +17,15 @@ SESSION_KEY = "assistant_conversation"
 # Held from the daily credit while a question runs: about what the longest one spends.
 RESERVED_TOKENS = 4000
 
+# A turn that never reaches the session: a fixed answer from the assistant, or an error line.
+ASSISTANT, ERROR = "assistant", "error"
+# Credit meter tones by percent used; the first whose floor is reached wins.
+TONES = ((100, "critical"), (90, "error"), (70, "warning"), (0, "brand"))
+
+
+def meter_tone(percent):
+    return next(tone for floor, tone in TONES if percent >= floor)
+
 
 class ChatView(LoginRequiredMixin, View):
     """The conversation lives in the session: the last few messages, text only, and nothing else."""
@@ -28,11 +37,11 @@ class ChatView(LoginRequiredMixin, View):
 
     def post(self, request):
         form = QuestionForm(request.POST)
-        if not form.is_valid():
+        if not form.is_valid() or not settings.LLM_API_KEY:
             return self._render(request, form)
         reservation = reserve_tokens(request.user, RESERVED_TOKENS, settings.LLM_DAILY_TOKEN_LIMIT)
         if reservation is None:
-            return self._render(request, form, notice=messages.NO_CREDITS)
+            return self._render(request, form, composer_notice=messages.NO_CREDITS)
         question = form.cleaned_data["question"]
         history = request.session.get(SESSION_KEY, [])
         started = time.monotonic()
@@ -51,10 +60,10 @@ class ChatView(LoginRequiredMixin, View):
                 failure.status,
                 time.monotonic() - started,
             )
-            return self._render(request, form, notice=failure.message, error=True)
+            return self._render(request, form, turn=(question, ERROR, failure.message))
         if result.outcome != TEXT:
             logger.info("Assistant declined: reason=%s tokens=%s", result.reason, result.tokens)
-            return self._render(request, form, notice=result.text)
+            return self._render(request, QuestionForm(), turn=(question, ASSISTANT, result.text))
         history = [
             *history,
             {"role": "user", "content": question},
@@ -63,19 +72,34 @@ class ChatView(LoginRequiredMixin, View):
         request.session[SESSION_KEY] = history[-MAX_HISTORY_MESSAGES:]
         return redirect("assistant:chat")
 
-    def _render(self, request, form, notice=None, error=False):
-        if notice is None and not settings.LLM_API_KEY:
-            notice, error = messages.UNAVAILABLE, True
+    def _render(self, request, form, turn=None, composer_notice=None):
+        """`turn` is (question, kind, text): shown once, after the conversation, never stored.
+
+        The text goes back to the field unless the assistant answered the question.
+        """
         used = tokens_used_today(request.user)
         limit = settings.LLM_DAILY_TOKEN_LIMIT
+        percent = min(100, used * 100 // limit) if limit else 100
+        if composer_notice is None and not settings.LLM_API_KEY:
+            composer_notice = messages.UNAVAILABLE
+        if composer_notice is None and percent >= 100:
+            composer_notice = messages.NO_CREDITS
+        ephemeral = None
+        if turn:
+            question, kind, text = turn
+            ephemeral = {"question": question, "kind": kind, "text": text}
         context = {
             "form": form,
             "conversation": request.session.get(SESSION_KEY, []),
-            "notice": notice,
-            "notice_is_error": error,
+            "ephemeral": ephemeral,
+            "composer_notice": composer_notice,
+            "restore": bool(
+                form.errors or composer_notice or (ephemeral and ephemeral["kind"] == ERROR)
+            ),
             "used": used,
             "limit": limit,
-            "percent": min(100, used * 100 // limit) if limit else 100,
+            "percent": percent,
+            "tone": meter_tone(percent),
             "example": messages.EXAMPLE_QUESTION,
             "disclaimer": messages.DISCLAIMER,
         }

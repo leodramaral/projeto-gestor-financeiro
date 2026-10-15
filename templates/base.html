@@ -11,6 +11,8 @@
     {% include "partials/sidebar_init.html" %}
     <link rel="stylesheet" href="{% static 'dist/css/style.css' %}" />
     <script defer src="{% static 'js/category-select.js' %}"></script>
+    {# Alpine components: they have to register on `alpine:init`, so they load before Alpine. #}
+    {% block component_scripts %}{% endblock %}
     <script defer src="{% static 'dist/js/alpine.min.js' %}"></script>
     {% block extra_scripts %}{% endblock %}
   </head>

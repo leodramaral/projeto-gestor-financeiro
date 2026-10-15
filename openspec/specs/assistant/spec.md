@@ -15,7 +15,11 @@ exibido DEVE estar em português do Brasil. O layout DEVE seguir o de um chat: a
 central, a pergunta do usuário em um bloco à direita e a resposta do assistente em texto corrido sob a marca
 "Assistente"; a caixa de pergunta fica no rodapé da tela, com os créditos do dia dentro dela e o aviso fixo
 abaixo; e o botão "Nova conversa" fica no topo, só quando há conversa. O campo de pergunta DEVE ter o nome
-acessível "Sua pergunta" e o botão de envio, que só mostra um ícone, o nome acessível "Enviar".
+acessível "Sua pergunta" e o botão de envio, que só mostra um ícone, o nome acessível "Enviar". A caixa DEVE mostrar os créditos do dia como uma barra com a palavra "Créditos" e o
+contador de porcentagem usada, sem repetir o uso em números na tela, e a cor da barra e do contador DEVE
+esquentar conforme o uso sobe: verde da marca até 69%, laranja de 70% a 89%, vermelho de 90% a 99% e vermelho
+forte em 100%. A região da conversa DEVE avisar leitores de tela quando uma mensagem nova chega, sem reler as anteriores, e o indicador
+de espera do assistente DEVE ter um nome acessível.
 
 #### Cenário: Visitante sem login
 - **QUANDO** um visitante abre `/assistant/` ou envia uma pergunta para ela
@@ -37,7 +41,12 @@ acessível "Sua pergunta" e o botão de envio, que só mostra um ícone, o nome 
 - **QUANDO** um leitor de tela percorre a tela
 - **ENTÃO** o campo de pergunta se chama "Sua pergunta"
 - **E** o botão de envio se chama "Enviar"
-- **E** a barra de créditos informa o uso do dia
+- **E** a barra de créditos informa a porcentagem usada e, em texto para leitor de tela, o uso e o total do dia
+
+#### Cenário: Medidor de créditos em cores
+- **QUANDO** o uso do dia é 40%, 75%, 95% ou 100% do teto
+- **ENTÃO** a barra e o contador aparecem em verde, laranja, vermelho e vermelho forte, respectivamente
+- **E** a tela mostra "Créditos" e a porcentagem, e em nenhum lugar a palavra "tokens"
 
 #### Cenário: Conversa em andamento
 - **QUANDO** há mensagens na conversa
@@ -45,11 +54,36 @@ acessível "Sua pergunta" e o botão de envio, que só mostra um ícone, o nome 
   de tela
 - **E** o botão "Nova conversa" aparece no topo
 
+#### Cenário: Resposta anunciada
+- **QUANDO**, com JavaScript, a resposta do assistente chega à conversa
+- **ENTÃO** a região da conversa a anuncia a leitores de tela como uma região viva educada
+- **E** o foco permanece no campo de pergunta
+
+#### Cenário: Indicador de espera acessível
+- **QUANDO** a pergunta foi enviada e a resposta ainda não chegou
+- **ENTÃO** o indicador de espera informa a leitores de tela que o assistente está respondendo
+- **E** a animação do indicador respeita a preferência por movimento reduzido
+
 ### Requirement: Pergunta e resposta
 O usuário DEVE poder enviar uma pergunta em texto, e a aplicação DEVE exibir a resposta do assistente na
 mesma tela. A pergunta DEVE ser obrigatória, sem contar espaços nas pontas, e ter no máximo 500
 caracteres. O envio DEVE ser protegido contra CSRF e só por POST. A resposta DEVE ser exibida como texto
-simples, escapado, sem interpretar HTML nem marcação vinda do modelo.
+simples, escapado, sem interpretar HTML nem marcação vinda do modelo. Com JavaScript, o envio DEVE
+acontecer sem recarregar a página, pela mesma rota e com as mesmas regras de validação, créditos e
+histórico do envio sem JavaScript: a pergunta DEVE aparecer na conversa imediatamente, com um indicador de
+espera do assistente, o campo DEVE ser limpo e manter o foco, e a conversa DEVE rolar até a última mensagem.
+Quando a resposta chegar, a conversa, os erros do campo, a mensagem da caixa e os créditos do dia DEVEM
+refletir o resultado. Sem JavaScript, o formulário DEVE continuar funcionando, com redirecionamento para a
+tela após o envio.
+
+Os avisos DEVEM fazer parte do chat conforme quem fala, e NÃO DEVEM aparecer como caixa solta fora dele:
+a recusa de assunto, a ajuda de cortesia e a mensagem de resposta não confiável DEVEM aparecer como uma
+resposta do assistente, abaixo da pergunta, e o campo DEVE ser limpo; a falha do provedor DEVE aparecer como
+uma linha de erro na conversa, sem a marca "Assistente", com a pergunta marcada como não enviada, e o texto
+digitado DEVE voltar ao campo; o erro de validação DEVE aparecer sob o campo, com o texto mantido; créditos
+esgotados e assistente sem chave DEVEM aparecer como mensagem dentro da caixa de envio, com o botão de envio
+desativado e o texto mantido. A pergunta e o texto desses avisos NÃO DEVEM entrar na sessão nem ser enviados
+ao modelo, e DEVEM sumir ao recarregar a tela ou ao enviar a próxima pergunta.
 
 #### Cenário: Pergunta dentro do escopo
 - **QUANDO** o usuário pergunta "quanto gastei com alimentação este mês?"
@@ -73,6 +107,48 @@ simples, escapado, sem interpretar HTML nem marcação vinda do modelo.
 #### Cenário: Envio por GET
 - **QUANDO** a rota de envio é acessada por GET
 - **ENTÃO** nenhuma pergunta é enviada ao provedor
+
+#### Cenário: Envio sem recarregar a página
+- **QUANDO** o usuário, com JavaScript, envia uma pergunta válida
+- **ENTÃO** a página não recarrega
+- **E** a pergunta aparece de imediato na conversa, seguida do indicador de espera do assistente
+- **E** o campo é limpo e continua com o foco
+- **E** ao chegar a resposta, ela aparece na conversa no lugar do indicador e a conversa rola até ela
+
+#### Cenário: Créditos atualizados após a resposta
+- **QUANDO** uma resposta chega sem recarregar a página
+- **ENTÃO** os créditos do dia exibidos refletem o consumo daquela pergunta
+
+#### Cenário: Recusa, cortesia ou resposta não confiável no chat
+- **QUANDO** a pergunta é recusada por estar fora do escopo, é cortesia ou a resposta é rejeitada pelas checagens
+- **ENTÃO** a pergunta aparece como bolha do usuário e o texto fixo, como resposta do assistente, na conversa
+- **E** o campo é limpo e continua com o foco
+- **E** nem a pergunta nem o texto entram no histórico, e somem ao recarregar a tela
+
+#### Cenário: Falha do provedor no chat
+- **QUANDO** o provedor falha, está indisponível, limita a taxa ou excede o tempo
+- **ENTÃO** a conversa mostra a pergunta marcada como não enviada, com o aviso em uma linha de erro
+- **E** o texto digitado volta ao campo, com o foco
+- **E** o indicador de espera some e a pergunta não entra no histórico
+
+#### Cenário: Aviso sem caixa solta
+- **QUANDO** qualquer aviso da tela é exibido
+- **ENTÃO** ele aparece na conversa, sob o campo ou dentro da caixa de envio
+- **E** nenhuma caixa de aviso aparece acima da caixa de envio
+
+#### Cenário: Erro de validação do campo
+- **QUANDO**, com JavaScript, o usuário envia uma pergunta com mais de 500 caracteres
+- **ENTÃO** o erro do campo aparece sob ele, sem recarregar a página
+- **E** o texto digitado é mantido
+
+#### Cenário: Sem JavaScript
+- **QUANDO** o navegador não executa JavaScript e o usuário envia uma pergunta
+- **ENTÃO** o formulário é enviado por POST e a aplicação redireciona para a tela com a resposta
+- **E** a conversa, os avisos e os créditos aparecem como antes
+
+#### Cenário: Duplo envio
+- **QUANDO** o usuário envia de novo, por Enter ou clique, enquanto uma pergunta está em andamento
+- **ENTÃO** nenhum segundo envio é feito
 
 ### Requirement: Conversa só na sessão
 A conversa em andamento DEVE viver apenas na sessão do usuário, guardando somente o texto das perguntas e
@@ -240,7 +316,8 @@ A aplicação DEVE contar os tokens consumidos por cada usuário em cada dia, so
 provedor em todas as chamadas de cada pergunta, e DEVE ter um teto diário de tokens por usuário vindo da
 variável de ambiente `LLM_DAILY_TOKEN_LIMIT`. A checagem DEVE ocorrer antes de chamar o provedor e reservar créditos
 para a pergunta em andamento, de modo que perguntas paralelas do mesmo usuário não passem todas pelo mesmo
-saldo, e a reserva DEVE ser trocada pelo consumo real ao fim: com o teto atingido, NÃO DEVE haver chamada. A tela DEVE mostrar os créditos do dia (usados e teto). O dia DEVE
+saldo, e a reserva DEVE ser trocada pelo consumo real ao fim: com o teto atingido, NÃO DEVE haver chamada. A tela DEVE mostrar os créditos do dia como porcentagem
+usada do teto, chamando-os apenas de "créditos", sem a palavra "tokens", e DEVE desativar o envio e avisar dentro da caixa quando o teto for atingido, inclusive ao abrir a tela já no teto. O dia DEVE
 seguir o fuso `America/Sao_Paulo`. Chamada que falha sem informar consumo NÃO DEVE gastar créditos, e o
 consumo de chamadas que deram certo antes de uma falha DEVE ser contado.
 
@@ -251,7 +328,11 @@ consumo de chamadas que deram certo antes de uma falha DEVE ser contado.
 #### Cenário: Créditos esgotados
 - **QUANDO** o uso do dia do usuário já alcançou o teto
 - **ENTÃO** a pergunta não chama o provedor
-- **E** a tela avisa em português que os créditos de hoje acabaram
+- **E** a caixa de envio avisa em português que os créditos de hoje acabaram, com o botão de envio desativado e o texto digitado mantido
+
+#### Cenário: Tela aberta já sem créditos
+- **QUANDO** o usuário abre a tela com o uso do dia no teto
+- **ENTÃO** o medidor aparece em vermelho forte, a caixa traz o aviso de créditos esgotados e o envio está desativado
 
 #### Cenário: Novo dia
 - **QUANDO** o dia local muda

@@ -1,5 +1,7 @@
 import logging
+import re
 from datetime import date
+from pathlib import Path
 
 import pytest
 from django.test import Client
@@ -42,6 +44,24 @@ def seed(client, messages_list):
 
 def conversation(client):
     return client.session.get(KEY, [])
+
+
+def region(html, tag, marker):
+    """The markup of the element opened by `marker`, up to its closing `</tag>`."""
+    start = html.index(marker)
+    return html[start : html.index(f"</{tag}>", start)]
+
+
+def thread(html):
+    return region(html, "section", 'id="chat-conversation"')
+
+
+def field_text(html):
+    return re.search(r"<textarea[^>]*>(.*?)</textarea>", html, re.S).group(1).strip()
+
+
+def flag(html, name):
+    return re.search(rf'id="chat-state"[^>]*data-{name}="(\w+)"', html).group(1)
 
 
 def test_a_good_answer_redirects_and_shows_up_on_the_page(logged, ask):
@@ -214,15 +234,18 @@ def test_a_failed_question_does_not_enter_the_history(logged, ask):
         (Unavailable(), messages.UNAVAILABLE),
     ],
 )
-def test_provider_failures_show_a_friendly_message_and_keep_the_question(logged, ask, error, text):
+def test_provider_failures_show_an_error_line_in_the_chat_and_give_the_text_back(
+    logged, ask, error, text
+):
     ask(error=error)
 
     response = logged.post(CHAT, {"question": "minha pergunta"})
 
     html = response.content.decode()
     assert response.status_code == 200
-    assert text in html and 'role="alert"' in html
-    assert "minha pergunta" in html
+    assert text in thread(html) and "Não enviada" in thread(html)
+    assert "minha pergunta" in thread(html)
+    assert field_text(html) == "minha pergunta" and flag(html, "restore") == "true"
     assert "Traceback" not in html
 
 
@@ -259,8 +282,10 @@ def test_a_refused_or_rejected_answer_shows_the_fixed_text_outside_the_history(
 
     html = response.content.decode()
     assert response.status_code == 200
-    assert shown in html
-    assert "pergunta recusada" in html  # kept in the field
+    assert shown in thread(html)
+    assert "pergunta recusada" in thread(html)  # the question shows as a turn of the chat
+    assert field_text(html) == "" and flag(html, "restore") == "false"
+    assert "Não enviada" not in html
     assert conversation(logged) == []
     assert tokens_used_today(user) == 450
 
@@ -283,7 +308,9 @@ def test_the_exhausted_credits_block_the_question(logged, user, ask, settings):
 
     response = logged.post(CHAT, {"question": "q"})
 
-    assert messages.NO_CREDITS in response.content.decode()
+    html = response.content.decode()
+    assert messages.NO_CREDITS in region(html, "p", 'id="chat-composer-notice"')
+    assert field_text(html) == "q" and flag(html, "blocked") == "true"
     assert calls == []
 
 
@@ -305,6 +332,7 @@ def test_the_page_shows_the_credits_used(logged, user, settings):
 
     assert "500 de 2.000" in html
     assert 'aria-valuenow="25"' in html
+    assert ">25%</span>" in html and ">Créditos</span>" in html
 
 
 def test_without_a_key_the_question_gets_the_unavailable_message(logged, settings, monkeypatch):
@@ -313,8 +341,10 @@ def test_without_a_key_the_question_gets_the_unavailable_message(logged, setting
 
     response = logged.post(CHAT, {"question": "q"})
 
+    html = response.content.decode()
     assert response.status_code == 200
-    assert messages.UNAVAILABLE in response.content.decode()
+    assert messages.UNAVAILABLE in region(html, "p", 'id="chat-composer-notice"')
+    assert flag(html, "blocked") == "true" and field_text(html) == "q"
 
 
 def test_the_notice_is_there_with_and_without_a_conversation(logged, ask):
@@ -415,9 +445,11 @@ def test_line_breaks_sent_as_crlf_count_as_one_character(logged, ask):
 
 def test_a_second_enter_or_submit_while_sending_does_nothing(logged):
     html = logged.get(CHAT).content.decode()
+    script = Path("static/js/assistant-chat.js").read_text()
 
-    assert "if (!sending) $el.form.requestSubmit()" in html
-    assert "if (sending) $event.preventDefault(); else sending = true" in html
+    assert "if (!busy) $el.form.requestSubmit()" in html
+    assert '@submit="send($event)"' in html and ':disabled="busy"' in html
+    assert "if (this.busy) {" in script and "event.preventDefault()" in script
 
 
 def test_long_words_in_the_conversation_wrap(logged):
@@ -425,4 +457,136 @@ def test_long_words_in_the_conversation_wrap(logged):
 
     html = logged.get(CHAT).content.decode()
 
-    assert html.count("break-words") == 2
+    assert thread(html).count("break-words") == 2
+
+
+def test_the_page_has_the_regions_and_the_pieces_the_script_swaps(logged):
+    html = logged.get(CHAT).content.decode()
+
+    for marker in (
+        'id="chat-conversation"',
+        'id="chat-actions"',
+        'id="chat-field-errors"',
+        'id="chat-composer-notice"',
+        'id="chat-credits"',
+        'id="chat-state"',
+        '<template id="chat-pending">',
+        '<template id="chat-network-error">',
+        'x-data="assistantChat"',
+        "js/assistant-chat.js",
+    ):
+        assert marker in html
+    assert 'aria-live="polite"' in thread(html) or 'aria-live="polite"' in html
+    assert 'role="log"' in html and 'aria-relevant="additions"' in html
+
+
+def test_the_script_loads_before_alpine(logged):
+    html = logged.get(CHAT).content.decode()
+
+    assert html.index("js/assistant-chat.js") < html.index("alpine.min.js")
+
+
+def test_the_new_conversation_button_comes_and_goes_with_the_conversation(logged):
+    assert "Nova conversa" not in logged.get(CHAT).content.decode()
+
+    seed(logged, [{"role": "user", "content": "q"}, {"role": "assistant", "content": "a"}])
+
+    assert "Nova conversa" in region(logged.get(CHAT).content.decode(), "div", 'id="chat-actions"')
+
+
+def test_the_post_without_script_still_redirects_and_stores_the_answer(logged, ask):
+    ask(Answer(TEXT, "ok", 1))
+
+    response = logged.post(CHAT, {"question": "q"})
+
+    assert response.status_code == 302 and response.url == CHAT
+    assert [m["role"] for m in conversation(logged)] == ["user", "assistant"]
+
+
+def test_an_empty_state_gives_way_to_the_turn_of_a_refused_question(logged, ask):
+    ask(Answer(REFUSED, messages.REFUSAL, 1, reason="off_topic"))
+
+    html = logged.post(CHAT, {"question": "oi"}).content.decode()
+
+    assert "Pergunte sobre seus gastos por categoria." not in thread(html)
+    assert "justify-center" not in region(html, "section", 'id="chat-conversation"')[:400]
+    assert "Nova conversa" not in html
+
+
+def test_the_question_of_a_turn_is_shown_as_text(logged, ask):
+    ask(error=Unavailable())
+
+    html = logged.post(CHAT, {"question": "<script>alert(1)</script>"}).content.decode()
+
+    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in thread(html)
+    assert "<script>alert(1)" not in thread(html)
+
+
+def test_a_validation_error_stays_under_the_field_with_the_text(logged, ask):
+    calls = ask(Answer(TEXT, "x", 1))
+
+    html = logged.post(CHAT, {"question": "a" * 501}).content.decode()
+
+    assert calls == []
+    assert "no máximo 500 caracteres" in region(html, "div", 'id="chat-field-errors"')
+    assert field_text(html) == "a" * 501 and flag(html, "restore") == "true"
+    assert "Não enviada" not in html
+
+
+def test_no_notice_box_sits_outside_the_chat(logged, ask, user, settings):
+    ask(Answer(REFUSED, messages.REFUSAL, 1, reason="off_topic"))
+    settings.LLM_DAILY_TOKEN_LIMIT = 1000
+    add_tokens(user, 1000)
+
+    html = logged.post(CHAT, {"question": "q"}).content.decode()
+
+    assert 'role="alert"' not in html
+    assert not re.search(r"bg-error-50\b", html)
+
+
+def test_the_page_opens_blocked_when_the_credits_are_gone(logged, user, settings):
+    settings.LLM_DAILY_TOKEN_LIMIT = 1000
+    add_tokens(user, 1000)
+
+    html = logged.get(CHAT).content.decode()
+
+    assert messages.NO_CREDITS in region(html, "p", 'id="chat-composer-notice"')
+    assert flag(html, "blocked") == "true" and ">100%</span>" in html
+
+
+def test_an_open_page_is_not_blocked(logged):
+    html = logged.get(CHAT).content.decode()
+
+    assert flag(html, "blocked") == "false" and flag(html, "restore") == "false"
+    assert region(html, "p", 'id="chat-composer-notice"').endswith(">")
+
+
+@pytest.mark.parametrize(
+    ("percent", "tone"),
+    [
+        (0, "brand"),
+        (69, "brand"),
+        (70, "warning"),
+        (89, "warning"),
+        (90, "error"),
+        (99, "error"),
+        (100, "critical"),
+    ],
+)
+def test_the_meter_tone_follows_the_percent_used(percent, tone):
+    assert views.meter_tone(percent) == tone
+
+
+@pytest.mark.parametrize(
+    ("used", "bar"),
+    [(400, "bg-brand-500"), (750, "bg-warning-600"), (950, "bg-error-600"), (1000, "bg-error-700")],
+)
+def test_the_meter_shows_credits_and_a_percent_in_the_tone(logged, user, settings, used, bar):
+    settings.LLM_DAILY_TOKEN_LIMIT = 1000
+    add_tokens(user, used)
+
+    html = logged.get(CHAT).content.decode()
+
+    assert bar in region(html, "div", 'id="chat-credits"')
+    assert f">{used // 10}%</span>" in html
+    assert "tokens" not in html.lower()
