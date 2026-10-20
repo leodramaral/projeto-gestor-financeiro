@@ -23,7 +23,7 @@ cobrir o escopo (MVP concluído na `v0.1.0`; pós-MVP em andamento) com qualidad
 ## Positioning
 
 Controle simples (lançamentos, categorias, metas, painel) com um assistente de gestão com IA
-previsto no pós-MVP. A simplicidade é o diferencial declarado; a IA ainda não existe.
+(beta, opcional: depende de uma chave de provedor). A simplicidade é o diferencial declarado.
 
 ## Operating Context
 
@@ -35,8 +35,9 @@ lançamentos, categorias, metas, perfil). Desenhos de tela em `design/` (FigCraf
 ## Capabilities and Constraints
 
 - Hoje: cadastro, login, recuperação de senha, perfil, lançamentos (entradas e despesas),
-  categorias, painel com gráficos (rosca por categoria, filtro de período) e metas financeiras.
-- Pós-MVP pendente: tarefas, previsão de orçamento, assistente com IA, planos de serviço,
+  categorias, painel com gráficos (rosca por categoria, filtro de período), metas financeiras e assistente
+  de IA (beta) que responde sobre os gastos por categoria.
+- Pós-MVP pendente: tarefas, previsão de orçamento, planos de serviço,
   relatórios e exportação, deploy em cloud.
 - Domínio só entra por change do OpenSpec (ver `AGENTS.md`); o contrato do que existe está em
   `openspec/specs/`.
