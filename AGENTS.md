@@ -21,7 +21,7 @@ Tudo roda em Docker; o Python do sistema não é usado.
 
 ```bash
 cp .env.example .env                                  # primeira vez
-docker compose up --build                             # web + db em 127.0.0.1:8000 (migra ao subir)
+docker compose up --build                             # web em 127.0.0.1:8000 (migra ao subir), db, css e Mailpit (e-mails em :8025)
 docker compose exec web python manage.py <comando>    # qualquer comando do Django
 docker compose exec web pytest                        # testes (settings de teste, banco próprio)
 docker compose exec web pytest --cov --cov-report=term-missing   # com cobertura (como o CI; piso em `fail_under`)
@@ -40,20 +40,27 @@ openspec validate --all                               # SEM --strict
 - **Ícones são da Lucide.** Todo ícone novo da interface vem da [Lucide](https://lucide.dev) (`lucide-static`
   1.52.0, ISC): copie o SVG para `core/icons/<nome-lucide>.svg` e use `{% load icon_tags %}{% lucide "nome" "h-5 w-5" %}`;
   os ícones das categorias ficam em `transactions/icons/` (`category_icon`). Não desenhe SVG à mão; só o
-  indicador de espera do assistente (pontos animados) e as marcas (logo) são desenho próprio. Os `.figcraft`
-  das outras telas ainda mostram os ícones antigos do TailAdmin (menu, cabeçalho, ações); só o do assistente
-  já usa os da Lucide.
+  indicador de espera do assistente (pontos animados) e as marcas (logo) são desenho próprio. Toda a
+  interface já usa a Lucide, e assim deve seguir. Nos `.figcraft` o ícone é o caminho do próprio SVG de
+  `core/icons/` (traço de 2 px, pontas e junções arredondadas, na cor do estado), não um redesenho.
 - **Dependências com `uv`** (`pyproject.toml` + `uv.lock`); nunca `requirements.txt`.
-- **O domínio ainda não foi modelado.** Não crie model, regra de negócio nem tela de domínio sem uma
-  change que a autorize.
+- **Todo model, regra de negócio e tela de domínio nasce de uma change.** O domínio já existe (contas,
+  lançamentos, categorias, metas, painel e assistente de IA; ver `openspec/specs/`): não amplie nem
+  crie nada dele fora de uma change que autorize.
 - **`static/dist/` e `node_modules/` não são versionados:** o CSS compilado nasce do serviço `css` do
   Compose, que também copia para `static/dist/` o Alpine, o Chart.js e a fonte Outfit
   (`@fontsource-variable/outfit`, `scripts/copy-alpine.mjs`). Node só existe dentro do contêiner.
-- **Qualidade e CI.** Ruff (`E,F,I,UP,B,DJ,C90`, complexidade máxima 10, linha de 100) roda só via
+- **Qualidade e CI.** Ruff (`E,F,I,UP,B,DJ,C90,S`, complexidade máxima 10, linha de 100; `S` é a checagem de segurança do
+  Bandit, isenta só em `**/tests/**`) roda só via
   pre-commit (`.pre-commit-config.yaml`; instale com `uvx pre-commit install`). O CI
-  (`.github/workflows/ci.yml`: `quality`, `tests`, `openspec`) repete tudo; **não mescle com o CI
+  (`.github/workflows/ci.yml`: `quality`, `tests`, `openspec`) repete tudo, e o CodeQL
+  (`codeql.yml`, a cada PR e semanalmente) analisa a segurança; **não mescle com o CI
   vermelho**. O piso de cobertura (`fail_under` no `pyproject.toml`) só sobe, nunca é rebaixado para
   fazer um PR passar.
+- **Dependabot** (`.github/dependabot.yml`, semanal) mantém as linhas Django 5.2, Node 22, PostgreSQL 16 e
+  Python 3.12 por `ignore`: para adotar outra versão, remova a entrada e migre numa change própria.
+- **O assistente de IA é opcional.** As variáveis `LLM_*` (`.env.example`) o configuram; sem
+  `LLM_API_KEY` a aplicação roda normalmente e só a tela do assistente fica indisponível.
 - `environment` vence `env_file` no Compose: ao acrescentar variável, confira que nada a sobrescreve.
 - **Worktrees ficam em `worktrees/<nome>`, dentro do repositório** (pasta já ignorada pelo
   `.gitignore` e pelo `.dockerignore`), nunca como pasta irmã fora dele. Use `scripts/worktree`
@@ -122,8 +129,7 @@ servidor MCP). Não é preciso para rodar nem para desenvolver o app, só para e
   geral (`form_errors`). O `-mt-2` do Tailwind não existe no auto layout: o design o reproduz com um
   grupo de 8 px entre o campo e o item abaixo dele.
 - **Divergências conhecidas do design de metas** (`design/goals.figcraft`): sem estados de foco e de hover
-  (o app dá foco ao campo Nome no modal) e sem `shadow-theme-*`; o ícone de metas (alvo) e o de tema são
-  desenhados à mão; o hambúrguer do cabeçalho é outro; o campo de data mostra `dd/mm/aaaa` (o do navegador
+  (o app dá foco ao campo Nome no modal) e sem `shadow-theme-*`; o campo de data mostra `dd/mm/aaaa` (o do navegador
   segue o idioma); o fundo dos modais é a casca da tela só com o título; menu `⋯` aberto não é desenhado;
   o frame é o tamanho da janela, sem a rolagem; o arquivo foi gerado por script e não usa componentes do
   FigCraft; dados fictícios (`Maria Silva`, 5 metas).

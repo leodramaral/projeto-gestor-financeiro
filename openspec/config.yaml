@@ -3,9 +3,10 @@ schema: spec-driven
 context: |
   # Aplicação web Django
 
-  Aplicação web em Django com PostgreSQL, executada inteiramente em Docker. O domínio de negócio
-  ainda não foi modelado: a fundação (OpenSpec, projeto Django, ambientes e contêineres) vem antes.
-  As regras do projeto estão no `AGENTS.md` na raiz.
+  Aplicação web de finanças pessoais em Django com PostgreSQL, executada inteiramente em Docker. O
+  domínio já está modelado e especificado em `openspec/specs/`: contas e autenticação, lançamentos,
+  categorias, painel, metas e assistente de IA. Toda mudança nele entra por uma change. As regras do
+  projeto estão no `AGENTS.md` na raiz.
 
   ## Idioma: dividido por quem lê
 
@@ -35,7 +36,9 @@ context: |
   ## Stack
 
   - Python 3.12+, dependências com `uv` + `pyproject.toml`
-  - Django (versão LTS) com templates renderizados no servidor; sem SPA
+  - Django 5.2 (LTS) com templates renderizados no servidor; sem SPA. Front-end com Tailwind CSS 4,
+    Alpine.js e Chart.js, compilados/copiados pelo serviço `css` do compose; ícones da Lucide
+  - Assistente de IA pelo SDK `openai`, com o provedor configurado por variável de ambiente
   - PostgreSQL; `psycopg` como driver
   - Configuração por ambiente em `config/settings/`: `base` (comum), `dev` (local), `test`, `prod`;
     `DJANGO_SETTINGS_MODULE` escolhe o ambiente. Segredos só por variável de ambiente
@@ -43,8 +46,7 @@ context: |
 
   ## Fora de escopo por enquanto
 
-  Teste de mutação, `import-linter`, checagem de tipos, deploy/CD, regras e modelagem de domínio.
-  Cada um entra como change própria depois que a fundação estiver de pé.
+  Teste de mutação, `import-linter`, checagem de tipos e deploy/CD. Cada um entra como change própria.
 
 rules:
   proposal:
