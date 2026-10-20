@@ -138,7 +138,8 @@ servidor MCP). Não é preciso para rodar nem para desenvolver o app, só para e
   390×844), sem a rolagem; os ícones do assistente (menu, marca nas mensagens e erro) são da Lucide, redesenhados em traço; o botão de envio
   aparece só no estado normal (sem o indicador de carregamento) e o campo, sem o anel de foco; só o desktop claro tem os estados aguardando (pergunta enviada com o
   indicador de espera, que no app salta), com erro (falha do provedor: pergunta marcada como não enviada e linha
-  de erro no chat), com recusa, com cortesia, não confiável e sem créditos (mensagem dentro da caixa, envio
+  de erro no chat), com recusa, com cortesia, não confiável, período sem dados (texto fixo de mês que não pode ser
+  consultado, com o intervalo consultável) e sem créditos (mensagem dentro da caixa, envio
   desativado), além de um quadro à parte com as quatro faixas do medidor de créditos (`assistant · medidor de
   créditos · claro · faixas`); o cabeçalho e a barra lateral são cópias de `goals.figcraft` (o item "Assistente" ativo e "Metas"
   inativo), e o arquivo foi gerado por script, sem componentes do FigCraft; dados fictícios (`Maria Silva`, uma

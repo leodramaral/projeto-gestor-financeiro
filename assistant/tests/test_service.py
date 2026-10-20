@@ -4,6 +4,7 @@ from types import SimpleNamespace
 
 import httpx2
 import pytest
+from django.utils import timezone
 from openai import APIConnectionError, APIStatusError, APITimeoutError, RateLimitError
 
 from assistant import messages, service
@@ -11,6 +12,7 @@ from assistant.guard import NO_QUERY, TOO_LONG, VALUE_MISMATCH
 from assistant.service import (
     MAX_COMPLETION_TOKENS,
     MAX_MODEL_CALLS,
+    PERIOD,
     REFUSED,
     REJECTED,
     TEXT,
@@ -19,6 +21,7 @@ from assistant.service import (
     answer,
 )
 from assistant.tools import DECLINE, SPENDING
+from transactions.periods import resolve_month
 
 from .fakes import FakeClient, text_response, tool_response, usage
 
@@ -190,11 +193,72 @@ def test_a_text_without_any_tool_is_replaced_by_the_refusal(user, fake):
 
 
 def test_a_text_after_a_failed_query_is_replaced_by_the_refusal(august, fake):
-    fake(tool_response(spending("2099-01")), text_response("Foram R$ 1,00."))
+    fake(tool_response(spending("agosto")), text_response("Foram R$ 1,00."))
 
     result = answer(august, [], "q")
 
     assert (result.outcome, result.text, result.reason) == (REJECTED, messages.REFUSAL, NO_QUERY)
+
+
+def test_a_badly_formatted_month_goes_back_to_the_model_with_how_to_fix_it(august, fake):
+    client = fake(
+        tool_response(spending("agosto")),
+        tool_response(spending("2026-08")),
+        text_response("Em agosto você gastou R$ 842,10 com Transporte."),
+    )
+
+    result = answer(august, [], "q")
+
+    assert result.outcome == TEXT
+    failed = json.loads(client.calls[1]["messages"][-1]["content"])["error"]
+    assert "2026-08" in failed
+
+
+def test_a_future_month_ends_the_question_with_the_fixed_text_and_no_more_calls(august, fake):
+    client = fake(tool_response(spending("2099-01"), tokens=650))
+
+    result = answer(august, [], "Quanto gastei em janeiro de 2099?")
+
+    first = "janeiro de 2000"
+    last = resolve_month(None, timezone.localdate()).label
+    assert result.outcome == REJECTED and result.reason == PERIOD
+    assert result.text == messages.period_unavailable(first, last)
+    assert f"de {first} até {last}" in result.text
+    assert result.tokens == 650
+    assert len(client.calls) == 1
+
+
+def test_a_month_before_the_floor_ends_the_question_the_same_way(august, fake):
+    client = fake(tool_response(spending("1999-12")))
+
+    result = answer(august, [], "q")
+
+    assert (result.outcome, result.reason) == (REJECTED, PERIOD)
+    assert len(client.calls) == 1
+
+
+def test_a_future_month_does_not_end_the_question_when_another_query_worked(august, fake):
+    client = fake(
+        tool_response(spending("2026-08"), spending("2099-01")),
+        text_response("Em agosto você gastou R$ 842,10 com Transporte; 2099 ainda não chegou."),
+    )
+
+    result = answer(august, [], "q")
+
+    assert result.outcome == TEXT
+    tool_messages = [m for m in client.calls[1]["messages"] if m["role"] == "tool"]
+    assert "future" in json.loads(tool_messages[1]["content"])["error"]
+
+
+def test_a_future_month_after_a_good_query_in_an_earlier_round_does_not_end_it(august, fake):
+    client = fake(
+        tool_response(spending("2026-08")),
+        tool_response(spending("2099-01")),
+        text_response("Em agosto você gastou R$ 842,10 com Transporte."),
+    )
+
+    assert answer(august, [], "q").outcome == TEXT
+    assert len(client.calls) == 3
 
 
 def test_an_invented_value_is_replaced_by_the_unreliable_text(august, fake):

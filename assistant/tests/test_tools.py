@@ -1,9 +1,11 @@
 import json
 from datetime import date
+from decimal import Decimal
 
 import pytest
 from django.utils import timezone
 
+from assistant.facts import Facts, Term
 from assistant.tools import (
     DECLINE,
     MAX_CATEGORIES,
@@ -22,6 +24,14 @@ def spending(user, arguments="{}"):
 
 def amounts(outcome):
     return {c["name"]: c["amount"] for c in outcome.data["categories"]}
+
+
+def error(outcome):
+    return json.loads(outcome.content)["error"]
+
+
+def current_month():
+    return timezone.localdate().strftime("%Y-%m")
 
 
 @pytest.fixture
@@ -88,8 +98,23 @@ def test_a_bad_month_is_an_error_and_no_query(user, month, django_assert_num_que
     with django_assert_num_queries(0):
         outcome = spending(user, json.dumps({"month": month}))
 
-    assert outcome.data is None
+    assert outcome.data is None and outcome.facts is None
     assert "error" in json.loads(outcome.content)
+    assert not outcome.period  # the model can still fix it
+
+
+@pytest.mark.parametrize("month", ["agosto", "2026-8", "", 202608, ["2026-08"]])
+def test_a_badly_formatted_month_says_the_format_with_an_example(user, month):
+    message = error(spending(user, json.dumps({"month": month})))
+
+    assert "YYYY-MM" in message and "2026-08" in message
+
+
+@pytest.mark.parametrize("month", ["2026-13", "2026-00"])
+def test_a_month_that_does_not_exist_says_which_numbers_are_valid(user, month):
+    message = error(spending(user, json.dumps({"month": month})))
+
+    assert "does not exist" in message and "01 to 12" in message and "2026-08" in message
 
 
 def test_a_month_before_the_floor_is_an_error_and_no_query(user, django_assert_num_queries):
@@ -97,7 +122,10 @@ def test_a_month_before_the_floor_is_an_error_and_no_query(user, django_assert_n
         outcome = spending(user, json.dumps({"month": "0001-01"}))
 
     assert outcome.data is None
-    assert "January 2000" in json.loads(outcome.content)["error"]
+    assert outcome.period
+    message = error(outcome)
+    assert "January 2000" in message
+    assert f"2000-01 to {current_month()}" in message
 
 
 def test_the_floor_month_is_accepted(user):
@@ -116,7 +144,10 @@ def test_a_future_month_is_an_error_and_no_query(user, django_assert_num_queries
         outcome = spending(user, json.dumps({"month": nxt.strftime("%Y-%m")}))
 
     assert outcome.data is None
-    assert "future" in json.loads(outcome.content)["error"]
+    assert outcome.period
+    message = error(outcome)
+    assert "future" in message
+    assert f"latest month available is {current_month()}" in message
 
 
 def test_more_categories_than_the_limit_are_grouped(user, make_category, make_expense):
@@ -152,7 +183,9 @@ def test_a_forged_user_argument_is_refused(user, other_user, django_assert_num_q
         outcome = spending(user, json.dumps({"user_id": other_user.pk}))
 
     assert outcome.data is None
-    assert "user_id" in json.loads(outcome.content)["error"]
+    message = error(outcome)
+    assert "user_id" in message
+    assert "accepts only: month" in message
 
 
 def test_an_unknown_tool_is_an_error_and_no_query(user, django_assert_num_queries):
@@ -160,7 +193,9 @@ def test_an_unknown_tool_is_an_error_and_no_query(user, django_assert_num_querie
         outcome = run_tool(user, "get_balance", "{}")
 
     assert outcome.data is None and outcome.decline is None
-    assert "Unknown tool" in json.loads(outcome.content)["error"]
+    message = error(outcome)
+    assert "Unknown tool: get_balance" in message
+    assert f"Available tools: {SPENDING}, {DECLINE}" in message
 
 
 @pytest.mark.parametrize("arguments", ["not json", "[]", "3", '"x"'])
@@ -168,7 +203,13 @@ def test_arguments_must_be_a_json_object(user, arguments):
     outcome = spending(user, arguments)
 
     assert outcome.data is None
-    assert "error" in json.loads(outcome.content)
+    assert '{"month": "2026-08"}' in error(outcome)  # the example of what to send
+
+
+def test_the_decline_tool_shows_its_own_example_of_arguments(user):
+    outcome = run_tool(user, DECLINE, "not json")
+
+    assert '{"kind": "off_topic"}' in error(outcome)
 
 
 @pytest.mark.parametrize(
@@ -194,3 +235,39 @@ def test_decline_refuses_extra_arguments(user):
 
     assert outcome.decline is None
     assert "user_id" in json.loads(outcome.content)["error"]
+
+
+def test_the_facts_are_the_total_and_each_category(august):
+    facts = spending(august, '{"month": "2026-08"}').facts
+
+    assert facts == Facts(
+        amounts=(
+            Term(None, Decimal("500.00")),
+            Term("Alimentação", Decimal("400.50")),
+            Term("Transporte", Decimal("99.50")),
+        ),
+        percents=(Term("Alimentação", Decimal(80)), Term("Transporte", Decimal(20))),
+        names=frozenset({"Alimentação", "Transporte"}),
+    )
+
+
+def test_a_month_without_expenses_has_only_the_total_as_a_fact(user):
+    facts = spending(user, '{"month": "2026-08"}').facts
+
+    assert facts == Facts(amounts=(Term(None, Decimal("0.00")),))
+
+
+def test_the_grouped_slice_is_a_fact_too(user, make_category, make_expense):
+    for index in range(MAX_CATEGORIES + 2):
+        make_expense(user, make_category(user, name=f"C{index:02d}"), "10.00", date(2026, 8, 3))
+
+    facts = spending(user, '{"month": "2026-08"}').facts
+
+    assert [term.label for term in facts.amounts][-1] == "Outras"
+    assert len(facts.amounts) == MAX_CATEGORIES + 2  # the total, 20 categories and "Outras"
+    assert Term("Outras", Decimal("20.00")) in facts.amounts
+
+
+def test_an_error_and_a_refusal_have_no_facts(user):
+    assert spending(user, '{"month": "agosto"}').facts is None
+    assert run_tool(user, DECLINE, '{"kind": "off_topic"}').facts is None

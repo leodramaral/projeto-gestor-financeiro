@@ -11,6 +11,8 @@ from django.conf import settings
 from django.utils import timezone
 from openai import APIError, RateLimitError
 
+from transactions.periods import MIN_MONTH, resolve_month
+
 from . import messages
 from .client import get_client
 from .guard import NO_QUERY, check_answer
@@ -29,6 +31,8 @@ FIRST_ROUND_TOOL_CHOICE = "required"
 TEXT = "text"
 REFUSED = "refused"
 REJECTED = "rejected"
+# Why a question ended without the model writing the answer, besides the guard's reasons.
+PERIOD = "period"
 
 
 @dataclass(frozen=True)
@@ -89,7 +93,8 @@ class _Question:
             {"role": "user", "content": question},
         ]
         self.tokens = 0
-        self.results = []  # spending results that worked, for this question only
+        self.facts = []  # what the model may cite from the queries that worked, this question only
+        self.period_error = False  # a month that cannot be queried was asked for
 
     def run(self):
         """Whatever goes wrong becomes `Unavailable` with the tokens spent so far: an odd reply
@@ -107,9 +112,9 @@ class _Question:
             message = self._ask(client, first=number == 0)
             if not message.tool_calls:
                 return self._finish(message.content)
-            refused = self._use_tools(message)
-            if refused:
-                return refused
+            ended = self._use_tools(message)
+            if ended:
+                return ended
         raise Unavailable(self.tokens)
 
     def _ask(self, client, first):
@@ -139,19 +144,30 @@ class _Question:
 
     def _use_tools(self, message):
         """Runs the tools the model asked for. A refusal wins: nothing else runs and it is
-        returned; otherwise the results go back to the model and None is returned."""
+        returned. When the round asked for a month that cannot be queried and no query of the
+        question worked, the question ends with the fixed text; otherwise the results go back to
+        the model and None is returned."""
         calls = sorted(message.tool_calls, key=lambda call: call.function.name != DECLINE)
         self.messages.append(_assistant_message(message))
         for call in calls:
             outcome = run_tool(self.user, call.function.name, call.function.arguments)
             if outcome.decline:
                 return self._refused(outcome.decline)
-            if outcome.data:
-                self.results.append(outcome.data)
+            if outcome.facts:
+                self.facts.append(outcome.facts)
+            self.period_error = self.period_error or outcome.period
             self.messages.append(
                 {"role": "tool", "tool_call_id": call.id, "content": outcome.content}
             )
+        if self.period_error and not self.facts:
+            return self._period_unavailable()
         return None
+
+    def _period_unavailable(self):
+        today = timezone.localdate()
+        first = resolve_month(MIN_MONTH.strftime("%Y-%m"), today).label
+        text = messages.period_unavailable(first, resolve_month(None, today).label)
+        return Answer(REJECTED, text, self.tokens, reason=PERIOD)
 
     def _refused(self, kind):
         text = messages.HELP if kind == SMALLTALK else messages.REFUSAL
@@ -161,7 +177,7 @@ class _Question:
         text = (text or "").strip()
         if not text:
             raise Unavailable(self.tokens)
-        reason = check_answer(text, self.results)
+        reason = check_answer(text, self.facts)
         if reason:
             fixed = messages.REFUSAL if reason == NO_QUERY else messages.UNRELIABLE
             return Answer(REJECTED, fixed, self.tokens, reason=reason)

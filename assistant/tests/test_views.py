@@ -214,6 +214,26 @@ def test_a_conversation_goes_through_the_real_service_with_a_fake_provider(
     assert "setembro" in logged.get(CHAT).content.decode()
 
 
+def test_a_future_month_shows_the_fixed_text_as_an_answer_outside_the_history(
+    logged, user, monkeypatch
+):
+    client = FakeClient(tool_response((SPENDING, '{"month": "2099-01"}'), tokens=650))
+    monkeypatch.setattr(service, "get_client", lambda: client)
+
+    response = logged.post(CHAT, {"question": "Quanto gastei em janeiro de 2099?"})
+
+    html = response.content.decode()
+    assert response.status_code == 200
+    assert "Não consigo consultar esse mês" in thread(html)
+    assert "de janeiro de 2000 até" in thread(html)
+    assert "Quanto gastei em janeiro de 2099?" in thread(html)  # the question shows as a turn
+    assert field_text(html) == "" and flag(html, "restore") == "false"
+    assert "Não enviada" not in html
+    assert conversation(logged) == []
+    assert tokens_used_today(user) == 650
+    assert len(client.calls) == 1
+
+
 def test_a_failed_question_does_not_enter_the_history(logged, ask):
     ask(error=Unavailable(tokens=0))
     seed(logged, [{"role": "user", "content": "antes"}, {"role": "assistant", "content": "ok"}])

@@ -8,11 +8,14 @@ never from the arguments the model produces.
 import json
 from dataclasses import dataclass
 from datetime import date
+from decimal import Decimal
 
 from django.utils import timezone
 
 from transactions.dashboard import category_slices
 from transactions.periods import MIN_MONTH, MONTH_PATTERN, resolve_month
+
+from .facts import Facts, Term
 
 SPENDING = "get_spending_by_category"
 DECLINE = "decline_out_of_scope"
@@ -59,6 +62,7 @@ TOOLS = [
     },
 ]
 ALLOWED_ARGUMENTS = {SPENDING: {"month"}, DECLINE: {"kind"}}
+EXAMPLE_ARGUMENTS = {SPENDING: '{"month": "2026-08"}', DECLINE: '{"kind": "off_topic"}'}
 
 
 @dataclass(frozen=True)
@@ -66,16 +70,23 @@ class ToolOutcome:
     """What running a tool produced."""
 
     content: str  # JSON text handed back to the model
-    data: dict | None = None  # the spending result, when the query worked (the guard checks it)
+    data: dict | None = None  # the spending result, when the query worked
+    facts: Facts | None = None  # what the model may cite from `data` (the guard checks it)
     decline: str | None = None  # OFF_TOPIC or SMALLTALK when the model asked to decline
+    period: bool = False  # the month asked for cannot be queried at all (future or too old)
 
 
 class ToolError(Exception):
-    """A bad call from the model; the message goes back to it as an error result."""
+    """A bad call from the model; the message goes back to it as an error result. It says what
+    to fix, because the model can only correct itself with that."""
 
 
-def _error(message):
-    return ToolOutcome(json.dumps({"error": message}))
+class PeriodError(ToolError):
+    """A month that cannot be queried however the model writes it: nothing to correct."""
+
+
+def _error(message, period=False):
+    return ToolOutcome(json.dumps({"error": message}), period=period)
 
 
 def _parse_arguments(name, arguments):
@@ -83,12 +94,18 @@ def _parse_arguments(name, arguments):
         try:
             arguments = json.loads(arguments or "{}")
         except ValueError:
-            raise ToolError("The arguments are not valid JSON.") from None
+            example = EXAMPLE_ARGUMENTS[name]
+            raise ToolError(
+                f"The arguments are not valid JSON. Send an object such as {example}."
+            ) from None
     if not isinstance(arguments, dict):
-        raise ToolError("The arguments must be a JSON object.")
+        raise ToolError(f"The arguments must be a JSON object, such as {EXAMPLE_ARGUMENTS[name]}.")
     unexpected = sorted(set(arguments) - ALLOWED_ARGUMENTS[name])
     if unexpected:
-        raise ToolError(f"Unexpected argument(s): {', '.join(unexpected)}.")
+        accepted = ", ".join(sorted(ALLOWED_ARGUMENTS[name]))
+        raise ToolError(
+            f"Unexpected argument(s): {', '.join(unexpected)}. This tool accepts only: {accepted}."
+        )
     return arguments
 
 
@@ -100,20 +117,40 @@ def _month_view(raw):
         return resolve_month(None, today)
     match = MONTH_PATTERN.match(raw) if isinstance(raw, str) else None
     if not match:
-        raise ToolError("The month must be a string in the format YYYY-MM.")
+        raise ToolError("The month must be a string in the format YYYY-MM, such as 2026-08.")
     try:
         first_day = date(int(match.group(1)), int(match.group(2)), 1)
     except ValueError:
-        raise ToolError("That month does not exist.") from None
+        raise ToolError(
+            "That month does not exist. Use YYYY-MM with a month from 01 to 12, such as 2026-08."
+        ) from None
+    current = today.replace(day=1)
     if first_day < MIN_MONTH:
-        raise ToolError("The month must be January 2000 or later.")
-    if first_day > today.replace(day=1):
-        raise ToolError("That month is in the future.")
+        raise PeriodError(
+            "The month must be January 2000 or later. "
+            f"Use a month from {MIN_MONTH:%Y-%m} to {current:%Y-%m}."
+        )
+    if first_day > current:
+        raise PeriodError(
+            f"That month is in the future. The latest month available is {current:%Y-%m}."
+        )
     return resolve_month(raw, today)
 
 
 def _money(amount):
     return f"{amount:.2f}"
+
+
+def _facts(total, slices):
+    """The numbers of a spending result the model may cite: the total and each category."""
+    return Facts(
+        amounts=(
+            Term(None, total),
+            *(Term(s.name, Decimal(_money(s.amount))) for s in slices),
+        ),
+        percents=tuple(Term(s.name, Decimal(s.percent)) for s in slices),
+        names=frozenset(s.name for s in slices if s.name),
+    )
 
 
 def _spending_by_category(user, month=None):
@@ -128,7 +165,8 @@ def _spending_by_category(user, month=None):
             {"name": s.name, "amount": _money(s.amount), "percent": s.percent} for s in slices
         ],
     }
-    return ToolOutcome(json.dumps(data, ensure_ascii=False), data=data)
+    facts = _facts(Decimal(data["total"]), slices)
+    return ToolOutcome(json.dumps(data, ensure_ascii=False), data=data, facts=facts)
 
 
 def _decline(user, kind=OFF_TOPIC):
@@ -143,8 +181,10 @@ def run_tool(user, name, arguments):
     """Runs the tool `name` for `user` and returns a `ToolOutcome`; a bad call becomes an error
     result for the model, never an exception and never a query."""
     if name not in HANDLERS:
-        return _error(f"Unknown tool: {name}.")
+        return _error(f"Unknown tool: {name}. Available tools: {', '.join(HANDLERS)}.")
     try:
         return HANDLERS[name](user, **_parse_arguments(name, arguments))
+    except PeriodError as error:
+        return _error(str(error), period=True)
     except ToolError as error:
         return _error(str(error))
