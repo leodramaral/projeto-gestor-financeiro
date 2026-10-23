@@ -429,12 +429,12 @@ def test_every_outcome_logs_a_summary_without_content(logged, ask, caplog, resul
 
 
 def test_a_refusal_is_logged_without_the_question(logged, ask, caplog):
-    ask(Answer(REFUSED, messages.REFUSAL, 450, reason="off_topic"))
+    ask(Answer(REFUSED, messages.REFUSAL, 450, reason="off_topic", question_id="cd56ef78"))
 
     with caplog.at_level(logging.INFO, logger="assistant"):
         logged.post(CHAT, {"question": "segredo-da-pergunta"})
 
-    assert "reason=off_topic" in caplog.text
+    assert "id=cd56ef78 reason=off_topic" in caplog.text
     assert "segredo-da-pergunta" not in caplog.text
 
 

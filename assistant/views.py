@@ -70,7 +70,12 @@ class ChatView(LoginRequiredMixin, View):
             return self._render(request, form, turn=(question, ERROR, failure.message))
         self._log_summary(result.question_id, result.outcome, result.rounds, spent, seconds)
         if result.outcome != TEXT:
-            logger.info("Assistant declined: reason=%s tokens=%s", result.reason, result.tokens)
+            logger.info(
+                "Assistant declined: id=%s reason=%s tokens=%s",
+                result.question_id,
+                result.reason,
+                result.tokens,
+            )
             return self._render(request, QuestionForm(), turn=(question, ASSISTANT, result.text))
         history = [
             *history,
