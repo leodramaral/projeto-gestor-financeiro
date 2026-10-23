@@ -235,6 +235,21 @@ def test_the_terms_of_a_sum_may_come_from_different_queries():
     assert check_answer(text, [august]) == VALUE_MISMATCH
 
 
+def test_a_short_name_inside_another_word_is_not_shown():
+    """ "Ar" is in "para", but the text does not name it: R$ 1.700,00 is not a sum it shows."""
+    results = [
+        Facts(
+            amounts=(Term("Moradia", Decimal("1500.00")), Term("Ar", Decimal("200.00"))),
+            names=frozenset({"Moradia", "Ar"}),
+        )
+    ]
+
+    text = "Moradia custou R$ 1.700,00 para você."
+
+    assert check_answer(text, results) == VALUE_MISMATCH
+    assert check_answer("Moradia e Ar somam R$ 1.700,00.", results) is None
+
+
 # --- percentages ---------------------------------------------------------------------------------
 
 
@@ -251,6 +266,13 @@ def test_a_sum_of_percentages_the_text_shows_is_accepted_with_a_point_of_slack_p
     assert check_answer("Moradia e Alimentação pesam juntas 88%.", [HOME]) is None
     assert check_answer("Moradia e Alimentação pesam juntas 89%.", [HOME]) is None
     assert check_answer("Moradia e Alimentação pesam juntas 95%.", [HOME]) == VALUE_MISMATCH
+
+
+def test_the_slack_of_a_sum_of_percentages_is_the_rounding_and_no_more():
+    """Terms of 55 and 33 are within one point of a sum that was rounded once more, not two."""
+    assert check_answer("Moradia e Alimentação pesam juntas 90%.", [HOME]) == VALUE_MISMATCH
+    assert check_answer("Moradia, Alimentação e Transporte pesam 98%.", [HOME]) is None
+    assert check_answer("Moradia, Alimentação e Transporte pesam 100%.", [HOME]) == VALUE_MISMATCH
 
 
 def test_a_ratio_of_two_amounts_the_text_shows_is_accepted_within_a_point():

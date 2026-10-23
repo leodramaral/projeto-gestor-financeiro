@@ -68,13 +68,18 @@ def _without_names(text, facts):
     return text
 
 
+def _has_word(text, label):
+    """Whether `label` is in `text` as a whole word: "Ar" is not in "para"."""
+    return re.search(rf"(?<!\w){re.escape(label.lower())}(?!\w)", text) is not None
+
+
 def _in_view(term, text, cited):
     """Whether the text itself shows `term`: it writes its value, or the name it goes by."""
     if term.value in cited:
         return True
     if term.label is None:
         return _TOTAL_WORD in text
-    return bool(term.label) and term.label.lower() in text
+    return bool(term.label) and _has_word(text, term.label)
 
 
 def _derived_amount(value, terms):
@@ -91,10 +96,11 @@ def _amount_ok(value, facts, shown):
 
 
 def _derived_percent(value, percents, amounts):
-    """`value` is a sum of percentages (one point of slack for each, as they come rounded) or the
-    ratio of two amounts (to within `RATIO_TOLERANCE`)."""
+    """`value` is a sum of percentages (to within the rounding of the terms and of the sum itself:
+    half a point for each) or the ratio of two amounts (to within `RATIO_TOLERANCE`)."""
     for size in range(2, MAX_SUM_TERMS + 1):
-        if any(abs(sum(group) - value) <= size for group in combinations(percents, size)):
+        slack = (size + 1) // 2
+        if any(abs(sum(group) - value) <= slack for group in combinations(percents, size)):
             return True
     return any(
         b and abs(value - 100 * a / b) <= RATIO_TOLERANCE for a, b in permutations(amounts, 2)

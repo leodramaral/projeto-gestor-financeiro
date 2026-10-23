@@ -80,8 +80,9 @@ O guard passa a ler todo número seguido de `%` (`55%`, `55 %`, `55,5%`), depois
 usuário (um nome pode conter "%"). Um percentual é aceito se:
 
 1. é o `percent` de um termo (citado), ou
-2. é a soma de 2 ou 3 percentuais de termos à vista, com tolerância de 1 ponto por termo (cada um já vem
-   arredondado), ou
+2. é a soma de 2 ou 3 percentuais de termos à vista, com tolerância de arredondamento: meio ponto por
+   termo (cada um já vem arredondado) e mais meio do próprio total, ou seja, 1 ponto para 2 termos e 2 para
+   3, ou
 3. está a até 1 ponto de `100 × a / b`, com `a` e `b` termos de valor à vista e `a ≠ b`.
 
 O percentual devolvido pela ferramenta é inteiro e vem de `category_slices` (`ROUND_HALF_UP`); a tolerância

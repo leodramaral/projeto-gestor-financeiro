@@ -15,7 +15,7 @@
 
 - [x] 3.1 Reescrever `assistant/guard.py` para receber `Facts` (sem ler `total` nem `categories`), mantendo `NO_QUERY`, `TOO_LONG`, a regra da escala e a retirada dos nomes antes de ler os números; verificar com os testes existentes de `test_guard.py` adaptados aos fatos
 - [x] 3.2 Aceitar valor em reais que seja soma de 2 ou 3 termos distintos ou diferença de 2, com os termos à vista (valor ou nome no texto; "total" para o total); verificar com testes: soma de 2, soma de 3, diferença, conta que não confere, termos fora de vista, nome em outra caixa e a mesma coincidência de valores com 20 categorias
-- [x] 3.3 Conferir percentuais (`55%`, `55 %`, `55,5%`): citado, soma de 2 ou 3 percentuais à vista com 1 ponto de tolerância por termo, ou razão entre dois valores à vista a até 1 ponto; verificar com testes para os três caminhos, para `80%` rejeitado e para um nome de categoria com `%` que não conta
+- [x] 3.3 Conferir percentuais (`55%`, `55 %`, `55,5%`): citado, soma de 2 ou 3 percentuais à vista com tolerância de arredondamento (1 ponto para 2 termos, 2 para 3), ou razão entre dois valores à vista a até 1 ponto; verificar com testes para os três caminhos, para `80%` rejeitado e para um nome de categoria com `%` que não conta
 - [x] 3.4 Cobrir o guard com um resultado de **outro formato de fatos** (termos inventados no teste), provando que ele não depende de `total` nem de `categories`; verificar com `pytest assistant/tests/test_guard.py`
 
 ## 4. Serviço: período sem dados
