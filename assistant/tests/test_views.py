@@ -391,13 +391,50 @@ def test_a_failure_is_logged_with_metadata_only(logged, ask, caplog):
     assert "cartão" not in text and "999" not in text
 
 
+def test_the_failure_line_carries_the_id_round_model_and_provider_message(
+    logged, ask, caplog, settings
+):
+    settings.LLM_API_KEY = "sk-secret"
+    error = Unavailable(5, "BadRequestError", 400, "thought_signature missing")
+    error.question_id, error.round = "ab12cd34", 2
+    ask(error=error)
+
+    with caplog.at_level(logging.INFO, logger="assistant"):
+        logged.post(CHAT, {"question": "pergunta-secreta 777"})
+
+    text = caplog.text
+    for part in ("id=ab12cd34", "round=2", f"model={settings.LLM_MODEL}", "status=400"):
+        assert part in text
+    assert "provider_message=thought_signature missing" in text
+    assert "outcome=failed rounds=2 tokens=5" in text
+    assert "pergunta-secreta" not in text and "777" not in text and "sk-secret" not in text
+
+
+@pytest.mark.parametrize(
+    ("result", "outcome"),
+    [
+        (Answer(TEXT, "resposta-secreta", 10, None, "aa11bb22", 2), "text"),
+        (Answer(REFUSED, messages.REFUSAL, 10, "off_topic", "aa11bb22", 1), "refused"),
+        (Answer(REJECTED, messages.UNRELIABLE, 10, "value_mismatch", "aa11bb22", 2), "rejected"),
+    ],
+)
+def test_every_outcome_logs_a_summary_without_content(logged, ask, caplog, result, outcome):
+    ask(result)
+
+    with caplog.at_level(logging.INFO, logger="assistant"):
+        logged.post(CHAT, {"question": "pergunta-secreta"})
+
+    assert f"id=aa11bb22 outcome={outcome} rounds={result.rounds} tokens=10" in caplog.text
+    assert "pergunta-secreta" not in caplog.text and "resposta-secreta" not in caplog.text
+
+
 def test_a_refusal_is_logged_without_the_question(logged, ask, caplog):
-    ask(Answer(REFUSED, messages.REFUSAL, 450, reason="off_topic"))
+    ask(Answer(REFUSED, messages.REFUSAL, 450, reason="off_topic", question_id="cd56ef78"))
 
     with caplog.at_level(logging.INFO, logger="assistant"):
         logged.post(CHAT, {"question": "segredo-da-pergunta"})
 
-    assert "reason=off_topic" in caplog.text
+    assert "id=cd56ef78 reason=off_topic" in caplog.text
     assert "segredo-da-pergunta" not in caplog.text
 
 
@@ -603,3 +640,23 @@ def test_the_form_does_not_depend_on_names_only_the_script_defines(logged):
     for expression in handlers:
         for name in ("busy", "sending", "blocked", "send"):
             assert not re.search(rf"(?<![\w$.]){name}\b(?!\s*:)", expression), expression
+
+
+def test_no_log_line_has_the_question_arguments_or_key_even_when_the_provider_echoes_it(
+    logged, caplog, monkeypatch, settings
+):
+    from assistant.tests.test_service import api_error
+
+    settings.LLM_API_KEY = "sk-secret"
+    body = {"error": {"message": "invalid key sk-secret"}}
+    client = FakeClient(
+        tool_response((SPENDING, '{"month": "2026-08"}'), tokens=50), api_error(400, body)
+    )
+    monkeypatch.setattr(service, "get_client", lambda: client)
+
+    with caplog.at_level(logging.DEBUG):
+        logged.post(CHAT, {"question": "pergunta-secreta 4242"})
+
+    assert "provider_message=invalid key ***" in caplog.text
+    for secret in ("sk-secret", "pergunta-secreta", "4242", "2026-08"):
+        assert secret not in caplog.text

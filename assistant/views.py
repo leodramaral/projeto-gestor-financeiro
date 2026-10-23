@@ -53,16 +53,29 @@ class ChatView(LoginRequiredMixin, View):
             failure, spent = error, error.tokens
         finally:
             settle_tokens(reservation, RESERVED_TOKENS, spent)
+        seconds = time.monotonic() - started
         if failure:
             logger.warning(
-                "Assistant failure: cause=%s status=%s seconds=%.2f",
+                "Assistant failure: id=%s round=%s model=%s cause=%s status=%s seconds=%.2f"
+                " provider_message=%s",
+                failure.question_id,
+                failure.round,
+                settings.LLM_MODEL,
                 failure.cause,
                 failure.status,
-                time.monotonic() - started,
+                seconds,
+                failure.detail,
             )
+            self._log_summary(failure.question_id, "failed", failure.round, spent, seconds)
             return self._render(request, form, turn=(question, ERROR, failure.message))
+        self._log_summary(result.question_id, result.outcome, result.rounds, spent, seconds)
         if result.outcome != TEXT:
-            logger.info("Assistant declined: reason=%s tokens=%s", result.reason, result.tokens)
+            logger.info(
+                "Assistant declined: id=%s reason=%s tokens=%s",
+                result.question_id,
+                result.reason,
+                result.tokens,
+            )
             return self._render(request, QuestionForm(), turn=(question, ASSISTANT, result.text))
         history = [
             *history,
@@ -71,6 +84,17 @@ class ChatView(LoginRequiredMixin, View):
         ]
         request.session[SESSION_KEY] = history[-MAX_HISTORY_MESSAGES:]
         return redirect("assistant:chat")
+
+    @staticmethod
+    def _log_summary(question_id, outcome, rounds, tokens, seconds):
+        logger.info(
+            "Assistant question: id=%s outcome=%s rounds=%s tokens=%s seconds=%.2f",
+            question_id,
+            outcome,
+            rounds,
+            tokens,
+            seconds,
+        )
 
     def _render(self, request, form, turn=None, composer_notice=None):
         """`turn` is (question, kind, text): shown once, after the conversation, never stored.

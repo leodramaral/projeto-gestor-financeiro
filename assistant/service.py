@@ -5,6 +5,9 @@ returns. Every outcome carries the tokens spent, and so does every error, so the
 them even when a later call fails.
 """
 
+import logging
+import time
+import uuid
 from dataclasses import dataclass
 
 from django.conf import settings
@@ -15,7 +18,9 @@ from . import messages
 from .client import get_client
 from .guard import NO_QUERY, check_answer
 from .prompts import system_prompt
-from .tools import DECLINE, SMALLTALK, TOOLS, run_tool
+from .tools import DECLINE, SMALLTALK, SPENDING, TOOLS, run_tool
+
+logger = logging.getLogger(__name__)
 
 MAX_HISTORY_MESSAGES = 6
 # Model calls per question: three rounds of tools and the final answer.
@@ -30,6 +35,10 @@ TEXT = "text"
 REFUSED = "refused"
 REJECTED = "rejected"
 
+# What the log keeps of the provider's error message on a 4xx.
+MAX_PROVIDER_MESSAGE = 500
+KNOWN_TOOLS = (SPENDING, DECLINE)
+
 
 @dataclass(frozen=True)
 class Answer:
@@ -39,6 +48,8 @@ class Answer:
     text: str
     tokens: int
     reason: str | None = None
+    question_id: str = ""
+    rounds: int = 0
 
 
 class AssistantError(Exception):
@@ -46,11 +57,14 @@ class AssistantError(Exception):
 
     message = messages.UNAVAILABLE
 
-    def __init__(self, tokens=0, cause=None, status=None):
+    def __init__(self, tokens=0, cause=None, status=None, detail=""):
         super().__init__(type(self).__name__)
         self.tokens = tokens
         self.cause = cause or type(self).__name__  # what failed, for the log (never content)
         self.status = status  # HTTP status of the provider, when it answered
+        self.detail = detail  # the provider's message on a 4xx, cleaned (see `provider_message`)
+        self.question_id = ""
+        self.round = 0  # the model call that failed, counting from 1 (0: before the first)
 
 
 class RateLimited(AssistantError):
@@ -59,6 +73,28 @@ class RateLimited(AssistantError):
 
 class Unavailable(AssistantError):
     message = messages.UNAVAILABLE
+
+
+def provider_message(error):
+    """The message the provider sent with a 4xx error, safe to log: one line, the API key masked
+    and cut short. Empty for any other error, and for a body that is not the expected shape: this
+    runs while handling a failure, so it never raises."""
+    status = getattr(error, "status_code", None)
+    if not isinstance(status, int) or not 400 <= status < 500:
+        return ""
+    try:
+        body = error.body
+        if isinstance(body, list):
+            body = body[0]
+        text = body["error"]["message"]
+        if not isinstance(text, str):
+            return ""
+        text = " ".join(text.split())
+        if settings.LLM_API_KEY:
+            text = text.replace(settings.LLM_API_KEY, "***")
+        return text[:MAX_PROVIDER_MESSAGE]
+    except (AttributeError, IndexError, KeyError, TypeError):
+        return ""
 
 
 def _clean(history):
@@ -88,6 +124,8 @@ class _Question:
             *_clean(history),
             {"role": "user", "content": question},
         ]
+        self.id = uuid.uuid4().hex[:8]  # ties the log lines of one question; carries no content
+        self.round = 0
         self.tokens = 0
         self.results = []  # spending results that worked, for this question only
 
@@ -96,15 +134,23 @@ class _Question:
         from the provider (an HTML page, a null field) must not end as a 500 that loses them."""
         try:
             return self._loop()
-        except AssistantError:
+        except AssistantError as error:
+            self._stamp(error)
             raise
         except Exception as error:
-            raise Unavailable(self.tokens, type(error).__name__) from None
+            failure = Unavailable(self.tokens, type(error).__name__)
+            self._stamp(failure)
+            raise failure from None
+
+    def _stamp(self, error):
+        error.question_id = self.id
+        error.round = self.round
 
     def _loop(self):
         client = get_client()
-        for number in range(MAX_MODEL_CALLS):
-            message = self._ask(client, first=number == 0)
+        for number in range(1, MAX_MODEL_CALLS + 1):
+            self.round = number
+            message = self._ask(client, number)
             if not message.tool_calls:
                 return self._finish(message.content)
             refused = self._use_tools(message)
@@ -112,7 +158,9 @@ class _Question:
                 return refused
         raise Unavailable(self.tokens)
 
-    def _ask(self, client, first):
+    def _ask(self, client, number):
+        first = number == 1
+        started = time.monotonic()
         options = {}
         if first and FIRST_ROUND_TOOL_CHOICE != "auto":
             options["tool_choice"] = FIRST_ROUND_TOOL_CHOICE
@@ -125,14 +173,32 @@ class _Question:
                 **options,
             )
         except RateLimitError as error:
-            raise RateLimited(self.tokens, type(error).__name__, error.status_code) from None
+            failure = RateLimited(
+                self.tokens, type(error).__name__, error.status_code, provider_message(error)
+            )
+            failure.round = number
+            raise failure from None
         except APIError as error:
             status = getattr(error, "status_code", None)
-            raise Unavailable(self.tokens, type(error).__name__, status) from None
-        self.tokens += getattr(response.usage, "total_tokens", None) or 0
-        if not response.choices:
+            failure = Unavailable(
+                self.tokens, type(error).__name__, status, provider_message(error)
+            )
+            failure.round = number
+            raise failure from None
+        spent = getattr(response.usage, "total_tokens", None) or 0
+        self.tokens += spent
+        choice = response.choices[0] if response.choices else None
+        logger.info(
+            "Model call: id=%s round=%s model=%s finish_reason=%s tokens=%s seconds=%.2f",
+            self.id,
+            number,
+            settings.LLM_MODEL,
+            getattr(choice, "finish_reason", None),
+            spent,
+            time.monotonic() - started,
+        )
+        if choice is None:
             raise Unavailable(self.tokens)
-        choice = response.choices[0]
         if getattr(choice, "finish_reason", None) == "length":
             raise Unavailable(self.tokens, "Truncated")  # cut off by max_completion_tokens
         return choice.message
@@ -144,6 +210,7 @@ class _Question:
         self.messages.append(_assistant_message(message))
         for call in calls:
             outcome = run_tool(self.user, call.function.name, call.function.arguments)
+            self._log_tool(call.function.name, outcome)
             if outcome.decline:
                 return self._refused(outcome.decline)
             if outcome.data:
@@ -153,9 +220,21 @@ class _Question:
             )
         return None
 
+    def _log_tool(self, name, outcome):
+        """Name and result only: the arguments and the data are the user's. The name comes from
+        the model, so anything but a known tool is logged as `unknown`."""
+        result = "refused" if outcome.decline else "ok" if outcome.data else "error"
+        logger.info(
+            "Tool call: id=%s round=%s tool=%s result=%s",
+            self.id,
+            self.round,
+            name if name in KNOWN_TOOLS else "unknown",
+            result,
+        )
+
     def _refused(self, kind):
         text = messages.HELP if kind == SMALLTALK else messages.REFUSAL
-        return Answer(REFUSED, text, self.tokens, reason=kind)
+        return Answer(REFUSED, text, self.tokens, kind, self.id, self.round)
 
     def _finish(self, text):
         text = (text or "").strip()
@@ -164,8 +243,8 @@ class _Question:
         reason = check_answer(text, self.results)
         if reason:
             fixed = messages.REFUSAL if reason == NO_QUERY else messages.UNRELIABLE
-            return Answer(REJECTED, fixed, self.tokens, reason=reason)
-        return Answer(TEXT, text, self.tokens)
+            return Answer(REJECTED, fixed, self.tokens, reason, self.id, self.round)
+        return Answer(TEXT, text, self.tokens, None, self.id, self.round)
 
 
 def answer(user, history, question):

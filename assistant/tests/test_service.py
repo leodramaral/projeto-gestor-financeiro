@@ -1,4 +1,6 @@
 import json
+import logging
+import re
 from datetime import date
 from types import SimpleNamespace
 
@@ -11,9 +13,11 @@ from assistant.guard import NO_QUERY, TOO_LONG, VALUE_MISMATCH
 from assistant.service import (
     MAX_COMPLETION_TOKENS,
     MAX_MODEL_CALLS,
+    MAX_PROVIDER_MESSAGE,
     REFUSED,
     REJECTED,
     TEXT,
+    AssistantError,
     RateLimited,
     Unavailable,
     answer,
@@ -356,3 +360,113 @@ def test_an_answer_cut_by_the_token_limit_is_unavailable(august, fake):
 
     assert raised.value.tokens == 2200
     assert raised.value.cause == "Truncated"
+
+
+def api_error(code, body, cls=APIStatusError):
+    return cls("x", response=httpx2.Response(code, request=REQUEST), body=body)
+
+
+def test_the_question_id_is_short_hex_and_shared_by_the_answer_and_the_error(august, fake):
+    fake(tool_response(spending()), text_response("Em agosto você gastou R$ 1.142,10."))
+    result = answer(august, [], "q")
+    fake(status_error(APIStatusError, 500))
+    with pytest.raises(Unavailable) as raised:
+        answer(august, [], "q")
+
+    assert re.fullmatch(r"[0-9a-f]{8}", result.question_id)
+    assert re.fullmatch(r"[0-9a-f]{8}", raised.value.question_id)
+    assert result.question_id != raised.value.question_id
+
+
+def test_the_error_carries_the_round_in_which_the_provider_failed(august, fake):
+    fake(tool_response(spending()), api_error(400, None))
+
+    with pytest.raises(Unavailable) as raised:
+        answer(august, [], "q")
+
+    assert raised.value.round == 2
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        {"error": {"message": "bad\n  request"}},
+        [{"error": {"message": "bad\n  request"}}],
+    ],
+)
+def test_the_provider_message_is_read_from_both_error_shapes(user, fake, body):
+    fake(api_error(400, body))
+
+    with pytest.raises(Unavailable) as raised:
+        answer(user, [], "q")
+
+    assert raised.value.detail == "bad request"
+
+
+def test_the_provider_message_is_cut_and_the_key_masked(user, fake, settings):
+    settings.LLM_API_KEY = "sk-secret"
+    fake(api_error(400, {"error": {"message": "key sk-secret " + "x" * 1000}}))
+
+    with pytest.raises(Unavailable) as raised:
+        answer(user, [], "q")
+
+    assert len(raised.value.detail) == MAX_PROVIDER_MESSAGE
+    assert "sk-secret" not in raised.value.detail and raised.value.detail.startswith("key ***")
+
+
+@pytest.mark.parametrize("body", [None, "text", {}, {"error": "x"}, {"error": {"message": 1}}, []])
+def test_a_malformed_provider_body_gives_no_message_and_no_exception(user, fake, body):
+    fake(api_error(400, body))
+
+    with pytest.raises(Unavailable) as raised:
+        answer(user, [], "q")
+
+    assert raised.value.detail == ""
+
+
+def test_the_provider_message_is_kept_for_429_and_dropped_otherwise(user, fake):
+    body = {"error": {"message": "quota"}}
+    fake(
+        api_error(429, body, RateLimitError),
+        api_error(503, body),
+        APIConnectionError(request=REQUEST),
+    )
+    details = []
+    for _ in range(3):
+        with pytest.raises(AssistantError) as raised:
+            answer(user, [], "q")
+        details.append(raised.value.detail)
+
+    assert details == ["quota", "", ""]
+
+
+def test_one_line_per_model_call_and_tool_with_the_same_id(august, fake, caplog):
+    fake(
+        tool_response(spending(), tokens=900),
+        text_response("Em agosto você gastou R$ 1.142,10.", tokens=1300),
+    )
+
+    with caplog.at_level(logging.INFO, logger="assistant"):
+        result = answer(august, [], "q")
+
+    lines = [r.getMessage() for r in caplog.records]
+    calls = [line for line in lines if line.startswith("Model call")]
+    tools = [line for line in lines if line.startswith("Tool call")]
+    assert len(calls) == 2 and len(tools) == 1
+    assert "round=1" in calls[0] and "round=2" in calls[1]
+    assert "tokens=900" in calls[0] and "model=" in calls[0] and "finish_reason=" in calls[0]
+    assert f"tool={SPENDING} result=ok" in tools[0]
+    assert all(f"id={result.question_id}" in line for line in calls + tools)
+
+
+def test_the_tool_log_has_no_arguments_and_names_unknown_tools_as_unknown(user, fake, caplog):
+    fake(
+        tool_response(("drop_table", json.dumps({"month": "SEGREDO-2026"})), tokens=10),
+        text_response("x"),
+    )
+
+    with caplog.at_level(logging.INFO, logger="assistant"):
+        answer(user, [], "q")
+
+    assert "SEGREDO" not in caplog.text and "drop_table" not in caplog.text
+    assert "tool=unknown result=error" in caplog.text
