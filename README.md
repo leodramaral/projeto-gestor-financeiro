@@ -196,5 +196,6 @@ necessárias.
 ## Licenças
 
 Layout do [TailAdmin](https://tailadmin.com) (versão gratuita, MIT; licença em `frontend/TAILADMIN-LICENSE`),
-ícones da [Lucide](https://lucide.dev) (ISC; licença em `core/icons/LICENSE` e `transactions/icons/LICENSE`) e
-seletor de data [flatpickr](https://flatpickr.js.org) (MIT).
+ícones da [Lucide](https://lucide.dev) (ISC; licença em `core/icons/LICENSE` e `transactions/icons/LICENSE`),
+seletor de data [flatpickr](https://flatpickr.js.org) (MIT) e o empilhamento do toast, adaptado do
+[Pines UI](https://devdojo.com/pines) (MIT; licença em `frontend/PINES-LICENSE`).

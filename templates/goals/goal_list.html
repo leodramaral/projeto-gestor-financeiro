@@ -8,10 +8,6 @@
 {% block content %}
   {% include "partials/page_title.html" with title="Metas" %}
 
-  {% for message in messages %}
-    <div class="mb-4">{% include "partials/alert.html" with title="Tudo certo" message=message %}</div>
-  {% endfor %}
-
   {% if active or completed %}
     {% if active %}
       {% include "goals/partials/goal_section.html" with title="Ativas" subtitle=active_subtitle goals=active new_button=True %}

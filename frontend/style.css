@@ -722,3 +722,64 @@ span.flatpickr-weekday {
   border-color: var(--color-brand-500);
   color: #fff;
 }
+
+/*
+  Toast stack (static/js/toast.js; markup in partials/toast_stack.html and partials/alert.html).
+  The cards sit one over the other; the script sets --y (offset) and --s (scale) on each one. Collapsed,
+  the newest is in front and the older ones peek out 12 px each below it, so the card scales from its
+  bottom edge; expanded, they spread out one under the other.
+*/
+.toast-stack {
+  position: fixed;
+  inset: auto; /* the popover default centers the box */
+  top: var(--toast-top, 77px); /* below the 65 px header of the panel */
+  right: 16px;
+  z-index: 100000; /* above the header (z-99999); the popover top layer puts it above a modal too */
+  width: min(24rem, calc(100vw - 2rem));
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+  transition: height 0.3s ease;
+}
+@media (min-width: 80rem) {
+  .toast-stack {
+    top: var(--toast-top, 97px); /* below the 85 px header of the panel */
+    right: 24px;
+  }
+}
+.toast-item {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  transform-origin: bottom center;
+  transform: translateY(var(--y, 0px)) scale(var(--s, 1));
+  transition:
+    transform 0.3s cubic-bezier(0.215, 0.61, 0.355, 1),
+    opacity 0.3s ease,
+    height 0.3s ease;
+}
+.toast-item > [role] {
+  box-shadow: var(--shadow-theme-lg);
+}
+.toast-item.is-hidden {
+  opacity: 0;
+  transform: translateY(calc(var(--y, 0px) - 1rem)) scale(var(--s, 1));
+}
+/* A card folded behind the one in front shows only its bottom edge. */
+.toast-item.is-folded > [role] {
+  height: 100%;
+  overflow: hidden;
+}
+.toast-item.is-behind {
+  opacity: 0;
+  visibility: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast-stack,
+  .toast-item {
+    transition: none;
+  }
+}

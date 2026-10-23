@@ -7,10 +7,6 @@
 {% block content %}
   {% include "partials/page_title.html" with title="Categorias" %}
 
-  {% for message in messages %}
-    <div class="mb-4">{% include "partials/alert.html" with title="Tudo certo" message=message %}</div>
-  {% endfor %}
-
   <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
     <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-6">
       <div>

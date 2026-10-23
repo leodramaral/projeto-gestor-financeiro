@@ -1,12 +1,18 @@
-{% load icon_tags %}{# Alerta de sucesso do TailAdmin. Parâmetros: title, message. #}
-<div class="border-success-500 bg-success-50 dark:border-success-500/30 dark:bg-success-500/15 rounded-xl border p-4" role="status">
+{% load icon_tags notice_tags %}{# Aviso do TailAdmin por nível; é também o modelo do toast. Parâmetros: message; level (success, error, warning ou info; padrão success); title (padrão: o do nível); closable (acrescenta o botão de fechar, usado no toast). #}
+{% notice_style level|default:"success" as s %}
+<div class="{{ s.box }} rounded-xl border p-4" role="{{ s.role }}" data-level="{{ s.name }}">
   <div class="flex items-start gap-3">
-    <div class="text-success-600 -mt-0.5">
-      {% lucide "circle-check" "h-6 w-6" %}
+    <div class="{{ s.icon }} -mt-0.5 shrink-0">
+      {% lucide s.icon_name "h-6 w-6" %}
     </div>
-    <div>
-      <h4 class="mb-1 text-sm font-semibold text-gray-800 dark:text-white/90">{{ title }}</h4>
-      <p class="text-sm text-gray-500 dark:text-gray-400">{{ message }}</p>
+    <div class="min-w-0 flex-1">
+      <h4 class="mb-1 text-sm font-semibold text-gray-800 dark:text-white/90">{{ title|default:s.title }}</h4>
+      <p data-toast-text class="text-sm text-gray-500 dark:text-gray-400">{{ message }}</p>
     </div>
+    {% if closable %}
+      <button type="button" data-toast-close aria-label="Fechar" class="-mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-gray-400 hover:text-gray-600 focus-visible:ring-brand-500 focus-visible:outline-none focus-visible:ring-2 dark:hover:text-gray-200">
+        {% lucide "x" "h-5 w-5" %}
+      </button>
+    {% endif %}
   </div>
 </div>

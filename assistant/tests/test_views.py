@@ -539,6 +539,8 @@ def test_no_notice_box_sits_outside_the_chat(logged, ask, user, settings):
     add_tokens(user, 1000)
 
     html = logged.post(CHAT, {"question": "q"}).content.decode()
+    # The toast models (`<template>`) are inert: nothing is drawn until a toast shows.
+    html = re.sub(r"<template\b.*?</template>", "", html, flags=re.DOTALL)
 
     assert 'role="alert"' not in html
     assert not re.search(r"bg-error-50\b", html)

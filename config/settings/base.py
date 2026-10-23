@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import environ
+from django.contrib.messages import constants as messages_constants
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -61,6 +62,15 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
+
+# The toast knows four levels; Django's `debug` has no look of its own, so it is shown as `info`.
+MESSAGE_TAGS = {
+    messages_constants.DEBUG: "info",
+    messages_constants.INFO: "info",
+    messages_constants.SUCCESS: "success",
+    messages_constants.WARNING: "warning",
+    messages_constants.ERROR: "error",
+}
 
 LANGUAGE_CODE = "pt-br"
 TIME_ZONE = "America/Sao_Paulo"
