@@ -57,6 +57,19 @@ openspec validate --all                               # SEM --strict
   (`codeql.yml`, a cada PR e semanalmente) analisa a segurança; **não mescle com o CI
   vermelho**. O piso de cobertura (`fail_under` no `pyproject.toml`) só sobe, nunca é rebaixado para
   fazer um PR passar.
+- **Aviso ao usuário é toast.** Confirmação ou resultado de uma ação sai como toast, nunca como alerta no
+  corpo da tela: no servidor, `messages.success|error|warning|info(request, "texto")` (texto de produto, em
+  pt-BR) e os layouts `base.html` e `base_auth.html` já o mostram, então a tela **não** inclui laço de
+  `messages` nem `partials/alert.html`; no JavaScript, `window.toast.success|error|warning|info("texto")`
+  (sem recarregar; pode ser chamado antes de o Alpine iniciar). Sucesso, aviso e info somem em 5 s e o erro
+  fica até ser fechado; o texto entra sempre como texto, nunca como HTML. O markup é o de
+  `templates/partials/alert.html` (um `<template>` por nível em `toast_templates.html`; sem JavaScript, o
+  `<noscript>` mostra o alerta estático), o mapa nível → cor, ícone, `role` e título é
+  `core/templatetags/notice_tags.py` e o componente é `static/js/toast.js`. **Erro de formulário** (`form_errors`,
+  erro por campo) e **erro do chat do assistente** continuam inline, junto do contexto: não viram toast.
+- **Código de terceiros adaptado entra com a licença.** O empilhamento em cartas do toast é adaptado do toast
+  do [Pines UI](https://devdojo.com/pines) (MIT, DevDojo): o `static/js/toast.js` cita o Pines no cabeçalho e a
+  licença fica em `frontend/PINES-LICENSE`, como a do TailAdmin (`frontend/TAILADMIN-LICENSE`).
 - **Dependabot** (`.github/dependabot.yml`, semanal) mantém as linhas Django 5.2, Node 22, PostgreSQL 16 e
   Python 3.12 por `ignore`: para adotar outra versão, remova a entrada e migre numa change própria.
 - **O assistente de IA é opcional.** As variáveis `LLM_*` (`.env.example`) o configuram; sem
@@ -93,7 +106,9 @@ servidor MCP). Não é preciso para rodar nem para desenvolver o app, só para e
 - **Nomes.** Frame: `<tela> · <viewport> · <tema> · <estado>`, como `signup · desktop · claro · com
   erros`: tela é o nome da rota em inglês, viewport é `desktop` ou `mobile`, tema é `claro` ou `escuro`
   e o estado é em português (`padrão`, `com erros`, `senha válida`). O PNG leva o mesmo nome em
-  minúsculas, sem acento e com `-`: `signup-desktop-claro-com-erros.png`.
+  minúsculas, sem acento e com `-`: `signup-desktop-claro-com-erros.png`. Exceção: o `design/toast.figcraft`
+  é de um componente global, não de uma tela, e nomeia os quadros `toast · <viewport> · <tema> · <estado>`
+  (`toast · desktop · escuro · níveis`), porque o toast não é uma rota.
 - **Fiel ao código.** Cores e tamanhos vêm de `frontend/style.css` (inclusive a altura de linha de cada
   classe `text-*`), e textos, rótulos e mensagens vêm dos templates e de `accounts/forms.py`; dado de
   exemplo é claramente fictício (`Maria Silva`, `maria@exemplo.com`). Quem muda uma tela atualiza o
@@ -143,6 +158,15 @@ servidor MCP). Não é preciso para rodar nem para desenvolver o app, só para e
   créditos · claro · faixas`); o cabeçalho e a barra lateral são cópias de `goals.figcraft` (o item "Assistente" ativo e "Metas"
   inativo), e o arquivo foi gerado por script, sem componentes do FigCraft; dados fictícios (`Maria Silva`, uma
   pergunta e uma resposta de exemplo, medidor de créditos em 3%).
+- **Divergências conhecidas do design do toast** (`design/toast.figcraft`, componente global de notificação; o
+  sucesso em contexto fica em `design/transactions.figcraft`, nos quadros `toast sucesso`): os quadros por
+  nível e a pilha recolhida são **recortes** sobre o fundo da página, não a tela inteira; a animação, a pausa
+  ao passar o mouse ou focar e a **pilha expandida** (que abre ao passar o mouse) não têm quadro; só o desktop
+  claro tem a pilha; os textos de erro, aviso e informação são de exemplo e o título de cada nível ("Tudo
+  certo", "Algo deu errado", "Atenção", "Informação") é o do app; no escuro o fundo do toast é opaco (o app
+  usa a mesma cor), para que as cartas da pilha não apareçam umas através das outras; o arquivo foi gerado por
+  script, sem componentes do FigCraft. O alerta estático foi removido do design (`lançamento registrado` e
+  `categoria criada`); ele só continua no app como fallback sem JavaScript.
 - **Divergências conhecidas das demais telas** (login, confirmação de conta, recuperação de senha,
   lançamentos, categorias e perfil; o painel tem a lista abaixo): sem estados de foco e de hover
   (o app dá `autofocus` ao primeiro campo) e sem `shadow-theme-*` em cartões, campos, modais e menus; o

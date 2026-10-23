@@ -9,6 +9,7 @@
           <div class="mb-8 flex justify-center lg:hidden">
             {% include "partials/brand.html" with text=True %}
           </div>
+          {% include "partials/toast_messages.html" %}
           {% block content %}{% endblock %}
         </div>
       </div>

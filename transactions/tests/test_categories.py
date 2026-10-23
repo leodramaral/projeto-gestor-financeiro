@@ -4,6 +4,7 @@ import re
 import pytest
 from django.urls import reverse
 
+from core.tests.toast_html import inline_alerts, toasts
 from transactions.models import Category, Transaction
 
 pytestmark = pytest.mark.django_db
@@ -92,6 +93,14 @@ class TestCreate:
         assert (category.user, category.icon, category.color) == (user, "paw-print", "amber")
         assert "Categoria criada." in [str(m) for m in response.context["messages"]]
         assert response.redirect_chain[-1][0] == reverse("transactions:category-list")
+
+    def test_the_success_message_reaches_the_page_as_a_toast(self, logged_client):
+        html = logged_client.post(
+            reverse("transactions:category-create"), VALID, follow=True
+        ).content.decode()
+
+        assert toasts(html) == [("success", "Categoria criada.")]
+        assert inline_alerts(html) == 0
 
     def test_user_in_post_is_ignored(self, logged_client, user, other_user):
         logged_client.post(

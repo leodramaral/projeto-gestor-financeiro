@@ -1,0 +1,5 @@
+{# Mensagens do servidor (django.contrib.messages) para o toast. Com JavaScript, o toast.js lê cada [data-toast] e mostra um toast; sem JavaScript, o <noscript> mostra o alerta estático. Nível ausente ou desconhecido vira info. #}
+{% for message in messages %}
+  <div hidden data-toast data-level="{{ message.level_tag|default:'info' }}">{{ message }}</div>
+  <noscript><div class="mb-4">{% include "partials/alert.html" with level=message.level_tag|default:"info" message=message %}</div></noscript>
+{% endfor %}

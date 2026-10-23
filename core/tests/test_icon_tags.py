@@ -44,3 +44,7 @@ def test_every_icon_file_is_a_clean_lucide_svg(name):
 
 def test_the_assistant_icons_are_in_the_folder():
     assert {"message-square-more", "sparkle", "circle-alert"} <= set(icon_names())
+
+
+def test_the_toast_icons_are_in_the_folder():
+    assert {"circle-check", "circle-alert", "triangle-alert", "info", "x"} <= set(icon_names())

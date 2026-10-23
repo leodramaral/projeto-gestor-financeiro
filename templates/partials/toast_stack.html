@@ -1,0 +1,25 @@
+{# Pilha de toasts: o contêiner que o componente Alpine `toastStack` (static/js/toast.js) preenche, mais os modelos de cada nível. Incluído uma vez em cada layout base. Parâmetro opcional: top (distância do topo; o padrão fica abaixo do cabeçalho do painel). #}
+<section
+  x-data="toastStack"
+  popover="manual"
+  aria-label="Notificações"
+  class="toast-stack"
+  {% if top %}style="--toast-top: {{ top }}"{% endif %}
+  :style="`height: ${stackHeight}px`"
+  @mouseenter="enter()"
+  @mouseleave="leave()"
+  @focusin="focusIn()"
+  @focusout="focusOut($event)"
+>
+  <template x-for="toast in toasts" :key="toast.id">
+    <div
+      class="toast-item"
+      :class="itemClass(toast)"
+      :style="itemStyle(toast)"
+      :data-toast-id="toast.id"
+      :inert="!expanded && position(toast) > 0"
+      x-init="mount($el, toast)"
+    ></div>
+  </template>
+</section>
+{% include "partials/toast_templates.html" %}

@@ -1,0 +1,5 @@
+{# Modelos do toast, um por nível: o toast.js clona o do nível pedido e preenche o texto com textContent. O visual é o do alert.html, com o botão de fechar. #}
+<template data-toast-level="success">{% include "partials/alert.html" with level="success" message="" closable=True %}</template>
+<template data-toast-level="error">{% include "partials/alert.html" with level="error" message="" closable=True %}</template>
+<template data-toast-level="warning">{% include "partials/alert.html" with level="warning" message="" closable=True %}</template>
+<template data-toast-level="info">{% include "partials/alert.html" with level="info" message="" closable=True %}</template>

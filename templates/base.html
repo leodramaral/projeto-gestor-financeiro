@@ -11,6 +11,7 @@
     {% include "partials/sidebar_init.html" %}
     <link rel="stylesheet" href="{% static 'dist/css/style.css' %}" />
     <script defer src="{% static 'js/category-select.js' %}"></script>
+    <script defer src="{% static 'js/toast.js' %}"></script>
     {# Alpine components: they have to register on `alpine:init`, so they load before Alpine. #}
     {% block component_scripts %}{% endblock %}
     <script defer src="{% static 'dist/js/alpine.min.js' %}"></script>
@@ -29,10 +30,12 @@
         {% include "partials/header.html" %}
         <main id="conteudo" tabindex="-1" class="outline-none">
           <div class="mx-auto max-w-(--breakpoint-2xl) p-4 pb-20 md:p-6 md:pb-6">
+            {% include "partials/toast_messages.html" %}
             {% block content %}{% endblock %}
           </div>
         </main>
       </div>
     </div>
+    {% include "partials/toast_stack.html" %}
   </body>
 </html>

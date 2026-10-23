@@ -6,6 +6,7 @@ import pytest
 from django.urls import NoReverseMatch, reverse
 from django.utils import timezone
 
+from core.tests.toast_html import inline_alerts, noscript_fallback, toasts
 from transactions.models import Transaction
 
 pytestmark = pytest.mark.django_db
@@ -227,6 +228,15 @@ class TestCreate:
         assert item.date == date(2026, 10, 2)
         assert response.redirect_chain[-1][0] == reverse("transactions:list")
         assert "Lançamento registrado." in messages_of(response)
+
+    def test_the_success_message_reaches_the_page_as_a_toast(self, logged_client):
+        html = logged_client.post(
+            reverse("transactions:create"), VALID, follow=True
+        ).content.decode()
+
+        assert toasts(html) == [("success", "Lançamento registrado.")]
+        assert inline_alerts(html) == 0
+        assert "Lançamento registrado." in noscript_fallback(html)
 
     def test_forged_user_field_is_ignored(self, logged_client, user, other_user):
         logged_client.post(reverse("transactions:create"), {**VALID, "user": other_user.pk})

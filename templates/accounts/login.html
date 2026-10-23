@@ -3,9 +3,6 @@
 {% block content %}
   <h1 class="mb-1 text-title-sm font-semibold text-gray-800 dark:text-white/90">Entrar</h1>
   <p class="mb-6 text-sm text-gray-500 dark:text-gray-400">Acesse o seu painel financeiro.</p>
-  {% for message in messages %}
-    <div class="mb-4">{% include "partials/alert.html" with title="Tudo certo" message=message %}</div>
-  {% endfor %}
   <form method="post" novalidate class="space-y-4">
     {% csrf_token %}
     <input type="hidden" name="next" value="{{ next }}" />

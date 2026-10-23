@@ -9,6 +9,7 @@
     <link rel="icon" type="image/svg+xml" href="{% static 'images/favicon.svg' %}" />
     {% include "partials/theme_init.html" %}
     <link rel="stylesheet" href="{% static 'dist/css/style.css' %}" />
+    <script defer src="{% static 'js/toast.js' %}"></script>
     <script defer src="{% static 'dist/js/alpine.min.js' %}"></script>
   </head>
   <body
@@ -24,9 +25,11 @@
           <div class="mb-6 flex justify-center">
             {% include "partials/brand.html" with text=True %}
           </div>
+          {% include "partials/toast_messages.html" %}
           {% block content %}{% endblock %}
         </div>
       </main>
     {% endblock %}
+    {% include "partials/toast_stack.html" with top="72px" %}
   </body>
 </html>

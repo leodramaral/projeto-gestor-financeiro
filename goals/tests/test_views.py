@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from django.urls import reverse
 
+from core.tests.toast_html import inline_alerts, toasts
 from goals.models import Goal
 from transactions.models import Transaction, current_balance
 
@@ -25,6 +26,13 @@ def test_create_with_deadline(logged, user, future):
     assert goal.saved_amount == 0
     assert not goal.is_completed
     assert "Meta criada." in response.content.decode()
+
+
+def test_the_success_message_reaches_the_page_as_a_toast(logged):
+    html = logged.post(reverse("goals:create"), payload(), follow=True).content.decode()
+
+    assert toasts(html) == [("success", "Meta criada.")]
+    assert inline_alerts(html) == 0
 
 
 def test_create_without_deadline(logged):

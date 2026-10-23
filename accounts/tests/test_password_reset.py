@@ -12,6 +12,7 @@ from django.urls import reverse
 from accounts import throttle
 from accounts.models import LoginThrottle
 from accounts.tokens import email_confirmation_token, password_reset_token
+from core.tests.toast_html import inline_alerts, toasts
 
 from .conftest import PASSWORD, confirmation_path
 
@@ -200,6 +201,8 @@ def test_password_is_reset_and_user_goes_to_login(client, make_user):
     assert SESSION_KEY not in client.session
     login = client.get(response.url).content.decode()
     assert "Senha redefinida. Entre com a nova senha." in login
+    assert toasts(login) == [("success", "Senha redefinida. Entre com a nova senha.")]
+    assert inline_alerts(login) == 0
 
     old = client.post(reverse("accounts:login"), {"username": user.email, "password": PASSWORD})
     new = client.post(reverse("accounts:login"), {"username": user.email, "password": NEW_PASSWORD})
