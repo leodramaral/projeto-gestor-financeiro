@@ -111,7 +111,7 @@ def _tool_call(call):
         "function": {"name": call.function.name, "arguments": call.function.arguments},
     }
     extra = getattr(call, "model_extra", None) or {}
-    return {**{key: value for key, value in extra.items() if key not in standard}, **standard}
+    return {**extra, **standard}
 
 
 def _assistant_message(message):

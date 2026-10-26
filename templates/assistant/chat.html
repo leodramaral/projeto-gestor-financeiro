@@ -101,9 +101,9 @@
               <span class="sr-only">Usados {{ used|floatformat:"0g" }} de {{ limit|floatformat:"0g" }} créditos</span>
             </div>
             {% if model %}
-              <div id="chat-model" class="flex min-w-0 items-center gap-2.5 text-xs" title="{{ model }}">
+              <div id="chat-model" class="flex min-w-0 items-center gap-2.5 text-xs">
                 <span class="hidden h-3 w-px shrink-0 bg-gray-200 sm:block dark:bg-gray-700" aria-hidden="true"></span>
-                <span class="truncate font-medium text-gray-700 dark:text-gray-300" aria-hidden="true">{{ model }}</span>
+                <span class="truncate font-medium text-gray-700 dark:text-gray-300" title="{{ model }}" aria-hidden="true">{{ model }}</span>
                 <span class="sr-only">Modelo em uso: {{ model }}</span>
               </div>
             {% endif %}

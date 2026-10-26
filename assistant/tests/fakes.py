@@ -22,10 +22,9 @@ def tool_response(*calls, tokens=100):
             id=f"call_{index}",
             type="function",
             function=SimpleNamespace(name=name, arguments=arguments),
-            model_extra=call[2] if len(call) > 2 else None,
+            model_extra=extra[0] if extra else None,
         )
-        for index, call in enumerate(calls, start=1)
-        for name, arguments in [call[:2]]
+        for index, (name, arguments, *extra) in enumerate(calls, start=1)
     ]
     message = SimpleNamespace(content=None, tool_calls=tool_calls)
     return SimpleNamespace(choices=[SimpleNamespace(message=message)], usage=usage(tokens))
