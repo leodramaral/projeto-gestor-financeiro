@@ -70,6 +70,86 @@ def test_a_question_with_one_tool_round_and_a_right_answer(august, fake):
     assert json.loads(sent[-1]["content"])["total"] == "1142.10"
 
 
+SIGNATURE = {"google": {"thought_signature": "opaque-signature"}}
+
+
+def test_an_extra_field_of_a_tool_call_goes_back_unchanged_in_the_next_round(august, fake):
+    client = fake(
+        tool_response((SPENDING, '{"month": "2026-08"}', {"extra_content": SIGNATURE})),
+        text_response("Em agosto você gastou R$ 842,10 com Transporte."),
+    )
+
+    result = answer(august, [], "Quanto gastei com transporte em agosto?")
+
+    assert result.outcome == TEXT
+    assistant_message = client.calls[1]["messages"][-2]
+    assert assistant_message["tool_calls"] == [
+        {
+            "id": "call_1",
+            "type": "function",
+            "function": {"name": SPENDING, "arguments": '{"month": "2026-08"}'},
+            "extra_content": SIGNATURE,
+        }
+    ]
+
+
+def test_each_tool_call_keeps_its_own_extra_field(august, fake):
+    first, second = {"extra_content": {"n": 1}}, {"extra_content": {"n": 2}}
+    client = fake(
+        tool_response((SPENDING, spending()[1], first), (SPENDING, spending("2026-07")[1], second)),
+        text_response("Foram R$ 842,10."),
+    )
+
+    answer(august, [], "q")
+
+    calls = client.calls[1]["messages"][-3]["tool_calls"]
+    assert [c.get("extra_content") for c in calls] == [{"n": 1}, {"n": 2}]
+
+
+def test_without_extra_fields_the_assistant_message_is_the_standard_one(august, fake):
+    client = fake(tool_response(spending()), text_response("Foram R$ 842,10."))
+
+    answer(august, [], "q")
+
+    assert client.calls[1]["messages"][-2]["tool_calls"] == [
+        {
+            "id": "call_1",
+            "type": "function",
+            "function": {"name": SPENDING, "arguments": spending()[1]},
+        }
+    ]
+
+
+def test_an_extra_field_never_overrides_the_standard_ones(august, fake):
+    client = fake(
+        tool_response((SPENDING, spending()[1], {"id": "hijack", "type": "x", "function": {}})),
+        text_response("Foram R$ 842,10."),
+    )
+
+    answer(august, [], "q")
+
+    call = client.calls[1]["messages"][-2]["tool_calls"][0]
+    assert call["id"] == "call_1" and call["type"] == "function"
+    assert call["function"]["name"] == SPENDING
+
+
+def test_the_extra_field_does_not_reach_the_next_question_of_the_conversation(august, fake):
+    fake(
+        tool_response((SPENDING, spending()[1], {"extra_content": SIGNATURE})),
+        text_response("Em agosto você gastou R$ 842,10 com Transporte."),
+    )
+    first = answer(august, [], "Quanto gastei com transporte em agosto?")
+    history = [
+        {"role": "user", "content": "Quanto gastei com transporte em agosto?"},
+        {"role": "assistant", "content": first.text},
+    ]
+    client = fake(text_response("Foram R$ 842,10."))
+
+    answer(august, history, "e em agosto de novo?")
+
+    assert "opaque-signature" not in json.dumps(client.calls[0]["messages"])
+
+
 def test_the_system_prompt_and_the_question_frame_the_messages(august, fake):
     client = fake(tool_response(spending()), text_response("Foram R$ 842,10."))
 

@@ -660,3 +660,63 @@ def test_no_log_line_has_the_question_arguments_or_key_even_when_the_provider_ec
     assert "provider_message=invalid key ***" in caplog.text
     for secret in ("sk-secret", "pergunta-secreta", "4242", "2026-08"):
         assert secret not in caplog.text
+
+
+def model_label(html):
+    return region(html, "div", 'id="chat-model"')
+
+
+def test_the_box_shows_the_model_in_use_next_to_the_credits(logged, settings):
+    settings.LLM_MODEL = "openai/gpt-oss-120b"
+
+    html = logged.get(CHAT).content.decode()
+
+    label = model_label(html)
+    assert "openai/gpt-oss-120b" in label
+    assert html.index('id="chat-credits"') < html.index('id="chat-model"')
+
+
+def test_the_label_is_the_name_alone_with_the_word_model_only_for_screen_readers(logged):
+    label = model_label(logged.get(CHAT).content.decode())
+
+    visible = re.sub(r'<span class="sr-only">.*?</span>', "", label, flags=re.S)
+    assert "Modelo" not in visible
+    assert 'class="sr-only">Modelo em uso: test-model</span>' in label
+    assert 'title="test-model"' in label
+
+
+def test_the_label_follows_the_configured_model(logged, settings):
+    settings.LLM_MODEL = "gemini-3.1-flash-lite"
+
+    html = logged.get(CHAT).content.decode()
+
+    assert "gemini-3.1-flash-lite" in model_label(html)
+    assert "test-model" not in html
+
+
+def test_the_label_is_escaped(logged, settings):
+    settings.LLM_MODEL = "<b>x</b>"
+
+    html = logged.get(CHAT).content.decode()
+
+    assert "<b>x</b>" not in html
+    assert "&lt;b&gt;x&lt;/b&gt;" in model_label(html)
+
+
+def test_without_a_key_there_is_no_label_and_the_box_says_unavailable(logged, settings):
+    settings.LLM_API_KEY = ""
+
+    html = logged.get(CHAT).content.decode()
+
+    assert 'id="chat-model"' not in html
+    assert messages.UNAVAILABLE in html
+
+
+def test_the_screen_never_shows_the_key_or_the_base_url(logged, settings):
+    settings.LLM_API_KEY = "sk-secret-key"
+    settings.LLM_BASE_URL = "https://provider.example/v1"
+
+    html = logged.get(CHAT).content.decode()
+
+    assert "sk-secret-key" not in html
+    assert "provider.example" not in html

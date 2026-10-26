@@ -126,6 +126,8 @@ class ChatView(LoginRequiredMixin, View):
             "tone": meter_tone(percent),
             "example": messages.EXAMPLE_QUESTION,
             "disclaimer": messages.DISCLAIMER,
+            # Nothing is running without a key, and the box already says so.
+            "model": settings.LLM_MODEL if settings.LLM_API_KEY else "",
         }
         return render(request, self.template_name, context)
 

@@ -101,18 +101,24 @@ def _clean(history):
     return [{"role": m["role"], "content": m["content"]} for m in history[-MAX_HISTORY_MESSAGES:]]
 
 
+def _tool_call(call):
+    """One tool call as it goes back to the provider: the standard fields plus whatever else the
+    provider sent with it (the SDK keeps those in `model_extra`). Some providers hand over state
+    in those fields and refuse the next round without it, so it is returned as received."""
+    standard = {
+        "id": call.id,
+        "type": "function",
+        "function": {"name": call.function.name, "arguments": call.function.arguments},
+    }
+    extra = getattr(call, "model_extra", None) or {}
+    return {**extra, **standard}
+
+
 def _assistant_message(message):
     return {
         "role": "assistant",
         "content": message.content,
-        "tool_calls": [
-            {
-                "id": call.id,
-                "type": "function",
-                "function": {"name": call.function.name, "arguments": call.function.arguments},
-            }
-            for call in message.tool_calls
-        ],
+        "tool_calls": [_tool_call(call) for call in message.tool_calls],
     }
 
 

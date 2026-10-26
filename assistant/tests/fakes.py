@@ -14,14 +14,17 @@ def text_response(content, tokens=100):
 
 
 def tool_response(*calls, tokens=100):
-    """`calls` are (name, arguments) pairs; the ids are call_1, call_2..."""
+    """`calls` are (name, arguments) pairs, or (name, arguments, extra) when the provider sent
+    fields beyond the standard ones (the SDK keeps those in `model_extra`); the ids are call_1,
+    call_2..."""
     tool_calls = [
         SimpleNamespace(
             id=f"call_{index}",
             type="function",
             function=SimpleNamespace(name=name, arguments=arguments),
+            model_extra=extra[0] if extra else None,
         )
-        for index, (name, arguments) in enumerate(calls, start=1)
+        for index, (name, arguments, *extra) in enumerate(calls, start=1)
     ]
     message = SimpleNamespace(content=None, tool_calls=tool_calls)
     return SimpleNamespace(choices=[SimpleNamespace(message=message)], usage=usage(tokens))

@@ -57,6 +57,18 @@ compatível com a API da OpenAI, padrão [Groq](https://console.groq.com) no pla
 [`.env.example`](.env.example)). Sem `LLM_API_KEY`, só a tela do assistente fica indisponível. Com o plano
 gratuito, **não use dados financeiros reais**.
 
+### Provedores do assistente
+
+O assistente usa o SDK `openai` e funciona com provedores compatíveis com a API da OpenAI; para trocar de
+provedor, mude só as variáveis `LLM_*` do `.env`. Estes funcionam e foram os testados:
+
+| Provedor | `LLM_BASE_URL` | `LLM_MODEL` | Chave (`LLM_API_KEY`) |
+|---|---|---|---|
+| Groq | `https://api.groq.com/openai/v1` | `openai/gpt-oss-120b` | [console.groq.com](https://console.groq.com) |
+| Gemini | `https://generativelanguage.googleapis.com/v1beta/openai/` | `gemini-3.1-flash-lite` | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
+
+Outros provedores compatíveis podem funcionar, mas não foram testados.
+
 Suba tudo:
 
 ```bash
