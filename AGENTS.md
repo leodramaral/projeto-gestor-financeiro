@@ -73,7 +73,9 @@ openspec validate --all                               # SEM --strict
 - **Dependabot** (`.github/dependabot.yml`, semanal) mantém as linhas Django 5.2, Node 22, PostgreSQL 16 e
   Python 3.12 por `ignore`: para adotar outra versão, remova a entrada e migre numa change própria.
 - **O assistente de IA é opcional.** As variáveis `LLM_*` (`.env.example`) o configuram; sem
-  `LLM_API_KEY` a aplicação roda normalmente e só a tela do assistente fica indisponível.
+  `LLM_API_KEY` a aplicação roda normalmente e só a tela do assistente fica indisponível. Os provedores
+  testados (Groq e Gemini) estão no `README.md`, em "Provedores do assistente": um provedor novo só entra
+  depois de testado com a chamada real (pergunta que consulta gastos, recusa e cortesia, com dados fictícios).
 - `environment` vence `env_file` no Compose: ao acrescentar variável, confira que nada a sobrescreve.
 - **Worktrees ficam em `worktrees/<nome>`, dentro do repositório** (pasta já ignorada pelo
   `.gitignore` e pelo `.dockerignore`), nunca como pasta irmã fora dele. Use `scripts/worktree`
@@ -157,7 +159,9 @@ servidor MCP). Não é preciso para rodar nem para desenvolver o app, só para e
   desativado), além de um quadro à parte com as quatro faixas do medidor de créditos (`assistant · medidor de
   créditos · claro · faixas`); o cabeçalho e a barra lateral são cópias de `goals.figcraft` (o item "Assistente" ativo e "Metas"
   inativo), e o arquivo foi gerado por script, sem componentes do FigCraft; dados fictícios (`Maria Silva`, uma
-  pergunta e uma resposta de exemplo, medidor de créditos em 3%).
+  pergunta e uma resposta de exemplo, medidor de créditos em 3%); o nome do modelo ao lado dos créditos é de exemplo
+  (`openai/gpt-oss-120b`, e `gemini-3.1-flash-lite` no mobile): no app é o valor de `LLM_MODEL`, cortado com reticências
+  quando não cabe, e o design não mostra esse corte.
 - **Divergências conhecidas do design do toast** (`design/toast.figcraft`, componente global de notificação; o
   sucesso em contexto fica em `design/transactions.figcraft`, nos quadros `toast sucesso`): os quadros por
   nível e a pilha recolhida são **recortes** sobre o fundo da página, não a tela inteira; a animação, a pausa
