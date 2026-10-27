@@ -297,7 +297,8 @@ def test_a_refused_question_is_not_sent_with_the_next_one(logged, ask):
 
     logged.post(CHAT, {"question": "Quanto gastei?"})
 
-    assert calls[0]["history"] == []
+    assert len(calls) == 2
+    assert calls[1]["history"] == []  # the call of the second question
     assert conversation(logged)[0]["content"] == "Quanto gastei?"
 
 
@@ -375,7 +376,8 @@ def test_two_users_have_separate_conversations(client, make_user, ask):
     calls = ask(Answer(TEXT, "resposta da bia", 1))
     bia.post(CHAT, {"question": "pergunta da bia"})
 
-    assert calls[0]["history"] == []
+    assert len(calls) == 2
+    assert calls[1]["history"] == []  # Bia's call: nothing of Ana's conversation goes with it
     assert "pergunta da ana" not in bia.get(CHAT).content.decode()
     assert "pergunta da bia" not in ana.get(CHAT).content.decode()
 
@@ -460,6 +462,32 @@ def test_a_question_in_flight_holds_credits_against_a_parallel_one(
 
     assert seen == ["first"]
     assert tokens_used_today(user) == 40500  # the reservation was replaced by what was spent
+
+
+def test_a_question_that_spends_more_than_the_reservation_is_charged_in_full(logged, user, ask):
+    ask(Answer(TEXT, "ok", views.RESERVED_TOKENS + 2500))
+
+    logged.post(CHAT, {"question": "q"})
+
+    assert tokens_used_today(user) == views.RESERVED_TOKENS + 2500
+
+
+def test_a_model_that_never_stops_asking_for_tools_shows_the_failure_message(
+    logged, user, monkeypatch
+):
+    client = FakeClient(
+        *[tool_response((SPENDING, "{}"), tokens=10) for _ in range(service.MAX_MODEL_CALLS + 1)]
+    )
+    monkeypatch.setattr(service, "get_client", lambda: client)
+
+    response = logged.post(CHAT, {"question": "minha pergunta"})
+
+    html = response.content.decode()
+    assert len(client.calls) == service.MAX_MODEL_CALLS
+    assert response.status_code == 200
+    assert messages.UNAVAILABLE in thread(html) and "Não enviada" in thread(html)
+    assert conversation(logged) == []
+    assert tokens_used_today(user) == 10 * service.MAX_MODEL_CALLS
 
 
 def test_a_failed_question_gives_the_reservation_back(logged, user, ask):
