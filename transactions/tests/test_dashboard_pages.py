@@ -1,4 +1,5 @@
 import json
+import re
 from datetime import date
 
 import pytest
@@ -21,6 +22,34 @@ def page(client, route="home", **params):
 
 def html(client, route="home", **params):
     return page(client, route, **params).content.decode()
+
+
+def embedded_data(content):
+    """The chart data the page embeds with `json_script`, decoded."""
+    payload = content.split('id="dashboard-data" type="application/json">')[1]
+    return json.loads(payload.split("</script>")[0])
+
+
+def text_of(fragment):
+    """The visible text of an HTML fragment, with the whitespace collapsed."""
+    return " ".join(re.sub(r"<[^>]+>", " ", fragment).split())
+
+
+def known_october(user, make_transaction):
+    """A month with known numbers: opening R$ 1.250,00, lowest on the 4th, closing R$ 4.425,35."""
+    make_transaction(user, "income", "1250.00", when=date(2026, 9, 20))
+    make_transaction(user, "expense", "1500.00", when=date(2026, 10, 2))
+    make_transaction(user, "expense", "745.80", when=date(2026, 10, 3))
+    make_transaction(user, "expense", "212.35", when=date(2026, 10, 4))
+    make_transaction(user, "income", "5600.00", when=date(2026, 10, 5))
+    make_transaction(user, "income", "100.00", when=date(2026, 10, 15))
+    make_transaction(user, "expense", "66.50", when=date(2026, 10, 31))
+
+
+# Day by day of `known_october` (index 0 is the 1st).
+KNOWN_INCOME = [0.0] * 4 + [5600.0] + [0.0] * 9 + [100.0] + [0.0] * 16
+KNOWN_EXPENSE = [0.0, 1500.0, 745.8, 212.35] + [0.0] * 26 + [66.5]
+KNOWN_BALANCE = [1250.0, -250.0, -995.8, -1208.15] + [4391.85] * 10 + [4491.85] * 16 + [4425.35]
 
 
 # --- access and layout ----------------------------------------------------------------------
@@ -484,6 +513,22 @@ def test_flow_tab_has_the_two_daily_charts_and_the_summary(logged_client, user, 
     }
 
 
+def test_flow_tab_shows_the_closing_the_lowest_and_the_balance_from_the_opening(
+    logged_client, user, make_transaction
+):
+    known_october(user, make_transaction)
+
+    content = html(logged_client, "dashboard_flow")
+    summary = text_of(content.split("data-flow-summary>")[1].split("</p>")[0])
+    lowest = content.split("data-lowest-balance>")[1].split("</p>")[0]
+    data = embedded_data(content)
+
+    assert summary == "Saldo inicial R$ 1.250,00 → saldo final R$ 4.425,35 (outubro de 2026)"
+    assert lowest == "Menor saldo: − R$ 1.208,15 em 04/10 · termina o mês em R$ 4.425,35"
+    assert data["balance"] == KNOWN_BALANCE
+    assert data["lowest"] == 3
+
+
 # --- transactions tab -----------------------------------------------------------------------
 
 
@@ -533,6 +578,29 @@ def test_chart_data_is_embedded_as_json_and_escaped(
     assert data["categories"][0]["name"] == "</script><b>x"
     assert data["categories"][0]["amount"] == 10.0
     assert len(data["days"]) == len(data["balance"]) == 31
+
+
+@pytest.mark.parametrize("route", ["home", "dashboard_flow"])
+def test_embedded_chart_values_match_the_month_and_close_with_the_cards(
+    logged_client, user, make_transaction, route
+):
+    known_october(user, make_transaction)
+
+    response = page(logged_client, route)
+    data = embedded_data(response.content.decode())
+    summary = response.context["summary"]
+
+    assert data["income"] == KNOWN_INCOME
+    assert data["expense"] == KNOWN_EXPENSE
+    assert data["balance"] == KNOWN_BALANCE
+    assert data["weeks"]["labels"][-1] == ["Sem 5", "29–31"]
+    assert data["weeks"]["income"] == [5600.0, 0.0, 100.0, 0.0, 0.0]
+    assert data["weeks"]["expense"] == [2458.15, 0.0, 0.0, 0.0, 66.5]
+    for series in (data["income"], data["weeks"]["income"]):
+        assert round(sum(series), 2) == float(summary.income) == 5700.0
+    for series in (data["expense"], data["weeks"]["expense"]):
+        assert round(sum(series), 2) == float(summary.expense) == 2524.65
+    assert data["balance"][-1] == float(summary.closing) == 4425.35
 
 
 def test_daily_series_follows_the_length_of_the_month(logged_client, user, make_transaction):
@@ -588,6 +656,30 @@ def test_pages_only_show_the_users_own_data(
 
     assert "Da Bia" not in content and "Segredo da Bia" not in content
     assert "900,00" not in content
+
+
+@pytest.mark.parametrize("route", ["home", "dashboard_flow"])
+def test_embedded_chart_data_only_carries_the_users_own_numbers(
+    logged_client, user, other_user, make_transaction, make_category, route
+):
+    secret = make_category(other_user, "Segredo da Bia")
+    make_transaction(user, "income", "10.00", when=date(2026, 10, 2), description="Meu")
+    make_transaction(other_user, "income", "700.00", when=date(2026, 9, 2))
+    make_transaction(other_user, "expense", "55.00", when=date(2026, 10, 2), category=secret)
+    make_transaction(other_user, "expense", "900.00", when=date(2026, 10, 5), category=secret)
+    make_transaction(other_user, "income", "300.00", when=date(2026, 10, 9))
+
+    content = html(logged_client, route)
+    data = embedded_data(content)
+    lowest = content.split("data-lowest-balance>")[1].split("</p>")[0]
+
+    assert data["income"] == [0.0, 10.0] + [0.0] * 29
+    assert data["expense"] == [0.0] * 31
+    assert data["balance"] == [0.0] + [10.0] * 30
+    assert data["weeks"]["income"] == [10.0, 0.0, 0.0, 0.0, 0.0]
+    assert data["weeks"]["expense"] == [0.0] * 5
+    assert data["lowest"] == 0
+    assert lowest == "Menor saldo: R$ 0,00 em 01/10 · termina o mês em R$ 10,00"
 
 
 # --- month field, "Este mês" and the new-transaction shortcut ------------------------------------

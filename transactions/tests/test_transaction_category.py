@@ -149,6 +149,25 @@ class TestFilter:
         assert list(response.context["transactions"]) == [new, old]
         assert response.context["selected_category"] == lazer
 
+    def test_filter_by_a_shared_default_category_shows_only_my_transactions(
+        self, lists, user, other_user, make_transaction
+    ):
+        from datetime import date
+
+        lazer = default("Lazer")
+        old = make_transaction(user, category=lazer, when=date(2026, 9, 1), description="Cinema")
+        new = make_transaction(user, category=lazer, when=date(2026, 10, 1), description="Show")
+        make_transaction(other_user, category=lazer, when=date(2026, 9, 15), description="Da Bia")
+        make_transaction(other_user, category=lazer, amount="777.00", description="Teatro da Bia")
+
+        response = lists(category=lazer.pk)
+        content = response.content.decode()
+
+        assert list(response.context["transactions"]) == [new, old]
+        assert response.context["paginator"].count == 2
+        assert "Da Bia" not in content
+        assert "777,00" not in content
+
     def test_pagination_links_keep_the_filter(self, lists, user, make_transaction, settings):
         settings.TRANSACTIONS_PER_PAGE = 2
         lazer = default("Lazer")

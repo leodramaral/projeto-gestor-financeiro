@@ -401,15 +401,28 @@ def test_nothing_of_another_user_leaks_into_the_numbers(
     make_transaction(user, "income", "10.00", when=date(2026, 10, 2), description="Meu")
     make_transaction(other_user, "income", "700.00", when=date(2026, 9, 2), description="Da Bia")
     make_transaction(other_user, "expense", "55.00", when=date(2026, 10, 2), category=secret)
+    make_transaction(other_user, "expense", "900.00", when=date(2026, 10, 5), category=secret)
+    make_transaction(other_user, "income", "300.00", when=date(2026, 10, 9), description="Da Bia")
 
     dashboard = build_dashboard(user, month_of())
+    data = dashboard.chart_data
 
     assert dashboard.summary.opening == 0
     assert dashboard.summary.closing == dec("10.00")
     assert dashboard.summary.income == dec("10.00")
     assert dashboard.summary.expense == 0
     assert dashboard.categories == []
-    assert [d.income for d in dashboard.days][:3] == [0, 10, 0]
+    assert [d.income for d in dashboard.days] == [0, 10] + [0] * 29
+    assert [d.expense for d in dashboard.days] == [0] * 31
+    assert [d.balance for d in dashboard.days] == [0] + [10] * 30
+    assert (dashboard.lowest.day, dashboard.lowest.balance) == (date(2026, 10, 1), 0)
+    assert data["income"] == [0.0, 10.0] + [0.0] * 29
+    assert data["expense"] == [0.0] * 31
+    assert data["balance"] == [0.0] + [10.0] * 30
+    assert data["weeks"]["income"] == [10.0, 0.0, 0.0, 0.0, 0.0]
+    assert data["weeks"]["expense"] == [0.0] * 5
+    assert data["lowest"] == 0
+    assert dashboard.largest_expense is None
     assert [t.description for t in dashboard.recent] == ["Meu"]
     assert [t.description for t in month_transactions(user, month_of())] == ["Meu"]
 
