@@ -1,5 +1,6 @@
 """A scripted stand-in for the provider client: each call to `create` returns the next item of the
-script, or raises it when it is an exception. Every call's arguments are kept in `calls`."""
+script, or raises it when it is an exception. Every call's arguments are kept in `calls`. A call
+past the end of the script raises `ScriptExhausted`."""
 
 from types import SimpleNamespace
 
@@ -30,6 +31,12 @@ def tool_response(*calls, tokens=100):
     return SimpleNamespace(choices=[SimpleNamespace(message=message)], usage=usage(tokens))
 
 
+class ScriptExhausted(BaseException):
+    """A call the script did not plan for. A BaseException on purpose: the service turns any
+    Exception into `Unavailable`, which would hide a loop that calls the model more than it
+    should behind the very error a test expects."""
+
+
 class FakeClient:
     def __init__(self, *script):
         self.script = list(script)
@@ -38,6 +45,8 @@ class FakeClient:
 
     def _create(self, **kwargs):
         self.calls.append(kwargs)
+        if not self.script:
+            raise ScriptExhausted(f"call {len(self.calls)} is past the end of the script")
         item = self.script.pop(0)
         if isinstance(item, Exception):
             raise item

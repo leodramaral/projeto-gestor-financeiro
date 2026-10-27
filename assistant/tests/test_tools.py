@@ -64,6 +64,17 @@ def test_without_a_month_it_is_the_current_one(user, category, make_expense):
     assert amounts(outcome) == {"Lazer": "42.00"}
 
 
+def test_the_current_month_given_explicitly_is_accepted(user, category, make_expense):
+    today = timezone.localdate()
+    make_expense(user, category("Lazer"), "42.00", today)
+
+    outcome = spending(user, json.dumps({"month": today.strftime("%Y-%m")}))
+
+    assert outcome.data["month"] == today.strftime("%Y-%m")
+    assert outcome.data["total"] == "42.00"
+    assert amounts(outcome) == {"Lazer": "42.00"}
+
+
 def test_a_null_month_is_the_current_one(user):
     assert spending(user, '{"month": null}').data["month"] == timezone.localdate().strftime("%Y-%m")
 

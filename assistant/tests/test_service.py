@@ -24,7 +24,7 @@ from assistant.service import (
 )
 from assistant.tools import DECLINE, SPENDING
 
-from .fakes import FakeClient, text_response, tool_response, usage
+from .fakes import FakeClient, ScriptExhausted, text_response, tool_response, usage
 
 REQUEST = httpx2.Request("POST", "https://llm.test/v1/chat/completions")
 
@@ -308,12 +308,23 @@ def test_rejected_and_refused_answers_count_their_tokens(user, august, fake):
 
 
 def test_a_model_that_never_stops_asking_for_tools_ends_at_the_limit(august, fake):
-    fake(*[tool_response(spending(), tokens=10) for _ in range(MAX_MODEL_CALLS)])
+    # One response more than the limit: a loop that ignores it would make that extra call.
+    client = fake(*[tool_response(spending(), tokens=10) for _ in range(MAX_MODEL_CALLS + 1)])
 
     with pytest.raises(Unavailable) as error:
         answer(august, [], "q")
 
+    assert len(client.calls) == MAX_MODEL_CALLS
+    assert error.value.cause == "Unavailable"  # the limit, not a failure of the provider
+    assert error.value.round == MAX_MODEL_CALLS
     assert error.value.tokens == 10 * MAX_MODEL_CALLS
+
+
+def test_a_call_past_the_script_fails_the_test_instead_of_becoming_unavailable(august, fake):
+    fake(tool_response(spending()))
+
+    with pytest.raises(ScriptExhausted):
+        answer(august, [], "q")
 
 
 @pytest.mark.parametrize(
