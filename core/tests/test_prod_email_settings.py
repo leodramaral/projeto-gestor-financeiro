@@ -33,6 +33,12 @@ def import_prod(env_vars):
     )
 
 
+def exception_line(result):
+    """The exception message: the traceback above it repeats the failing source line, which already
+    names the variable whatever the message says."""
+    return result.stderr.strip().splitlines()[-1]
+
+
 def test_prod_imports_with_all_variables():
     result = import_prod(REQUIRED)
     assert result.returncode == 0, result.stderr
@@ -43,16 +49,21 @@ def test_prod_fails_naming_the_missing_variable(missing):
     result = import_prod({k: v for k, v in REQUIRED.items() if k != missing})
 
     assert result.returncode != 0
-    assert missing in result.stderr
+    assert exception_line(result) == (
+        f"django.core.exceptions.ImproperlyConfigured: Set the {missing} environment variable"
+    )
     for secret in ("user-secret", "password-secret"):
         assert secret not in result.stderr
 
 
+@pytest.mark.parametrize("blank", ["", "   "])
 @pytest.mark.parametrize("empty", EMAIL_VARS)
-def test_prod_fails_naming_the_empty_variable(empty):
-    result = import_prod({**REQUIRED, empty: ""})
+def test_prod_fails_naming_the_empty_variable(empty, blank):
+    result = import_prod({**REQUIRED, empty: blank})
 
     assert result.returncode != 0
-    assert empty in result.stderr
+    assert exception_line(result) == (
+        f"django.core.exceptions.ImproperlyConfigured: Set the {empty} environment variable."
+    )
     for secret in ("user-secret", "password-secret"):
         assert secret not in result.stderr
