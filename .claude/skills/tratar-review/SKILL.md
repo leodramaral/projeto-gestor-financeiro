@@ -1,10 +1,10 @@
 ---
-name: responder-review
-description: 'Trata os comentários de review recebidos no nosso Pull Request (de bots como o Copilot, de pessoas ou da skill `revisar-pr`): coleta, verifica cada achado no código, recomenda resolver ou não, espera a decisão do usuário, aplica as correções com verificação e commit, empurra e responde em cada comentário citando o commit. Use quando o usuário disser "analise os comentários do PR X", "resolva os comentários do review", "faz sentido resolver?" ou "responda os comentários". Para revisar um PR, use `revisar-pr`.'
+name: tratar-review
+description: 'Trata os comentários de review recebidos no nosso Pull Request (de bots como o Copilot, de pessoas ou da skill `revisar-codigo`): coleta, verifica cada achado no código, recomenda resolver ou não, espera a decisão do usuário, aplica as correções com verificação e commit, empurra e responde em cada comentário citando o commit. Use quando o usuário disser "analise os comentários do PR X", "resolva os comentários do review", "faz sentido resolver?" ou "responda os comentários". Para revisar um PR, use `revisar-codigo`.'
 license: MIT
 ---
 
-# Responder review
+# Tratar review
 
 ## Objetivo
 

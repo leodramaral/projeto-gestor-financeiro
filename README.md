@@ -135,8 +135,8 @@ openspec validate --all                                          # valida as spe
 ```
 
 **Opcional, para um fluxo melhor:** instale o [GitHub CLI (`gh`)](https://cli.github.com/) e faça `gh auth login`.
-Ele cria Issues (`gh issue create`) e abre PRs pelo terminal, e as skills `fechar-change`, `revisar-pr` e
-`responder-review` dependem dele.
+Ele cria Issues (`gh issue create`) e abre PRs pelo terminal, e as skills `fechar-change`, `revisar-codigo` e
+`tratar-review` dependem dele.
 
 ### Os três artefatos
 
