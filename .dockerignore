@@ -10,3 +10,4 @@ worktrees
 node_modules
 static/dist
 design
+mutants

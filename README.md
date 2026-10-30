@@ -200,6 +200,41 @@ os três jobs verdes e uma aprovação.
 - **CodeQL** analisa o código em todo PR, em todo push na `main` e semanalmente. Ele **não bloqueia** o merge:
   leia os alertas do PR antes de mesclar.
 
+### Teste de mutação
+
+A cobertura diz se a linha rodou, não se algum teste confere o resultado. O
+[mutmut](https://github.com/boxed/mutmut) faz pequenas alterações no código (`<` vira `<=`, `+` vira `-`, um
+filtro perde um argumento) e roda os testes que passam por aquela função: se nenhum falha, o mutante
+**sobreviveu** e há um teste que passa com o código quebrado.
+
+```bash
+scripts/mutation run                      # rodada completa (retoma de onde parou)
+scripts/mutation run "transactions.views*"   # só os mutantes de um módulo
+scripts/mutation results                  # lista os sobreviventes
+scripts/mutation show <mutante>           # mostra o diff de um mutante
+scripts/mutation browse                   # navegação interativa
+scripts/mutation score                    # confere o score contra o piso
+rm -rf mutants                            # descarta os resultados e recomeça do zero
+```
+
+- **Escopo:** todo o código dos apps é mutado, menos o que está em `do_not_mutate` (`[tool.mutmut]` no
+  `pyproject.toml`): testes, migrations, `admin.py`/`apps.py`/`urls.py`, `config/`, templatetags de apresentação
+  e comandos de desenvolvimento. Um arquivo novo entra por padrão; o critério para excluir está no
+  [`AGENTS.md`](AGENTS.md).
+- **Custo:** a rodada de referência (todos os mutantes do escopo) está em [`AGENTS.md`](AGENTS.md), com o tempo,
+  a memória e o score. Os resultados ficam em `mutants/`, e uma nova rodada só refaz as funções alteradas.
+- **Por que os limites:** o mutmut abre, por padrão, um processo por núcleo e ignora o teto de CPU do contêiner.
+  Sem limite, a máquina fica sem processador. O `scripts/mutation` roda num contêiner com `cpus` e `mem_limit`
+  (`MUTATION_CPUS`, padrão metade dos núcleos; `MUTATION_MEMORY`, padrão `2g`) e passa sempre
+  `--max-children` (`MUTATION_MAX_CHILDREN`, padrão igual a `MUTATION_CPUS`).
+- **Como ler um sobrevivente:** `scripts/mutation show <mutante>` mostra a alteração. Pergunte qual teste
+  deveria ter falhado com ela. Se o comportamento importa, falta uma asserção. Se a alteração é equivalente
+  (não muda nada observável), ela pode ser ignorada.
+- **Fora do caminho do commit e do PR:** a rotina [`mutation.yml`](.github/workflows/mutation.yml) roda toda
+  noite (e sob demanda, em **Actions → Mutação → Run workflow**). Se o score ficar abaixo do piso
+  (`[tool.mutation] min_score`), ela abre uma Issue ou comenta na que já estiver aberta. O piso só sobe, como o
+  `fail_under`.
+
 CI verde não garante código correto: a revisão por outra pessoa e a verificação manual das tasks continuam
 necessárias.
 

@@ -27,6 +27,7 @@ docker compose exec web pytest                        # testes (settings de test
 docker compose exec web pytest --cov --cov-report=term-missing   # com cobertura (como o CI; piso em `fail_under`)
 uvx pre-commit run --all-files                        # lint (Ruff, inclui complexidade), formatação e higiene
 docker compose run --rm css npm run build             # recompila o CSS (`watch` para acompanhar)
+scripts/mutation run                                  # teste de mutação no contêiner, com teto de CPU e memória (ver "Teste de mutação")
 openspec validate --all                               # SEM --strict
 ```
 
@@ -94,6 +95,64 @@ openspec validate --all                               # SEM --strict
     worktree**. Só uma worktree por vez na 8000. `--build` só se `pyproject.toml` ou `uv.lock`
     mudaram. Para voltar ao checkout principal, rode `docker compose up -d` nele.
   - Testes sem trocar o `web`: `docker compose run --rm --no-deps web pytest` (o `db` de pé).
+
+## Teste de mutação (mutmut)
+
+Mede o que a cobertura não mede: se algum teste falha quando o código quebra. O uso está no `README.md`
+("Teste de mutação"); aqui ficam as fronteiras e as armadilhas.
+
+- **Sempre por `scripts/mutation`**, nunca `mutmut run` direto. O mutmut abre um filho por núcleo
+  (`os.cpu_count()`, 20 no WSL) e o `--max-children` não é chave do `pyproject.toml`, só da linha de
+  comando. O `cpus` do contêiner também não muda o `os.cpu_count()` lá dentro. O script roda o serviço
+  `mutation` do Compose (profile próprio, fora do `up`) com `cpus` e `mem_limit` e passa `--max-children`
+  sempre. O `docker compose run` não aceita `--cpus` nem `-m`, por isso os limites ficam no serviço.
+- **Fora do commit e do PR.** Não há hook de pre-commit de mutação. A medição oficial é a rotina noturna
+  `.github/workflows/mutation.yml` (e `workflow_dispatch`), que abre ou comenta uma Issue se o score ficar
+  abaixo do piso.
+- **Escopo por exclusão** (`[tool.mutmut] do_not_mutate`): **todo** arquivo dos `source_paths` é
+  mutado, e só sai por um destes motivos, cada um num bloco comentado da lista:
+  - não é código de produção (`tests/`, `migrations/`);
+  - é declaração, sem lógica (`admin.py`, `apps.py`, `urls.py`);
+  - fica fora de função, onde o mutmut não chega, e tem teste direto (`config/`);
+  - é apresentação, e o erro aparece na tela (templatetags de ícone, aviso, categoria e iniciais);
+  - é ferramenta de desenvolvimento (`core/management/`).
+
+  Arquivo novo entra por padrão: o erro fica do lado seguro, já que custa tempo de rodada mas não esconde
+  defeito. Uma exclusão nova precisa caber numa dessas categorias e é decidida no PR. "Só gera
+  sobrevivente" não é motivo, porque sobrevivente é o que a ferramenta existe para mostrar. Na dúvida, pergunte
+  se o erro passaria despercebido na tela (dinheiro errado, dado de outro usuário, acesso indevido, recurso
+  sem limite): se sim, o arquivo fica. A primeira versão usava lista de inclusão (`only_mutate`) e deixou de
+  fora, sem ninguém notar, views que filtram por dono e o fluxo de autenticação; não volte a ela.
+- **Seleção de testes é do mutmut:** ele registra quais testes passam por cada função e só roda esses.
+  Não mapeie `arquivo.py` → `test_arquivo.py` (nossos testes são por comportamento, e o teste que mata o
+  mutante pode estar em `test_isolation.py`).
+- **Piso por ratchet** (`[tool.mutation] min_score`, em %): o score medido na rotina do Actions, truncado
+  para baixo, que só sobe. O score é o do próprio mutmut, `(mortos + timeout) ÷ (total − pulados)`. O timeout
+  conta como detectado, então um runner lento que troca morto por timeout não derruba o piso. O
+  `scripts/mutation_score.py` recusa uma rodada incompleta (mutante não checado).
+- **Armadilhas já resolvidas, não desfaça:**
+  - `manage.py` no `also_copy`. Sem ele, o pytest-django acha o `manage.py` da raiz e põe a raiz no
+    `sys.path`. Os testes importam então o código original, não o mutado, e o mutmut para com "could not
+    find any test case for any mutant".
+  - `conftest.py` da raiz (copiado para a sandbox): dá a cada processo do mutmut o seu banco de teste
+    (`test_<banco>_mut<pid>`). Com o nome compartilhado, os filhos apagavam o banco uns dos outros e o erro
+    contava como mutante **morto**. O pytest normal não é afetado (só vale com `MUTANT_UNDER_TEST`). Um filho
+    morto por timeout não apaga o seu banco, e o `scripts/mutation run` remove os que sobrarem.
+  - `--ignore=mutants` no `addopts`: a sandbox tem uma cópia dos testes, que o pytest normal não deve coletar.
+- **Rodada de referência** (2026-10-30, WSL com 20 núcleos, `MUTATION_CPUS=10`, 10 filhos, teto `4g`,
+  escopo por exclusão): 2.742 mutantes em 24 módulos, **851 s** (14 min), pico de **664 MiB** no contêiner
+  (o padrão `2g` deixa 3× de folga), CPU até 547% do teto de 1.000%, máquina utilizável durante a rodada.
+  Score **86,36%** (2.368 mortos, 374 sobreviventes, nenhum timeout): piso `86.3`. A primeira rodada, com a
+  lista de inclusão de 13 arquivos, deu 1.975 mutantes, 602 s e 85,62%. Com os testes de antes dos #85 e #87,
+  os mutantes da auditoria sobrevivem (laço do assistente com `MAX_MODEL_CALLS + 2`, "mês atual" com `>=`,
+  `income`/`expense` do gráfico como `None`) e morrem com os testes atuais: a ferramenta reproduz o achado.
+- **O que o mutmut não alcança:** código fora de função (constantes de módulo, `config/settings/`) e
+  **funções com decorador** (`@property`, `@cached_property`; só `staticmethod` e `classmethod` são
+  mutados). Ficam sem mutante, entre outras, as propriedades `selected_category` (o filtro de categoria
+  da listagem) e `progress_percent` (metas), e todo filtro ou tag de template registrado com decorador,
+  inclusive o `brl` (`money_tags.py`, formato de dinheiro). Esse código depende de leitura e de teste direto.
+- **Strings:** o mutmut troca `"texto"` por `"XXtextoXX"`. As linhas de `logger.` ficam de fora
+  (`do_not_mutate_patterns`). Uma string de produto que sobrevive é sinal: nenhum teste confere aquele texto.
 
 ## Design (FigCraft)
 
