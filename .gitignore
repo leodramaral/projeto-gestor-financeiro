@@ -31,3 +31,6 @@ static/dist/
 
 # Design: PNGs exported from design/*.figcraft are derived, regenerate them (see AGENTS.md)
 design/png/
+
+# Teste de mutação: sandbox e resultados do mutmut (ver AGENTS.md)
+mutants/

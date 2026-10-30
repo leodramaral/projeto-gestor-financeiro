@@ -1,0 +1,89 @@
+name: Mutação
+
+# Teste de mutação do backend (ver AGENTS.md): mede se os testes falham quando o código quebra.
+# Não roda em PR nem em push: uma rodada completa leva muito mais que o CI. Roda toda noite e sob
+# demanda; se o score cair abaixo do piso (`[tool.mutation]` no pyproject.toml), abre uma Issue ou
+# comenta na que já estiver aberta.
+on:
+  schedule:
+    - cron: "23 5 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: mutation
+  cancel-in-progress: false
+
+permissions: {}
+
+env:
+  ISSUE_TITLE: "Teste de mutação: score abaixo do piso"
+
+jobs:
+  mutation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Gerar o .env (valores descartáveis, nenhum segredo do repositório)
+        run: |
+          cp .env.example .env
+          sed -i "s|^SECRET_KEY=.*|SECRET_KEY=$(openssl rand -hex 32)|" .env
+          sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$(openssl rand -hex 16)|" .env
+      - name: Liberar escrita no workspace
+        # Os contêineres rodam como uid 1000; `mutants/` é a sandbox do mutmut (ver ci.yml).
+        run: |
+          mkdir -p static/dist mutants
+          chmod -R a+rwX static/dist mutants
+      - name: Compilar o CSS e subir o banco
+        run: |
+          docker compose run --rm css
+          docker compose up -d --wait db
+      - name: Rodar a mutação
+        # O runner é descartável: usa os 4 núcleos (repositório público) em vez da metade.
+        env:
+          MUTATION_CPUS: "4"
+          MUTATION_MAX_CHILDREN: "4"
+        run: scripts/mutation run
+      - name: Conferir o piso
+        id: score
+        run: |
+          set +e
+          scripts/mutation score | tee score.txt
+          rc=${PIPESTATUS[0]}
+          { echo "## Teste de mutação"; echo; cat score.txt; } >> "$GITHUB_STEP_SUMMARY"
+          exit $rc
+      - name: Listar os sobreviventes
+        if: always()
+        run: scripts/mutation results > mutants/sobreviventes.txt || true
+      - name: Guardar o resultado
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutacao
+          path: |
+            mutants/mutmut-cicd-stats.json
+            mutants/sobreviventes.txt
+          if-no-files-found: ignore
+      - name: Abrir ou comentar a Issue
+        if: failure() && steps.score.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          body="$(printf '%s\n\nExecução: %s\n\nOs sobreviventes estão no artefato `mutacao` da execução.' "$(cat score.txt)" "$RUN_URL")"
+          number="$(gh issue list --state open --search "in:title \"$ISSUE_TITLE\"" --json number,title \
+            --jq "map(select(.title == env.ISSUE_TITLE)) | first | .number // empty")"
+          if [ -n "$number" ]; then
+            gh issue comment "$number" --body "$body"
+          else
+            gh issue create --title "$ISSUE_TITLE" --body "$body"
+          fi
+      - name: Mostrar logs do compose se algo falhou
+        if: failure()
+        run: docker compose logs --no-color db
+      - name: Derrubar o ambiente
+        if: always()
+        run: docker compose --profile mutation down -v

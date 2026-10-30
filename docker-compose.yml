@@ -42,6 +42,25 @@ services:
       mailpit:
         condition: service_started
 
+  # Teste de mutação (mutmut), só sob demanda: `scripts/mutation`. O profile o deixa fora do `up`.
+  # O teto de CPU e de memória fica no contêiner, então uma rodada pesada não derruba o WSL nem o
+  # Windows. O `cpus` não muda o `os.cpu_count()` lá dentro: o script passa `--max-children` sempre.
+  mutation:
+    profiles: ["mutation"]
+    build: *app-build
+    image: projeto-gestor-financeiro:dev
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${APP_DB_NAME:-${POSTGRES_DB}}
+    cpus: ${MUTATION_CPUS:-4}
+    mem_limit: ${MUTATION_MEMORY:-2g}
+    volumes:
+      - ./:/app
+    depends_on:
+      db:
+        condition: service_healthy
+
   # Caixa de entrada fake: recebe todo e-mail enviado em dev. SMTP em mailpit:1025 só na rede
   # interna do Compose (porta não publicada); interface web só em 127.0.0.1:8025. Sem volume.
   mailpit:
