@@ -1,6 +1,7 @@
 import math
 
 from django import forms
+from django.contrib.admin.forms import AdminAuthenticationForm
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm, BaseUserCreationForm, SetPasswordForm
 
@@ -58,21 +59,12 @@ class SignupForm(StyledFormMixin, BaseUserCreationForm):
         return email
 
 
-class LoginForm(StyledFormMixin, AuthenticationForm):
-    username = forms.EmailField(label="E-mail", widget=forms.EmailInput(attrs={"autofocus": True}))
-    remember_me = forms.BooleanField(label="Lembrar de mim", required=False)
+class LoginThrottleFormMixin:
+    """Enforces temporary lockout and counts wrong-credential failures by normalized email."""
 
-    error_messages = {
-        **AuthenticationForm.error_messages,
-        "invalid_login": "E-mail ou senha incorretos.",
-        "unconfirmed": "Confirme seu e-mail para entrar. Procure a mensagem de confirmação.",
+    throttle_error_messages = {
         "locked": "Muitas tentativas de login. Tente novamente em %(minutes)d %(unit)s.",
     }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.unconfirmed = False
-        self.fields["password"].widget.attrs["autocomplete"] = "current-password"
 
     def clean_username(self):
         return User.objects.normalize_email(self.cleaned_data["username"])
@@ -95,11 +87,36 @@ class LoginForm(StyledFormMixin, AuthenticationForm):
                 throttle.register_failure(email)
             raise
 
+
+class LoginForm(StyledFormMixin, LoginThrottleFormMixin, AuthenticationForm):
+    username = forms.EmailField(label="E-mail", widget=forms.EmailInput(attrs={"autofocus": True}))
+    remember_me = forms.BooleanField(label="Lembrar de mim", required=False)
+
+    error_messages = {
+        **AuthenticationForm.error_messages,
+        **LoginThrottleFormMixin.throttle_error_messages,
+        "invalid_login": "E-mail ou senha incorretos.",
+        "unconfirmed": "Confirme seu e-mail para entrar. Procure a mensagem de confirmação.",
+    }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.unconfirmed = False
+        self.fields["password"].widget.attrs["autocomplete"] = "current-password"
+
     def confirm_login_allowed(self, user):
         super().confirm_login_allowed(user)
         if not user.is_email_confirmed:
             self.unconfirmed = True
             raise forms.ValidationError(self.error_messages["unconfirmed"], code="unconfirmed")
+
+
+class AdminLoginForm(LoginThrottleFormMixin, AdminAuthenticationForm):
+    error_messages = {
+        **AdminAuthenticationForm.error_messages,
+        **LoginThrottleFormMixin.throttle_error_messages,
+        "invalid_login": "E-mail ou senha incorretos.",
+    }
 
 
 class ResendConfirmationForm(StyledFormMixin, forms.Form):

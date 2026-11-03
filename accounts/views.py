@@ -74,7 +74,6 @@ class SignInView(LoginView):
 
     def form_valid(self, form):
         response = super().form_valid(form)
-        throttle.reset(form.get_user().email)
         if form.cleaned_data["remember_me"]:
             self.request.session.set_expiry(settings.SESSION_REMEMBER_SECONDS)
         else:
