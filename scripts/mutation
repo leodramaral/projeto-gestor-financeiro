@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# Mutation testing (mutmut) inside Docker, with capped CPU, memory and parallelism (see AGENTS.md).
+#
+#   scripts/mutation run [mutant-glob...]   run mutmut (resumes; `rm -rf mutants` for a fresh run)
+#   scripts/mutation score                  check the score of the last full run against the floor
+#   scripts/mutation <mutmut command...>    any other mutmut command: results, show <m>, browse
+#
+# Limits (environment): MUTATION_CPUS (default: half of the host cores), MUTATION_MEMORY
+# (default 2g) and MUTATION_MAX_CHILDREN (default: MUTATION_CPUS). mutmut's own default for
+# `--max-children` is os.cpu_count(), which ignores the container CPU cap: never rely on it.
+set -euo pipefail
+
+die() {
+  echo "mutation: $*" >&2
+  exit 1
+}
+
+usage() {
+  sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//' >&2
+  exit 2
+}
+
+cd "$(dirname "$0")/.."
+
+host_cores="$(nproc)"
+export MUTATION_CPUS="${MUTATION_CPUS:-$((host_cores > 1 ? host_cores / 2 : 1))}"
+export MUTATION_MEMORY="${MUTATION_MEMORY:-2g}"
+MUTATION_MAX_CHILDREN="${MUTATION_MAX_CHILDREN:-$MUTATION_CPUS}"
+[[ "$MUTATION_MAX_CHILDREN" =~ ^[1-9][0-9]*$ ]] || die "MUTATION_MAX_CHILDREN must be a positive integer"
+
+compose() {
+  docker compose --profile mutation "$@"
+}
+
+# Each mutant gets its own test database (conftest.py); a worker killed on timeout never drops it.
+drop_leftover_databases() {
+  local user names
+  user="$(grep -E '^POSTGRES_USER=' .env | tail -n 1 | cut -d= -f2-)"
+  names="$(compose exec -T db psql -U "$user" -d postgres -tA \
+    -c "SELECT datname FROM pg_database WHERE datname ~ '^test_.*_mut[0-9]+$'")"
+  for name in $names; do
+    compose exec -T db psql -U "$user" -d postgres -q -c "DROP DATABASE IF EXISTS \"$name\""
+  done
+}
+
+[[ $# -ge 1 ]] || usage
+case "$1" in
+  run)
+    shift
+    echo "mutation: --max-children $MUTATION_MAX_CHILDREN, cpus $MUTATION_CPUS, memory $MUTATION_MEMORY" >&2
+    status=0
+    compose run --rm mutation mutmut run --max-children "$MUTATION_MAX_CHILDREN" "$@" || status=$?
+    drop_leftover_databases
+    exit "$status"
+    ;;
+  score)
+    compose run --rm mutation sh -c 'mutmut export-cicd-stats && python scripts/mutation_score.py'
+    ;;
+  -h | --help | help)
+    usage
+    ;;
+  *)
+    compose run --rm mutation mutmut "$@"
+    ;;
+esac
