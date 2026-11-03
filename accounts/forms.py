@@ -62,13 +62,12 @@ class SignupForm(StyledFormMixin, BaseUserCreationForm):
 class LoginThrottleFormMixin:
     """Enforces temporary lockout and counts wrong-credential failures by normalized email."""
 
-    locked_error_message = "Muitas tentativas de login. Tente novamente em %(minutes)d %(unit)s."
+    throttle_error_messages = {
+        "locked": "Muitas tentativas de login. Tente novamente em %(minutes)d %(unit)s.",
+    }
 
     def clean_username(self):
-        username = self.cleaned_data.get("username")
-        if username:
-            return User.objects.normalize_email(username)
-        return username
+        return User.objects.normalize_email(self.cleaned_data["username"])
 
     def clean(self):
         email = self.cleaned_data.get("username")
@@ -76,11 +75,8 @@ class LoginThrottleFormMixin:
             remaining = throttle.lock_remaining(email)
             if remaining is not None:
                 minutes = max(1, math.ceil(remaining.total_seconds() / 60))
-                error_message = getattr(self, "error_messages", {}).get(
-                    "locked", self.locked_error_message
-                )
                 raise forms.ValidationError(
-                    error_message,
+                    self.error_messages["locked"],
                     code="locked",
                     params={"minutes": minutes, "unit": "minuto" if minutes == 1 else "minutos"},
                 )
@@ -98,9 +94,9 @@ class LoginForm(StyledFormMixin, LoginThrottleFormMixin, AuthenticationForm):
 
     error_messages = {
         **AuthenticationForm.error_messages,
+        **LoginThrottleFormMixin.throttle_error_messages,
         "invalid_login": "E-mail ou senha incorretos.",
         "unconfirmed": "Confirme seu e-mail para entrar. Procure a mensagem de confirmação.",
-        "locked": "Muitas tentativas de login. Tente novamente em %(minutes)d %(unit)s.",
     }
 
     def __init__(self, *args, **kwargs):
@@ -118,8 +114,8 @@ class LoginForm(StyledFormMixin, LoginThrottleFormMixin, AuthenticationForm):
 class AdminLoginForm(LoginThrottleFormMixin, AdminAuthenticationForm):
     error_messages = {
         **AdminAuthenticationForm.error_messages,
+        **LoginThrottleFormMixin.throttle_error_messages,
         "invalid_login": "E-mail ou senha incorretos.",
-        "locked": "Muitas tentativas de login. Tente novamente em %(minutes)d %(unit)s.",
     }
 
 

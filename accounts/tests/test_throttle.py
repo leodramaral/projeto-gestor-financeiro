@@ -6,7 +6,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from accounts import throttle
-from accounts.forms import AdminLoginForm, LoginForm
+from accounts.forms import AdminLoginForm
 from accounts.models import LoginThrottle
 
 from .conftest import PASSWORD
@@ -241,11 +241,17 @@ def test_admin_login_non_staff_registers_failure_and_locks(client, make_user):
     assert throttle.is_locked("comum@exemplo.com")
 
 
-def test_form_clean_username_normalizes_email():
-    login_form = LoginForm()
-    login_form.cleaned_data = {"username": "  TESTE@Exemplo.COM "}
-    assert login_form.clean_username() == "teste@exemplo.com"
+@pytest.mark.django_db
+def test_admin_login_email_case_shares_one_count(client, make_user):
+    make_user("admin@exemplo.com", is_staff=True, is_superuser=True)
+    for email in ("Admin@Exemplo.com", " ADMIN@exemplo.com"):
+        post_admin_login(client, email=email)
+    for _ in range(LIMIT - 2):
+        post_admin_login(client, email="admin@exemplo.com")
 
-    admin_form = AdminLoginForm()
-    admin_form.cleaned_data = {"username": "  ADMIN@Exemplo.COM "}
-    assert admin_form.clean_username() == "admin@exemplo.com"
+    assert LoginThrottle.objects.count() == 1
+    assert throttle.is_locked("admin@exemplo.com")
+
+    response = post_admin_login(client, email=" ADMIN@EXEMPLO.COM ", password=PASSWORD)
+    assert response.status_code == 200
+    assert "Muitas tentativas de login" in response.content.decode()
