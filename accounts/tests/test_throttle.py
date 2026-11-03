@@ -6,11 +6,13 @@ from django.urls import reverse
 from django.utils import timezone
 
 from accounts import throttle
+from accounts.forms import AdminLoginForm, LoginForm
 from accounts.models import LoginThrottle
 
 from .conftest import PASSWORD
 
 LOGIN = "accounts:login"
+ADMIN_LOGIN = "admin:login"
 LIMIT = 5  # LOGIN_MAX_FAILED_ATTEMPTS default
 
 
@@ -70,6 +72,10 @@ def test_reset_lifts_the_lock():
 
 def post_login(client, email="ana@exemplo.com", password="errada"):
     return client.post(reverse(LOGIN), {"username": email, "password": password})
+
+
+def post_admin_login(client, email="admin@exemplo.com", password="errada"):
+    return client.post(reverse(ADMIN_LOGIN), {"username": email, "password": password})
 
 
 @pytest.mark.django_db
@@ -169,3 +175,77 @@ def test_failure_during_an_active_lock_does_not_extend_it():
     row = LoginThrottle.objects.get()
     assert row.locked_until == locked_until
     assert row.failed_count == 0
+
+
+@pytest.mark.django_db
+def test_admin_login_uses_admin_login_form(client):
+    response = client.get(reverse(ADMIN_LOGIN))
+
+    assert response.status_code == 200
+    assert isinstance(response.context["form"], AdminLoginForm)
+
+
+@pytest.mark.django_db
+def test_admin_login_locks_after_limit_even_with_the_right_password(client, make_user):
+    make_user("admin@exemplo.com", is_staff=True, is_superuser=True)
+    for _ in range(LIMIT):
+        post_admin_login(client)
+
+    response = post_admin_login(client, password=PASSWORD)
+
+    assert response.status_code == 200
+    assert SESSION_KEY not in client.session
+    content = response.content.decode()
+    assert "Muitas tentativas de login" in content
+    assert "15 minutos" in content
+
+
+@pytest.mark.django_db
+def test_admin_login_below_the_limit_resets_count_on_success(client, make_user):
+    make_user("admin@exemplo.com", is_staff=True, is_superuser=True)
+    for _ in range(LIMIT - 1):
+        post_admin_login(client)
+
+    response = post_admin_login(client, password=PASSWORD)
+
+    assert response.status_code == 302
+    assert SESSION_KEY in client.session
+    assert not LoginThrottle.objects.filter(email="admin@exemplo.com").exists()
+
+
+@pytest.mark.django_db
+def test_throttle_count_is_shared_between_app_and_admin(client, make_user):
+    make_user("admin@exemplo.com", is_staff=True, is_superuser=True)
+    for _ in range(3):
+        post_login(client, "admin@exemplo.com")
+    for _ in range(2):
+        post_admin_login(client, "admin@exemplo.com")
+
+    assert throttle.is_locked("admin@exemplo.com")
+
+    admin_resp = post_admin_login(client, "admin@exemplo.com", password=PASSWORD)
+    app_resp = post_login(client, "admin@exemplo.com", password=PASSWORD)
+
+    assert admin_resp.status_code == 200
+    assert "Muitas tentativas de login" in admin_resp.content.decode()
+    assert app_resp.status_code == 200
+    assert "Muitas tentativas de login" in app_resp.content.decode()
+
+
+@pytest.mark.django_db
+def test_admin_login_non_staff_registers_failure_and_locks(client, make_user):
+    make_user("comum@exemplo.com", is_staff=False)
+    for _ in range(LIMIT):
+        post_admin_login(client, "comum@exemplo.com", password=PASSWORD)
+
+    assert throttle.is_locked("comum@exemplo.com")
+
+
+def test_form_clean_username_normalizes_email():
+    login_form = LoginForm()
+    login_form.cleaned_data = {"username": "  TESTE@Exemplo.COM "}
+    assert login_form.clean_username() == "teste@exemplo.com"
+
+    admin_form = AdminLoginForm()
+    admin_form.cleaned_data = {"username": "  ADMIN@Exemplo.COM "}
+    assert admin_form.clean_username() == "admin@exemplo.com"

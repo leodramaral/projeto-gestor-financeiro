@@ -1,6 +1,7 @@
 import math
 
 from django import forms
+from django.contrib.admin.forms import AdminAuthenticationForm
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm, BaseUserCreationForm, SetPasswordForm
 
@@ -58,7 +59,40 @@ class SignupForm(StyledFormMixin, BaseUserCreationForm):
         return email
 
 
-class LoginForm(StyledFormMixin, AuthenticationForm):
+class LoginThrottleFormMixin:
+    """Enforces temporary lockout and counts wrong-credential failures by normalized email."""
+
+    locked_error_message = "Muitas tentativas de login. Tente novamente em %(minutes)d %(unit)s."
+
+    def clean_username(self):
+        username = self.cleaned_data.get("username")
+        if username:
+            return User.objects.normalize_email(username)
+        return username
+
+    def clean(self):
+        email = self.cleaned_data.get("username")
+        if email:
+            remaining = throttle.lock_remaining(email)
+            if remaining is not None:
+                minutes = max(1, math.ceil(remaining.total_seconds() / 60))
+                error_message = getattr(self, "error_messages", {}).get(
+                    "locked", self.locked_error_message
+                )
+                raise forms.ValidationError(
+                    error_message,
+                    code="locked",
+                    params={"minutes": minutes, "unit": "minuto" if minutes == 1 else "minutos"},
+                )
+        try:
+            return super().clean()
+        except forms.ValidationError as error:
+            if error.code == "invalid_login":
+                throttle.register_failure(email)
+            raise
+
+
+class LoginForm(StyledFormMixin, LoginThrottleFormMixin, AuthenticationForm):
     username = forms.EmailField(label="E-mail", widget=forms.EmailInput(attrs={"autofocus": True}))
     remember_me = forms.BooleanField(label="Lembrar de mim", required=False)
 
@@ -74,32 +108,19 @@ class LoginForm(StyledFormMixin, AuthenticationForm):
         self.unconfirmed = False
         self.fields["password"].widget.attrs["autocomplete"] = "current-password"
 
-    def clean_username(self):
-        return User.objects.normalize_email(self.cleaned_data["username"])
-
-    def clean(self):
-        email = self.cleaned_data.get("username")
-        if email:
-            remaining = throttle.lock_remaining(email)
-            if remaining is not None:
-                minutes = max(1, math.ceil(remaining.total_seconds() / 60))
-                raise forms.ValidationError(
-                    self.error_messages["locked"],
-                    code="locked",
-                    params={"minutes": minutes, "unit": "minuto" if minutes == 1 else "minutos"},
-                )
-        try:
-            return super().clean()
-        except forms.ValidationError as error:
-            if error.code == "invalid_login":
-                throttle.register_failure(email)
-            raise
-
     def confirm_login_allowed(self, user):
         super().confirm_login_allowed(user)
         if not user.is_email_confirmed:
             self.unconfirmed = True
             raise forms.ValidationError(self.error_messages["unconfirmed"], code="unconfirmed")
+
+
+class AdminLoginForm(LoginThrottleFormMixin, AdminAuthenticationForm):
+    error_messages = {
+        **AdminAuthenticationForm.error_messages,
+        "invalid_login": "E-mail ou senha incorretos.",
+        "locked": "Muitas tentativas de login. Tente novamente em %(minutes)d %(unit)s.",
+    }
 
 
 class ResendConfirmationForm(StyledFormMixin, forms.Form):

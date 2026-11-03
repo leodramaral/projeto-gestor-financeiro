@@ -74,11 +74,13 @@ autenticado. Usuário autenticado que abre login ou cadastro DEVE ser redirecion
 ### Requirement: Limite de tentativas de login
 O login DEVE contar as tentativas com credenciais erradas por e-mail (sem diferenciar maiúsculas) e,
 ao atingir o limite configurável de falhas seguidas, DEVE bloquear novas tentativas daquele e-mail
-por um tempo configurável. Durante o bloqueio, nenhuma sessão DEVE ser iniciada, nem com a senha
-correta, e a página DEVE informar em português que o login está temporariamente bloqueado. O limite
-DEVE valer igualmente para e-mails sem conta, e a mensagem de bloqueio NÃO DEVE revelar se o e-mail
-tem conta. O bloqueio DEVE terminar sozinho ao fim do tempo, e um login bem-sucedido DEVE zerar a
-contagem.
+por um tempo configurável. A proteção DEVE aplicar-se tanto ao login da aplicação (`/accounts/login/`)
+quanto à interface administrativa (`/admin/login/`), compartilhando o mesmo contador de falhas e o
+mesmo período de bloqueio por e-mail. Durante o bloqueio, nenhuma sessão DEVE ser iniciada em qualquer
+uma das interfaces, mesmo com a senha correta, e a resposta DEVE informar em português que o login
+está temporariamente bloqueado. O limite DEVE valer igualmente para e-mails sem conta, e a mensagem
+de bloqueio NÃO DEVE revelar se o e-mail tem conta. O bloqueio DEVE terminar sozinho ao fim do tempo,
+e um login bem-sucedido em qualquer das interfaces DEVE zerar a contagem.
 
 #### Cenário: Bloqueio após o limite
 - **QUANDO** um e-mail acumula o número máximo de tentativas erradas seguidas
@@ -110,3 +112,18 @@ contagem.
 - **QUANDO** o usuário bloqueado redefine a senha pelo link recebido por e-mail
 - **ENTÃO** o bloqueio e a contagem de falhas desse e-mail são zerados
 - **E** o login com a nova senha funciona
+
+#### Cenário: Bloqueio no login do admin
+- **QUANDO** um e-mail acumula o número máximo de tentativas erradas seguidas em `/admin/login/`
+- **ENTÃO** a tentativa seguinte em `/admin/login/`, mesmo com a senha correta de um superusuário ou staff, não inicia sessão
+- **E** o formulário do admin exibe a mensagem em português de que o login está temporariamente bloqueado
+
+#### Cenário: Contagem unificada entre app e admin
+- **QUANDO** tentativas erradas ocorrem de forma intercalada entre o login do app e o login do admin para o mesmo e-mail
+- **ENTÃO** as falhas somam-se contra o mesmo limite configurado
+- **E** ao atingir o limite, o e-mail fica bloqueado em ambas as rotas
+
+#### Cenário: Login bem-sucedido no admin zera contagem
+- **QUANDO** um superusuário ou usuário staff possui falhas acumuladas abaixo do limite e efetua login com sucesso em `/admin/login/`
+- **ENTÃO** a sessão administrativa é iniciada
+- **E** a contagem de falhas desse e-mail volta a zero
