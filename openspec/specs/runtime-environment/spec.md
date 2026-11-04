@@ -1,7 +1,8 @@
 # runtime-environment Specification
 
 ## Purpose
-TBD - created by archiving change 1-boilerplate. Update Purpose after archive.
+Define como a aplicação roda em contêineres: a subida conjunta com o PostgreSQL, a persistência
+dos dados, as migrações aplicadas na subida e a escolha do banco por variável de ambiente.
 
 ## Requirements
 
