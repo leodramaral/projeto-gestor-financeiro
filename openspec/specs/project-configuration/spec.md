@@ -1,7 +1,8 @@
 # project-configuration Specification
 
 ## Purpose
-TBD - created by archiving change 1-boilerplate. Update Purpose after archive.
+Define como a aplicação escolhe a configuração de cada ambiente (`dev`, `test`, `prod`) e
+exige que os segredos venham só de variáveis de ambiente, sem valor padrão no código.
 
 ## Requirements
 
