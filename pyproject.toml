@@ -3,16 +3,16 @@ name = "gestor-financeiro"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
-    "django>=5.2.18,<5.3",
+    "django>=5.2.19,<5.3",
     "django-environ>=0.14.0",
-    "openai>=3.37.0",
+    "openai>=3.46.0",
     "psycopg[binary]>=3.3.6",
 ]
 
 [dependency-groups]
 dev = [
-    "mutmut>=3.8.0",
-    "pytest>=9.1.1",
+    "mutmut>=3.8.1",
+    "pytest>=9.2.0",
     "pytest-cov>=7.1.0",
     "pytest-django>=4.14.0",
 ]
