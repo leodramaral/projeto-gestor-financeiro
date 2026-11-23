@@ -60,7 +60,7 @@ jobs:
         run: scripts/mutation results > mutants/sobreviventes.txt || true
       - name: Guardar o resultado
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mutacao
           path: |
